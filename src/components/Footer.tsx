@@ -1,80 +1,112 @@
 import { useState } from 'react';
-import { MapPin, Phone, Mail } from 'lucide-react';
+import { Phone, Printer, Mail, MapPin, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 
 export const Footer = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: '',
-  });
+  const [email, setEmail] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('문의가 접수되었습니다. 빠른 시일 내에 답변드리겠습니다.');
-    setFormData({ name: '', email: '', message: '' });
+    if (email) {
+      toast.success('신청이 완료되었습니다. 빠른 시일 내에 연락드리겠습니다.');
+      setEmail('');
+    }
   };
 
   return (
-    <footer id="contact" className="bg-primary text-primary-foreground py-20 px-6">
-      <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12">
-        <div>
-          <h2 className="text-4xl font-black mb-6">G.G.I</h2>
-          <p className="text-primary-foreground/60 mb-8 max-w-sm">
-            주식회사 지지아이는 내실 있는 인프라 구축을 통해 대한민국 교육 현장의 미래를 설계합니다.
-          </p>
-          <div className="space-y-4 text-sm">
-            <p className="flex items-center gap-3">
-              <MapPin className="w-5 h-5 text-accent" />
-              경기도 소재 본사 및 제조센터
+    <footer id="contact" className="bg-primary text-primary-foreground">
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
+          {/* Brand */}
+          <div>
+            <h2 className="text-3xl font-black mb-4">G.G.I</h2>
+            <div className="text-sm text-primary-foreground/60 leading-relaxed mb-6">
+              <span className="text-accent">G</span>lobal Standard<br />
+              <span className="text-accent">G</span>reat Design<br />
+              <span className="text-accent">I</span>nfrastructure Specialist
+            </div>
+            <div className="flex gap-3">
+              <div className="w-10 h-10 bg-primary-foreground/10 rounded-full flex items-center justify-center hover:bg-accent transition-colors cursor-pointer">
+                <span className="text-xs font-bold">G2B</span>
+              </div>
+              <div className="w-10 h-10 bg-primary-foreground/10 rounded-full flex items-center justify-center hover:bg-accent transition-colors cursor-pointer">
+                <span className="text-xs font-bold">S2B</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Business Info */}
+          <div>
+            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 bg-accent rounded-full"></span>
+              Business Info
+            </h3>
+            <div className="space-y-3 text-sm text-primary-foreground/70">
+              <p><span className="text-primary-foreground/50">상호:</span> 주식회사 지지아이</p>
+              <p><span className="text-primary-foreground/50">대표자:</span> 김지은 대표이사</p>
+              <p><span className="text-primary-foreground/50">사업자등록번호:</span> 000-00-00000</p>
+              <p className="text-accent font-medium">여성기업 확인서 보유</p>
+            </div>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 bg-accent rounded-full"></span>
+              Contact Us
+            </h3>
+            <div className="space-y-3 text-sm">
+              <p className="flex items-center gap-3 text-primary-foreground/70">
+                <Phone className="w-4 h-4 text-accent" />
+                031-123-4567
+              </p>
+              <p className="flex items-center gap-3 text-primary-foreground/70">
+                <Printer className="w-4 h-4 text-accent" />
+                031-123-4568
+              </p>
+              <p className="flex items-center gap-3 text-primary-foreground/70">
+                <Mail className="w-4 h-4 text-accent" />
+                ggi_furniture@ggi.co.kr
+              </p>
+              <p className="flex items-center gap-3 text-primary-foreground/70">
+                <MapPin className="w-4 h-4 text-accent" />
+                경기도 소재 본사 및 공장
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Support */}
+          <div>
+            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 bg-accent rounded-full"></span>
+              Quick Support
+            </h3>
+            <p className="text-sm text-primary-foreground/70 mb-4">
+              견적 요청 및 제품 카탈로그 신청을 위해 연락처를 남겨주세요.
             </p>
-            <p className="flex items-center gap-3">
-              <Phone className="w-5 h-5 text-accent" />
-              031-000-0000
-            </p>
-            <p className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-accent" />
-              ggi_official@ggi.co.kr
-            </p>
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="이메일 주소"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/30 focus:border-accent"
+              />
+              <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground px-4">
+                <Send className="w-4 h-4" />
+              </Button>
+            </form>
           </div>
         </div>
-        <div className="bg-primary-foreground/5 p-8 rounded-2xl border border-primary-foreground/10">
-          <h4 className="font-bold mb-6 text-accent">나라장터 식별번호 및 제품 문의</h4>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              type="text"
-              placeholder="기관명/담당자 성함"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/30 focus:border-accent"
-            />
-            <Input
-              type="email"
-              placeholder="이메일 주소"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/30 focus:border-accent"
-            />
-            <Textarea
-              placeholder="문의 내용을 입력하세요"
-              value={formData.message}
-              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              className="bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground h-32 placeholder:text-primary-foreground/30 focus:border-accent resize-none"
-            />
-            <Button
-              type="submit"
-              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-6 font-bold shadow-lg"
-            >
-              문의 접수하기
-            </Button>
-          </form>
-        </div>
       </div>
-      <div className="max-w-7xl mx-auto mt-20 pt-8 border-t border-primary-foreground/10 text-center text-primary-foreground/40 text-[10px] uppercase tracking-widest">
-        &copy; 2024 G.G.I Infrastructure All Rights Reserved.
+
+      {/* Copyright */}
+      <div className="border-t border-primary-foreground/10">
+        <div className="max-w-7xl mx-auto px-6 py-6 text-center text-primary-foreground/40 text-xs uppercase tracking-widest">
+          © 2024 G.G.I Infrastructure. All Rights Reserved.
+        </div>
       </div>
     </footer>
   );

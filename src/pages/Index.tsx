@@ -1,7 +1,7 @@
 import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/HeroSection';
-import { StatsSection } from '@/components/StatsSection';
-import { RegistrySection } from '@/components/RegistrySection';
+import { ProcurementSection } from '@/components/ProcurementSection';
+import { ProductsSection } from '@/components/ProductsSection';
 import { Footer } from '@/components/Footer';
 
 const Index = () => {
@@ -9,8 +9,10 @@ const Index = () => {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
       <HeroSection />
-      <StatsSection />
-      <RegistrySection />
+      <section id="about">
+        <ProcurementSection />
+      </section>
+      <ProductsSection />
       <Footer />
     </div>
   );
