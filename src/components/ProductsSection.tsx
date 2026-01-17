@@ -1,25 +1,32 @@
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 
 const products = [
   {
+    id: 'blackboard-cabinet',
     image: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=800&auto=format&fit=crop',
     title: '칠판보조장',
     description: '효율적인 수납과 슬라이딩 시스템으로 교실 정면의 완성도를 높이는 프리미엄 칠판보조장.',
     badges: ['MAS 등록', '조달청 식별번호 보유'],
   },
   {
+    id: 'workstation',
     image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop',
     title: '워크스테이션',
     description: '업무 효율성을 극대화하는 모듈형 워크스테이션. 다양한 공간에 맞춤 설치 가능.',
     badges: ['KS 인증', '모듈형 설계'],
   },
   {
+    id: 'office-chair',
     image: 'https://images.unsplash.com/photo-1589384267710-7a25bc5b4862?q=80&w=800&auto=format&fit=crop',
     title: '오피스체어',
     description: '인체공학적 설계로 장시간 착석에도 편안한 프리미엄 오피스체어.',
     badges: ['인체공학', '높이 조절형'],
   },
   {
+    id: 'cafeteria-furniture',
     image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=800&auto=format&fit=crop',
     title: '식당가구',
     description: '공공기관 식당에 최적화된 내구성 높은 식당 테이블 및 의자 세트.',
@@ -59,7 +66,7 @@ export const ProductsSection = () => {
                 <p className="text-muted-foreground text-sm mb-4 leading-relaxed line-clamp-2">
                   {product.description}
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {product.badges.map((badge) => (
                     <Badge
                       key={badge}
@@ -70,6 +77,16 @@ export const ProductsSection = () => {
                     </Badge>
                   ))}
                 </div>
+                <Link to={`/products/${product.id}`}>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                  >
+                    자세히 보기
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
             </div>
           ))}
