@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import officeChairImage from '@/assets/category-office-chair.png';
+import blackboardCabinetImage from '@/assets/category-blackboard-cabinet.png';
 
 // Static category data for the main page display
 const categories = [
   {
     slug: 'blackboard-cabinet',
-    image: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=800&auto=format&fit=crop',
+    image: blackboardCabinetImage,
     title: '칠판보조장',
     description: '효율적인 수납과 슬라이딩 시스템으로 교실 정면의 완성도를 높이는 프리미엄 칠판보조장.',
     badges: ['MAS 등록', '조달청 식별번호 보유'],
