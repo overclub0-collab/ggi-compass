@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import officeChairImage from '@/assets/category-office-chair.png';
 import blackboardCabinetImage from '@/assets/category-blackboard-cabinet.png';
 import workstationImage from '@/assets/category-workstation.jpg';
+import cafeteriaImage from '@/assets/category-cafeteria.jpg';
 
 // Static category data for the main page display
 const categories = [
@@ -31,7 +32,7 @@ const categories = [
   },
   {
     slug: 'cafeteria-furniture',
-    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=800&auto=format&fit=crop',
+    image: cafeteriaImage,
     title: '식당가구',
     description: '공공기관 식당에 최적화된 내구성 높은 식당 테이블 및 의자 세트.',
     badges: ['친환경 소재', '고강도 내구성'],
