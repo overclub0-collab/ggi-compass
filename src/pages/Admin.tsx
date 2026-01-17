@@ -41,6 +41,7 @@ type Product = Tables<'products'>;
 
 const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -63,12 +64,39 @@ const Admin = () => {
     display_order: 0,
   });
 
+  // Check if user has admin role
+  const checkAdminRole = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error checking admin role:', error);
+      return false;
+    }
+    return !!data;
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user ?? null);
         if (!session) {
           navigate('/admin/auth');
+        } else {
+          // Defer the admin check to avoid deadlock
+          setTimeout(() => {
+            checkAdminRole(session.user.id).then((isAdminUser) => {
+              setIsAdmin(isAdminUser);
+              if (!isAdminUser) {
+                toast.error('관리자 권한이 없습니다.');
+                navigate('/');
+              }
+            });
+          }, 0);
         }
       }
     );
@@ -77,6 +105,14 @@ const Admin = () => {
       setUser(session?.user ?? null);
       if (!session) {
         navigate('/admin/auth');
+      } else {
+        checkAdminRole(session.user.id).then((isAdminUser) => {
+          setIsAdmin(isAdminUser);
+          if (!isAdminUser) {
+            toast.error('관리자 권한이 없습니다.');
+            navigate('/');
+          }
+        });
       }
     });
 
@@ -84,10 +120,10 @@ const Admin = () => {
   }, [navigate]);
 
   useEffect(() => {
-    if (user) {
+    if (user && isAdmin) {
       fetchProducts();
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -317,7 +353,18 @@ const Admin = () => {
     XLSX.writeFile(wb, '제품_업로드_템플릿.xlsx');
   };
 
-  if (!user) {
+  if (!user || isAdmin === null) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">권한 확인 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
     return null;
   }
 
