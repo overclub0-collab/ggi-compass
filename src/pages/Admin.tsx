@@ -14,7 +14,9 @@ import {
   Save, 
   X, 
   FileSpreadsheet,
-  Download
+  Download,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import {
   Table,
@@ -33,7 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import * as XLSX from 'xlsx';
 import type { User } from '@supabase/supabase-js';
-import type { Tables, Json } from '@/integrations/supabase/types';
+import type { Tables } from '@/integrations/supabase/types';
 
 type Product = Tables<'products'>;
 
@@ -44,7 +46,9 @@ const Admin = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isImageUploading, setIsImageUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -134,6 +138,52 @@ const Admin = () => {
       display_order: product.display_order || 0,
     });
     setIsDialogOpen(true);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('JPG, PNG, WebP, GIF 이미지만 업로드 가능합니다.');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('이미지 크기는 5MB 이하여야 합니다.');
+      return;
+    }
+
+    setIsImageUploading(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, image_url: publicUrl });
+      toast.success('이미지가 업로드되었습니다.');
+    } catch (error: any) {
+      toast.error(error.message || '이미지 업로드 중 오류가 발생했습니다.');
+    } finally {
+      setIsImageUploading(false);
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSave = async () => {
@@ -339,14 +389,73 @@ const Admin = () => {
                   />
                 </div>
 
+                {/* Image Upload Section */}
                 <div>
-                  <Label htmlFor="image_url">이미지 URL</Label>
-                  <Input
-                    id="image_url"
-                    value={formData.image_url}
-                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                  />
+                  <Label>제품 이미지</Label>
+                  <div className="mt-2 space-y-3">
+                    {formData.image_url && (
+                      <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                        <img
+                          src={formData.image_url}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          onClick={() => setFormData({ ...formData, image_url: '' })}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2">
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => imageInputRef.current?.click()}
+                        disabled={isImageUploading}
+                        className="flex-1"
+                      >
+                        {isImageUploading ? (
+                          <>업로드 중...</>
+                        ) : (
+                          <>
+                            <Upload className="mr-2 h-4 w-4" />
+                            이미지 업로드
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-xs text-muted-foreground">또는</span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="image_url" className="text-xs text-muted-foreground">
+                        이미지 URL 직접 입력
+                      </Label>
+                      <Input
+                        id="image_url"
+                        value={formData.image_url}
+                        onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                        placeholder="https://example.com/image.jpg"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -473,12 +582,16 @@ const Admin = () => {
                   <TableRow key={product.id}>
                     <TableCell>{product.display_order}</TableCell>
                     <TableCell>
-                      {product.image_url && (
+                      {product.image_url ? (
                         <img
                           src={product.image_url}
                           alt={product.title}
                           className="w-16 h-12 object-cover rounded"
                         />
+                      ) : (
+                        <div className="w-16 h-12 bg-muted rounded flex items-center justify-center">
+                          <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="font-medium">{product.title}</TableCell>
