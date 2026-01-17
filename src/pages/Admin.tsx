@@ -16,7 +16,8 @@ import {
   FileSpreadsheet,
   Download,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  FolderTree
 } from 'lucide-react';
 import {
   Table,
@@ -39,15 +40,28 @@ import type { Tables } from '@/integrations/supabase/types';
 
 type Product = Tables<'products'>;
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  parent_id: string | null;
+  display_order: number;
+  is_active: boolean;
+}
+
 const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -61,6 +75,15 @@ const Admin = () => {
     features: '',
     specs: '',
     category: '',
+    main_category: '',
+    subcategory: '',
+    display_order: 0,
+  });
+
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: '',
+    slug: '',
+    parent_id: '',
     display_order: 0,
   });
 
@@ -122,6 +145,7 @@ const Admin = () => {
   useEffect(() => {
     if (user && isAdmin) {
       fetchProducts();
+      fetchCategories();
     }
   }, [user, isAdmin]);
 
@@ -140,6 +164,25 @@ const Admin = () => {
     setIsLoading(false);
   };
 
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('display_order', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching categories:', error);
+    } else {
+      setCategories(data || []);
+    }
+  };
+
+  // Get main categories (parent_id is null)
+  const mainCategories = categories.filter(c => !c.parent_id);
+  
+  // Get subcategories for a given parent
+  const getSubcategories = (parentId: string) => categories.filter(c => c.parent_id === parentId);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/admin/auth');
@@ -155,9 +198,21 @@ const Admin = () => {
       features: '',
       specs: '',
       category: '',
+      main_category: '',
+      subcategory: '',
       display_order: 0,
     });
     setEditingProduct(null);
+  };
+
+  const resetCategoryForm = () => {
+    setCategoryFormData({
+      name: '',
+      slug: '',
+      parent_id: '',
+      display_order: 0,
+    });
+    setEditingCategory(null);
   };
 
   const handleEdit = (product: Product) => {
@@ -171,9 +226,22 @@ const Admin = () => {
       features: product.features?.join('\n') || '',
       specs: product.specs ? JSON.stringify(product.specs, null, 2) : '',
       category: product.category || '',
+      main_category: (product as any).main_category || '',
+      subcategory: (product as any).subcategory || '',
       display_order: product.display_order || 0,
     });
     setIsDialogOpen(true);
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setEditingCategory(category);
+    setCategoryFormData({
+      name: category.name,
+      slug: category.slug,
+      parent_id: category.parent_id || '',
+      display_order: category.display_order,
+    });
+    setIsCategoryDialogOpen(true);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -233,6 +301,8 @@ const Admin = () => {
         features: formData.features ? formData.features.split('\n').filter(f => f.trim()) : [],
         specs: formData.specs ? JSON.parse(formData.specs) : {},
         category: formData.category || null,
+        main_category: formData.main_category || null,
+        subcategory: formData.subcategory || null,
         display_order: formData.display_order,
       };
 
@@ -261,6 +331,40 @@ const Admin = () => {
     }
   };
 
+  const handleSaveCategory = async () => {
+    try {
+      const categoryData = {
+        name: categoryFormData.name,
+        slug: categoryFormData.slug,
+        parent_id: categoryFormData.parent_id || null,
+        display_order: categoryFormData.display_order,
+      };
+
+      if (editingCategory) {
+        const { error } = await supabase
+          .from('categories')
+          .update(categoryData)
+          .eq('id', editingCategory.id);
+
+        if (error) throw error;
+        toast.success('카테고리가 수정되었습니다.');
+      } else {
+        const { error } = await supabase
+          .from('categories')
+          .insert([categoryData]);
+
+        if (error) throw error;
+        toast.success('카테고리가 추가되었습니다.');
+      }
+
+      setIsCategoryDialogOpen(false);
+      resetCategoryForm();
+      fetchCategories();
+    } catch (error: any) {
+      toast.error(error.message || '저장 중 오류가 발생했습니다.');
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('정말 삭제하시겠습니까?')) return;
 
@@ -274,6 +378,22 @@ const Admin = () => {
     } else {
       toast.success('제품이 삭제되었습니다.');
       fetchProducts();
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm('정말 삭제하시겠습니까? 하위 카테고리도 함께 삭제됩니다.')) return;
+
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast.error('삭제 중 오류가 발생했습니다.');
+    } else {
+      toast.success('카테고리가 삭제되었습니다.');
+      fetchCategories();
     }
   };
 
@@ -385,8 +505,28 @@ const Admin = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Actions */}
-        <div className="flex flex-wrap gap-4 mb-8">
+        {/* Tab Navigation */}
+        <div className="flex gap-4 mb-6">
+          <Button 
+            variant={activeTab === 'products' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('products')}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            제품 관리
+          </Button>
+          <Button 
+            variant={activeTab === 'categories' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('categories')}
+          >
+            <FolderTree className="mr-2 h-4 w-4" />
+            카테고리 관리
+          </Button>
+        </div>
+
+        {activeTab === 'products' && (
+          <>
+            {/* Product Actions */}
+            <div className="flex flex-wrap gap-4 mb-8">
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
@@ -505,14 +645,50 @@ const Admin = () => {
                   </div>
                 </div>
 
+                {/* Category Selection */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="category">카테고리</Label>
+                    <Label htmlFor="main_category">대분류</Label>
+                    <select
+                      id="main_category"
+                      value={formData.main_category}
+                      onChange={(e) => setFormData({ ...formData, main_category: e.target.value, subcategory: '' })}
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    >
+                      <option value="">선택하세요</option>
+                      {mainCategories.map((cat) => (
+                        <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="subcategory">소분류</Label>
+                    <select
+                      id="subcategory"
+                      value={formData.subcategory}
+                      onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                      disabled={!formData.main_category}
+                    >
+                      <option value="">선택하세요</option>
+                      {formData.main_category && 
+                        getSubcategories(mainCategories.find(c => c.slug === formData.main_category)?.id || '')
+                          .map((cat) => (
+                            <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                          ))
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="category">레거시 카테고리</Label>
                     <Input
                       id="category"
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      placeholder="교육가구"
+                      placeholder="교육가구 (기존 호환용)"
                     />
                   </div>
                   <div>
@@ -606,7 +782,8 @@ const Admin = () => {
                 <TableHead className="w-16">순서</TableHead>
                 <TableHead className="w-24">이미지</TableHead>
                 <TableHead>제품명</TableHead>
-                <TableHead>카테고리</TableHead>
+                <TableHead>대분류</TableHead>
+                <TableHead>소분류</TableHead>
                 <TableHead>뱃지</TableHead>
                 <TableHead className="w-32">작업</TableHead>
               </TableRow>
@@ -614,13 +791,13 @@ const Admin = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     로딩 중...
                   </TableCell>
                 </TableRow>
               ) : products.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     등록된 제품이 없습니다.
                   </TableCell>
                 </TableRow>
@@ -642,7 +819,8 @@ const Admin = () => {
                       )}
                     </TableCell>
                     <TableCell className="font-medium">{product.title}</TableCell>
-                    <TableCell>{product.category}</TableCell>
+                    <TableCell>{(product as any).main_category || '-'}</TableCell>
+                    <TableCell>{(product as any).subcategory || '-'}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {product.badges?.slice(0, 2).map((badge) => (
@@ -679,6 +857,148 @@ const Admin = () => {
             </TableBody>
           </Table>
         </div>
+          </>
+        )}
+
+        {activeTab === 'categories' && (
+          <>
+            {/* Category Actions */}
+            <div className="flex flex-wrap gap-4 mb-8">
+              <Dialog open={isCategoryDialogOpen} onOpenChange={(open) => {
+                setIsCategoryDialogOpen(open);
+                if (!open) resetCategoryForm();
+              }}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    새 카테고리 추가
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingCategory ? '카테고리 수정' : '새 카테고리 추가'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div>
+                      <Label htmlFor="cat_name">카테고리명</Label>
+                      <Input
+                        id="cat_name"
+                        value={categoryFormData.name}
+                        onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+                        placeholder="카테고리 이름"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="cat_slug">슬러그 (URL)</Label>
+                      <Input
+                        id="cat_slug"
+                        value={categoryFormData.slug}
+                        onChange={(e) => setCategoryFormData({ ...categoryFormData, slug: e.target.value })}
+                        placeholder="category-slug"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="parent_id">상위 카테고리 (대분류)</Label>
+                      <select
+                        id="parent_id"
+                        value={categoryFormData.parent_id}
+                        onChange={(e) => setCategoryFormData({ ...categoryFormData, parent_id: e.target.value })}
+                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                      >
+                        <option value="">없음 (대분류)</option>
+                        {mainCategories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="cat_order">표시 순서</Label>
+                      <Input
+                        id="cat_order"
+                        type="number"
+                        value={categoryFormData.display_order}
+                        onChange={(e) => setCategoryFormData({ ...categoryFormData, display_order: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => {
+                        setIsCategoryDialogOpen(false);
+                        resetCategoryForm();
+                      }}>
+                        <X className="mr-2 h-4 w-4" />
+                        취소
+                      </Button>
+                      <Button onClick={handleSaveCategory}>
+                        <Save className="mr-2 h-4 w-4" />
+                        저장
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Categories Display */}
+            <div className="bg-card rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-bold mb-4">대분류 카테고리</h3>
+              <div className="space-y-4">
+                {mainCategories.length === 0 ? (
+                  <p className="text-muted-foreground">등록된 대분류 카테고리가 없습니다.</p>
+                ) : (
+                  mainCategories.map((mainCat) => (
+                    <div key={mainCat.id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">#{mainCat.display_order}</span>
+                          <h4 className="font-bold text-primary">{mainCat.name}</h4>
+                          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                            {mainCat.slug}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleEditCategory(mainCat)}>
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteCategory(mainCat.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Subcategories */}
+                      <div className="ml-6 mt-3 space-y-2">
+                        <p className="text-sm text-muted-foreground font-medium">소분류:</p>
+                        {getSubcategories(mainCat.id).length === 0 ? (
+                          <p className="text-sm text-muted-foreground italic">소분류 없음</p>
+                        ) : (
+                          getSubcategories(mainCat.id).map((subCat) => (
+                            <div key={subCat.id} className="flex items-center justify-between bg-muted/50 p-2 rounded">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">#{subCat.display_order}</span>
+                                <span>{subCat.name}</span>
+                                <span className="text-xs text-muted-foreground">({subCat.slug})</span>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="ghost" onClick={() => handleEditCategory(subCat)}>
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => handleDeleteCategory(subCat.id)}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
