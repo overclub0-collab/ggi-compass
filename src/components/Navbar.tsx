@@ -11,7 +11,7 @@ const navItems = [{
   id: 'procurement',
   label: '나라장터/조달',
   isExternal: true,
-  href: 'https://shopping.g2b.go.kr/cust/search/searchResult.do?searchType=&searchWord=%EC%A7%80%EC%A7%80%EC%95%84%EC%9D%B4'
+  href: 'https://shop.g2b.go.kr/'
 }, {
   id: 'products',
   label: '주요제품',
