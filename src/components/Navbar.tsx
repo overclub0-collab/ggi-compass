@@ -55,7 +55,9 @@ export const Navbar = () => {
           <div className="hidden sm:block text-[10px] text-muted-foreground leading-tight uppercase tracking-wider">GLOBAL  
 GREAT     
 INTELLIGENT​​   ​​
-​<br />​
+​<br />​GLOBAL
+GREAT     
+INTELLIGENT​​   ​​ ​
           </div>
         </div>
         
