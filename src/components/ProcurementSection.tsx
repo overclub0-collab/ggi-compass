@@ -55,7 +55,7 @@ export const ProcurementSection = () => {
                     <span className="text-2xl font-black text-primary-foreground">GGI</span>
                   </div>
                   <div>
-                    <p className="font-bold text-primary text-lg">주식회사 지지아이 대표</p>
+                    <p className="font-bold text-primary text-lg">주식회사 지지아이 대표이사 차 경 희</p>
                     <p className="text-sm text-muted-foreground">Women-Owned Business</p>
                   </div>
                 </div>
