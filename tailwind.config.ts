@@ -48,8 +48,8 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         ggi: {
-          teal: "hsl(var(--ggi-teal))",
-          orange: "hsl(var(--ggi-orange))",
+          blue: "hsl(var(--ggi-blue))",
+          yellow: "hsl(var(--ggi-yellow))",
           light: "hsl(var(--ggi-light-bg))",
           slate: "hsl(var(--ggi-slate))",
         },
