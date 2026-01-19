@@ -44,8 +44,8 @@ export const Footer = () => {
             </h3>
             <div className="space-y-3 text-sm text-primary-foreground/80">
               <p><span className="text-primary-foreground/60">상호:</span> 주식회사 지지아이</p>
-              
-              <p><span className="text-primary-foreground/60">사업자등록번호:</span> 234-81-05951</p>
+              <p className=""><span className="text-primary-foreground/60">대표자:</span>차경희  </p>
+              <p><span className="text-primary-foreground/60">사업자등록번호:</span> 000-00-00000</p>
               <p className="text-accent font-medium">대표자: 차경희</p>
             </div>
           </div>
@@ -59,11 +59,11 @@ export const Footer = () => {
             <div className="space-y-3 text-sm">
               <p className="flex items-center gap-3 text-primary-foreground/80">
                 <Phone className="w-4 h-4 text-accent" />
-                031-123-4567
+                02-1800-7631
               </p>
               <p className="flex items-center gap-3 text-primary-foreground/80">
                 <Printer className="w-4 h-4 text-accent" />
-                031-123-4568
+                031-981-4997
               </p>
               <p className="flex items-center gap-3 text-primary-foreground/80">
                 <Mail className="w-4 h-4 text-accent" />
@@ -71,7 +71,7 @@ export const Footer = () => {
               </p>
               <p className="flex items-center gap-3 text-primary-foreground/80">
                 <MapPin className="w-4 h-4 text-accent" />
-                경기도 소재 본사 및 공장
+                경기도 김포시 월곶면 애기봉로 468     
               </p>
             </div>
           </div>
