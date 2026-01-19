@@ -29,7 +29,7 @@ export const ProcurementSection = () => {
                 <Quote className="absolute -top-4 -left-4 w-12 h-12 text-accent/20" />
                 <h2 className="text-3xl md:text-4xl font-black text-primary mb-6 leading-tight">
                   안녕하세요,<br />
-                  <span className="text-accent">주식회사 지지아이</span> 대표입니다
+                  <span className="text-accent">주식회사 지지아이</span>입니다
                 </h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>
