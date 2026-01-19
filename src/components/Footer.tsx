@@ -21,7 +21,7 @@ export const Footer = () => {
             <h2 className="text-3xl font-black mb-4">G.G.I</h2>
             <div className="text-sm text-primary-foreground/80 leading-relaxed mb-6">​<span className="text-accent">G</span>lobal Standard<br />
               <span className="text-accent">G</span>reat Design<br />
-              <span className="text-accent">I</span>ntelligent Specialist
+              <span className="text-accent">I</span>nfrastructure Specialist
             </div>
             <div className="flex gap-3">
               <div className="w-10 h-10 bg-primary-foreground/20 rounded-full flex items-center justify-center hover:bg-accent transition-colors cursor-pointer">
@@ -44,7 +44,7 @@ export const Footer = () => {
             </h3>
             <div className="space-y-3 text-sm text-primary-foreground/80">
               <p><span className="text-primary-foreground/60">상호:</span> 주식회사 지지아이</p>
-              <p className=""><span className="text-primary-foreground/60">대표자:</span>차경희 대표이사</p>
+              <p className=""><span className="text-primary-foreground/60">대표자:</span>차경희  </p>
               <p><span className="text-primary-foreground/60">사업자등록번호:</span> 000-00-00000</p>
               <p className="text-accent font-medium">대표자: 차경희</p>
             </div>
