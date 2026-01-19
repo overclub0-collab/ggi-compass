@@ -44,7 +44,7 @@ export const Footer = () => {
             </h3>
             <div className="space-y-3 text-sm text-primary-foreground/80">
               <p><span className="text-primary-foreground/60">상호:</span> 주식회사 지지아이</p>
-              <p className=""><span className="text-primary-foreground/60">대표자:</span>차경희  </p>
+              
               <p><span className="text-primary-foreground/60">사업자등록번호:</span> 234-81-05951</p>
               <p className="text-accent font-medium">대표자: 차경희</p>
             </div>
