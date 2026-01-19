@@ -21,7 +21,7 @@ export const Footer = () => {
             <h2 className="text-3xl font-black mb-4">G.G.I</h2>
             <div className="text-sm text-primary-foreground/80 leading-relaxed mb-6">​<span className="text-accent">G</span>lobal Standard<br />
               <span className="text-accent">G</span>reat Design<br />
-              <span className="text-accent">I</span>nfrastructure Specialist
+              <span className="text-accent">I</span>ntelligent Specialist
             </div>
             <div className="flex gap-3">
               <div className="w-10 h-10 bg-primary-foreground/20 rounded-full flex items-center justify-center hover:bg-accent transition-colors cursor-pointer">
