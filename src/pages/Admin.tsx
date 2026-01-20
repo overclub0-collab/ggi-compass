@@ -9,22 +9,20 @@ import { toast } from 'sonner';
 import { 
   LogOut, 
   Plus, 
-  Trash2, 
-  Edit2, 
   Save, 
   X, 
   FileSpreadsheet,
   Download,
   Upload,
-  FolderTree,
-  Menu
+  Menu,
+  Package,
+  Search
 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Sheet,
@@ -35,9 +33,9 @@ import {
 } from '@/components/ui/sheet';
 import { getErrorMessage, logError } from '@/lib/errorUtils';
 import { parseProductCSV, exportProductsToCSV, downloadProductTemplate } from '@/lib/excelUtils';
-import CategoryFilter from '@/components/admin/CategoryFilter';
+import CategoryTree from '@/components/admin/CategoryTree';
 import ProductForm from '@/components/admin/ProductForm';
-import ProductTable from '@/components/admin/ProductTable';
+import DraggableProductCard from '@/components/admin/DraggableProductCard';
 import type { User } from '@supabase/supabase-js';
 
 interface Product {
@@ -95,16 +93,14 @@ const Admin = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Category filter state
-  const [filterMainCategory, setFilterMainCategory] = useState('');
-  const [filterSubcategory, setFilterSubcategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -210,16 +206,31 @@ const Admin = () => {
   };
 
   const mainCategories = categories.filter(c => !c.parent_id);
-  const getSubcategories = (parentId: string) => categories.filter(c => c.parent_id === parentId);
 
-  // Filtered products based on category selection
+  // Filtered products based on selected category and search
   const filteredProducts = products.filter(product => {
-    if (filterMainCategory && filterMainCategory !== 'all') {
-      if (product.main_category !== filterMainCategory) return false;
+    // Category filter
+    if (selectedCategory) {
+      const isMainCategory = !selectedCategory.parent_id;
+      if (isMainCategory) {
+        // Show products in this main category or its subcategories
+        if (product.main_category !== selectedCategory.slug) return false;
+      } else {
+        // Show only products in this specific subcategory
+        if (product.subcategory !== selectedCategory.slug) return false;
+      }
     }
-    if (filterSubcategory && filterSubcategory !== 'all') {
-      if (product.subcategory !== filterSubcategory) return false;
+    
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        product.title.toLowerCase().includes(query) ||
+        product.procurement_id?.toLowerCase().includes(query) ||
+        product.description?.toLowerCase().includes(query)
+      );
     }
+    
     return true;
   });
 
@@ -243,6 +254,7 @@ const Admin = () => {
       image_url: '',
     });
     setEditingCategory(null);
+    setNewCategoryParentId(null);
   };
 
   const handleEdit = (product: Product) => {
@@ -262,7 +274,30 @@ const Admin = () => {
       procurement_id: product.procurement_id || '',
       price: product.price || '',
     });
-    setIsDialogOpen(true);
+    setIsProductDialogOpen(true);
+  };
+
+  const handleAddProductToCategory = (category: Category) => {
+    resetForm();
+    
+    // Determine main_category and subcategory based on category hierarchy
+    const isMainCategory = !category.parent_id;
+    if (isMainCategory) {
+      setFormData(prev => ({
+        ...prev,
+        main_category: category.slug,
+        subcategory: '',
+      }));
+    } else {
+      const parentCategory = categories.find(c => c.id === category.parent_id);
+      setFormData(prev => ({
+        ...prev,
+        main_category: parentCategory?.slug || '',
+        subcategory: category.slug,
+      }));
+    }
+    
+    setIsProductDialogOpen(true);
   };
 
   const handleEditCategory = (category: Category) => {
@@ -278,18 +313,46 @@ const Admin = () => {
     setIsCategoryDialogOpen(true);
   };
 
+  const handleAddCategory = (parentId: string | null) => {
+    resetCategoryForm();
+    setNewCategoryParentId(parentId);
+    if (parentId) {
+      setCategoryFormData(prev => ({ ...prev, parent_id: parentId }));
+    }
+    setIsCategoryDialogOpen(true);
+  };
+
+  const handleDeleteCategory = async (category: Category) => {
+    if (!confirm(`"${category.name}" 카테고리를 삭제하시겠습니까? 하위 카테고리도 함께 삭제됩니다.`)) return;
+
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', category.id);
+
+    if (error) {
+      logError('Delete category', error);
+      toast.error(getErrorMessage(error));
+    } else {
+      toast.success('카테고리가 삭제되었습니다.');
+      if (selectedCategory?.id === category.id) {
+        setSelectedCategory(null);
+      }
+      fetchCategories();
+    }
+  };
+
   const handleFormChange = (data: Partial<typeof formData>) => {
     setFormData(prev => ({ ...prev, ...data }));
   };
 
   const handleSave = async () => {
-    // Validate JSON specs before proceeding
     let parsedSpecs = {};
     if (formData.specs) {
       try {
         parsedSpecs = JSON.parse(formData.specs);
       } catch (e) {
-        toast.error('사양(specs) 필드의 JSON 형식이 올바르지 않습니다. 예: {"키": "값"}');
+        toast.error('사양(specs) 필드의 JSON 형식이 올바르지 않습니다.');
         return;
       }
     }
@@ -333,7 +396,7 @@ const Admin = () => {
         toast.success('제품이 추가되었습니다.');
       }
 
-      setIsDialogOpen(false);
+      setIsProductDialogOpen(false);
       resetForm();
       fetchProducts();
     } catch (error: any) {
@@ -343,10 +406,15 @@ const Admin = () => {
   };
 
   const handleSaveCategory = async () => {
+    if (!categoryFormData.name.trim()) {
+      toast.error('카테고리명은 필수입니다.');
+      return;
+    }
+
     try {
       const categoryData = {
         name: categoryFormData.name,
-        slug: categoryFormData.slug,
+        slug: categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-'),
         parent_id: categoryFormData.parent_id || null,
         display_order: categoryFormData.display_order,
         description: categoryFormData.description || null,
@@ -396,20 +464,37 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    if (!confirm('정말 삭제하시겠습니까? 하위 카테고리도 함께 삭제됩니다.')) return;
+  const handleProductDrop = async (productId: string, targetCategory: Category) => {
+    const isMainCategory = !targetCategory.parent_id;
+    
+    try {
+      let updateData: { main_category: string; subcategory: string | null };
+      
+      if (isMainCategory) {
+        updateData = {
+          main_category: targetCategory.slug,
+          subcategory: null,
+        };
+      } else {
+        const parentCategory = categories.find(c => c.id === targetCategory.parent_id);
+        updateData = {
+          main_category: parentCategory?.slug || '',
+          subcategory: targetCategory.slug,
+        };
+      }
 
-    const { error } = await supabase
-      .from('categories')
-      .delete()
-      .eq('id', id);
+      const { error } = await supabase
+        .from('products')
+        .update(updateData)
+        .eq('id', productId);
 
-    if (error) {
-      logError('Delete category', error);
+      if (error) throw error;
+      
+      toast.success(`제품이 "${targetCategory.name}" 카테고리로 이동되었습니다.`);
+      fetchProducts();
+    } catch (error: any) {
+      logError('Move product', error);
       toast.error(getErrorMessage(error));
-    } else {
-      toast.success('카테고리가 삭제되었습니다.');
-      fetchCategories();
     }
   };
 
@@ -440,11 +525,7 @@ const Admin = () => {
       fetchProducts();
     } catch (error: any) {
       logError('CSV upload', error);
-      if (error.message?.includes('CSV') || error.message?.includes('행') || error.message?.includes('유효성')) {
-        toast.error(error.message);
-      } else {
-        toast.error(getErrorMessage(error));
-      }
+      toast.error(error.message || getErrorMessage(error));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -455,16 +536,11 @@ const Admin = () => {
 
   const handleExportProducts = () => {
     const dataToExport = filteredProducts.length > 0 ? filteredProducts : products;
-    const filename = filterMainCategory && filterMainCategory !== 'all' 
-      ? `제품_목록_${filterMainCategory}.csv`
-      : '제품_전체_목록.csv';
+    const filename = selectedCategory 
+      ? `제품_${selectedCategory.name}.csv`
+      : '제품_전체.csv';
     exportProductsToCSV(dataToExport, filename);
     toast.success(`${dataToExport.length}개 제품을 내보냈습니다.`);
-  };
-
-  const clearFilters = () => {
-    setFilterMainCategory('');
-    setFilterSubcategory('');
   };
 
   if (!user || isAdmin === null) {
@@ -482,359 +558,295 @@ const Admin = () => {
     return null;
   }
 
+  const CategoryTreeSidebar = (
+    <CategoryTree
+      categories={categories}
+      selectedCategory={selectedCategory}
+      onSelectCategory={setSelectedCategory}
+      onAddProduct={handleAddProductToCategory}
+      onEditCategory={handleEditCategory}
+      onDeleteCategory={handleDeleteCategory}
+      onAddCategory={handleAddCategory}
+      onProductDrop={handleProductDrop}
+    />
+  );
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header - Mobile Responsive */}
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
       <header className="bg-card border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* Mobile Menu Button */}
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="md:hidden min-h-[44px] min-w-[44px]">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[280px]">
-                  <SheetHeader>
-                    <SheetTitle>관리자 메뉴</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6 space-y-2">
-                    <Button 
-                      variant={activeTab === 'products' ? 'default' : 'ghost'}
-                      className="w-full justify-start min-h-[44px]"
-                      onClick={() => { setActiveTab('products'); setMobileMenuOpen(false); }}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      제품 관리
-                    </Button>
-                    <Button 
-                      variant={activeTab === 'categories' ? 'default' : 'ghost'}
-                      className="w-full justify-start min-h-[44px]"
-                      onClick={() => { setActiveTab('categories'); setMobileMenuOpen(false); }}
-                    >
-                      <FolderTree className="mr-2 h-4 w-4" />
-                      카테고리 관리
-                    </Button>
-                    <div className="pt-4 border-t">
-                      <Button variant="outline" className="w-full min-h-[44px]" onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        로그아웃
-                      </Button>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
-              
-              <div>
-                <h1 className="text-lg sm:text-2xl font-bold text-primary">관리자 대시보드</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">{user.email}</p>
-              </div>
-            </div>
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Mobile Menu Toggle */}
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden min-h-[44px] min-w-[44px]">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] p-0">
+                <SheetHeader className="p-4 border-b">
+                  <SheetTitle>카테고리 관리</SheetTitle>
+                </SheetHeader>
+                <div className="p-2 overflow-y-auto max-h-[calc(100vh-80px)]">
+                  {CategoryTreeSidebar}
+                </div>
+              </SheetContent>
+            </Sheet>
             
-            <Button variant="outline" onClick={handleLogout} className="hidden md:flex min-h-[44px]">
-              <LogOut className="mr-2 h-4 w-4" />
-              로그아웃
-            </Button>
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-primary">통합 제품 관리</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">{user.email}</p>
+            </div>
           </div>
+          
+          <Button variant="outline" onClick={handleLogout} className="min-h-[44px]">
+            <LogOut className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">로그아웃</span>
+          </Button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-        {/* Desktop Tab Navigation */}
-        <div className="hidden md:flex gap-4 mb-6">
-          <Button 
-            variant={activeTab === 'products' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('products')}
-            className="min-h-[44px]"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            제품 관리
-          </Button>
-          <Button 
-            variant={activeTab === 'categories' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('categories')}
-            className="min-h-[44px]"
-          >
-            <FolderTree className="mr-2 h-4 w-4" />
-            카테고리 관리
-          </Button>
-        </div>
+      <div className="flex-1 flex">
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:block w-72 border-r bg-card overflow-y-auto">
+          <div className="p-3">
+            {CategoryTreeSidebar}
+          </div>
+        </aside>
 
-        {/* Mobile Tab Pills */}
-        <div className="flex md:hidden gap-2 mb-4 overflow-x-auto pb-2">
-          <Button 
-            size="sm"
-            variant={activeTab === 'products' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('products')}
-            className="min-h-[44px] whitespace-nowrap"
-          >
-            제품 관리
-          </Button>
-          <Button 
-            size="sm"
-            variant={activeTab === 'categories' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('categories')}
-            className="min-h-[44px] whitespace-nowrap"
-          >
-            카테고리 관리
-          </Button>
-        </div>
-
-        {activeTab === 'products' && (
-          <>
-            {/* Product Actions */}
-            <div className="space-y-4 mb-6">
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2 sm:gap-4">
-                <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                  setIsDialogOpen(open);
-                  if (!open) resetForm();
-                }}>
-                  <DialogTrigger asChild>
-                    <Button className="min-h-[44px]">
-                      <Plus className="mr-2 h-4 w-4" />
-                      <span className="hidden sm:inline">새 제품 추가</span>
-                      <span className="sm:hidden">추가</span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>
-                        {editingProduct ? '제품 수정' : '새 제품 추가'}
-                      </DialogTitle>
-                    </DialogHeader>
-                    <ProductForm
-                      formData={formData}
-                      categories={categories}
-                      isEditing={!!editingProduct}
-                      onFormChange={handleFormChange}
-                      onSave={handleSave}
-                      onCancel={() => { setIsDialogOpen(false); resetForm(); }}
-                    />
-                  </DialogContent>
-                </Dialog>
-
-                <div className="flex gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv"
-                    onChange={handleCSVUpload}
-                    className="hidden"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="min-h-[44px]"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">{isUploading ? '업로드 중...' : 'CSV 대량 업로드'}</span>
-                    <span className="sm:hidden">{isUploading ? '...' : '업로드'}</span>
-                  </Button>
-                  <Button variant="outline" onClick={downloadProductTemplate} className="min-h-[44px]">
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">템플릿</span>
-                  </Button>
-                  <Button variant="outline" onClick={handleExportProducts} className="min-h-[44px]">
-                    <Download className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">내보내기</span>
-                  </Button>
-                </div>
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4 sm:p-6 space-y-4">
+            {/* Toolbar */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Search */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="제품명, 조달번호로 검색..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 min-h-[44px]"
+                />
               </div>
 
-              {/* Category Filter */}
-              <CategoryFilter
-                categories={categories}
-                selectedMainCategory={filterMainCategory}
-                selectedSubcategory={filterSubcategory}
-                onMainCategoryChange={(value) => {
-                  setFilterMainCategory(value);
-                  setFilterSubcategory('');
-                }}
-                onSubcategoryChange={setFilterSubcategory}
-                onClear={clearFilters}
-              />
+              {/* Actions */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => {
+                    resetForm();
+                    if (selectedCategory) {
+                      handleAddProductToCategory(selectedCategory);
+                    } else {
+                      setIsProductDialogOpen(true);
+                    }
+                  }}
+                  className="min-h-[44px]"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">제품 추가</span>
+                  <span className="sm:hidden">추가</span>
+                </Button>
 
-              {/* Filter Result Info */}
-              {(filterMainCategory || filterSubcategory) && (
-                <p className="text-sm text-muted-foreground">
-                  {filteredProducts.length}개 제품 표시 (전체 {products.length}개)
-                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCSVUpload}
+                  className="hidden"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="min-h-[44px]"
+                >
+                  <Upload className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{isUploading ? '업로드 중...' : 'CSV 업로드'}</span>
+                </Button>
+                
+                <Button variant="outline" onClick={downloadProductTemplate} className="min-h-[44px]">
+                  <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">템플릿</span>
+                </Button>
+                
+                <Button variant="outline" onClick={handleExportProducts} className="min-h-[44px]">
+                  <Download className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">내보내기</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Current Category Info */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium">
+                  {selectedCategory ? selectedCategory.name : '전체 제품'}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  ({filteredProducts.length}개)
+                </span>
+              </div>
+              {selectedCategory && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedCategory(null)}
+                  className="text-muted-foreground"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  필터 해제
+                </Button>
               )}
             </div>
 
-            {/* Products Table */}
-            <ProductTable
-              products={filteredProducts}
-              isLoading={isLoading}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          </>
-        )}
-
-        {activeTab === 'categories' && (
-          <>
-            {/* Category Actions */}
-            <div className="flex flex-wrap gap-4 mb-6">
-              <Dialog open={isCategoryDialogOpen} onOpenChange={(open) => {
-                setIsCategoryDialogOpen(open);
-                if (!open) resetCategoryForm();
-              }}>
-                <DialogTrigger asChild>
-                  <Button className="min-h-[44px]">
-                    <Plus className="mr-2 h-4 w-4" />
-                    새 카테고리 추가
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingCategory ? '카테고리 수정' : '새 카테고리 추가'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div>
-                      <Label htmlFor="cat_name">카테고리명</Label>
-                      <Input
-                        id="cat_name"
-                        value={categoryFormData.name}
-                        onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                        placeholder="카테고리 이름"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cat_slug">슬러그 (URL)</Label>
-                      <Input
-                        id="cat_slug"
-                        value={categoryFormData.slug}
-                        onChange={(e) => setCategoryFormData({ ...categoryFormData, slug: e.target.value })}
-                        placeholder="category-slug"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cat_description">설명</Label>
-                      <Textarea
-                        id="cat_description"
-                        value={categoryFormData.description}
-                        onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                        placeholder="카테고리 설명"
-                        rows={2}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cat_image_url">썸네일 이미지 URL</Label>
-                      <Input
-                        id="cat_image_url"
-                        value={categoryFormData.image_url}
-                        onChange={(e) => setCategoryFormData({ ...categoryFormData, image_url: e.target.value })}
-                        placeholder="https://example.com/image.jpg"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="parent_id">상위 카테고리 (대분류)</Label>
-                      <select
-                        id="parent_id"
-                        value={categoryFormData.parent_id}
-                        onChange={(e) => setCategoryFormData({ ...categoryFormData, parent_id: e.target.value })}
-                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-base"
-                      >
-                        <option value="">없음 (대분류)</option>
-                        {mainCategories.map((cat) => (
-                          <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <Label htmlFor="cat_order">표시 순서</Label>
-                      <Input
-                        id="cat_order"
-                        type="number"
-                        value={categoryFormData.display_order}
-                        onChange={(e) => setCategoryFormData({ ...categoryFormData, display_order: Number(e.target.value) })}
-                      />
-                    </div>
-                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t">
-                      <Button variant="outline" onClick={() => {
-                        setIsCategoryDialogOpen(false);
-                        resetCategoryForm();
-                      }} className="min-h-[44px]">
-                        <X className="mr-2 h-4 w-4" />
-                        취소
-                      </Button>
-                      <Button onClick={handleSaveCategory} className="min-h-[44px]">
-                        <Save className="mr-2 h-4 w-4" />
-                        저장
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+            {/* Products Grid */}
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {isLoading ? (
+                <div className="col-span-full flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                </div>
+              ) : filteredProducts.length === 0 ? (
+                <div className="col-span-full text-center py-12 text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>등록된 제품이 없습니다</p>
+                  {selectedCategory && (
+                    <Button
+                      variant="link"
+                      className="mt-2"
+                      onClick={() => handleAddProductToCategory(selectedCategory)}
+                    >
+                      이 카테고리에 제품 추가하기
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                filteredProducts.map((product) => (
+                  <DraggableProductCard
+                    key={product.id}
+                    product={product}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                ))
+              )}
             </div>
+          </div>
+        </main>
+      </div>
 
-            {/* Categories Display */}
-            <div className="bg-card rounded-xl shadow-lg p-4 sm:p-6">
-              <h3 className="text-lg font-bold mb-4">카테고리 구조</h3>
-              <div className="space-y-4">
-                {mainCategories.length === 0 ? (
-                  <p className="text-muted-foreground">등록된 대분류 카테고리가 없습니다.</p>
-                ) : (
-                  mainCategories.map((mainCat) => (
-                    <div key={mainCat.id} className="border rounded-lg p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                          <span className="text-sm text-muted-foreground">#{mainCat.display_order}</span>
-                          <h4 className="font-bold text-primary">{mainCat.name}</h4>
-                          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                            {mainCat.slug}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEditCategory(mainCat)} className="min-h-[44px] min-w-[44px]">
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteCategory(mainCat.id)} className="min-h-[44px] min-w-[44px]">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Subcategories */}
-                      <div className="ml-0 sm:ml-6 mt-3 space-y-2">
-                        <p className="text-sm text-muted-foreground font-medium">소분류:</p>
-                        {getSubcategories(mainCat.id).length === 0 ? (
-                          <p className="text-sm text-muted-foreground italic">소분류 없음</p>
-                        ) : (
-                          getSubcategories(mainCat.id).map((subCat) => (
-                            <div key={subCat.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-muted/50 p-3 rounded">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-xs text-muted-foreground">#{subCat.display_order}</span>
-                                <span className="text-base">{subCat.name}</span>
-                                <span className="text-xs text-muted-foreground">({subCat.slug})</span>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button size="sm" variant="ghost" onClick={() => handleEditCategory(subCat)} className="min-h-[44px] min-w-[44px]">
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button size="sm" variant="ghost" onClick={() => handleDeleteCategory(subCat.id)} className="min-h-[44px] min-w-[44px]">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+      {/* Product Dialog */}
+      <Dialog open={isProductDialogOpen} onOpenChange={(open) => {
+        setIsProductDialogOpen(open);
+        if (!open) resetForm();
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingProduct ? '제품 수정' : '새 제품 추가'}
+            </DialogTitle>
+          </DialogHeader>
+          <ProductForm
+            formData={formData}
+            categories={categories}
+            isEditing={!!editingProduct}
+            onFormChange={handleFormChange}
+            onSave={handleSave}
+            onCancel={() => { setIsProductDialogOpen(false); resetForm(); }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Category Dialog */}
+      <Dialog open={isCategoryDialogOpen} onOpenChange={(open) => {
+        setIsCategoryDialogOpen(open);
+        if (!open) resetCategoryForm();
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCategory ? '카테고리 수정' : '새 카테고리 추가'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="cat_name">카테고리명 *</Label>
+              <Input
+                id="cat_name"
+                value={categoryFormData.name}
+                onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+                placeholder="카테고리 이름"
+              />
             </div>
-          </>
-        )}
-      </main>
+            <div>
+              <Label htmlFor="cat_slug">슬러그 (URL)</Label>
+              <Input
+                id="cat_slug"
+                value={categoryFormData.slug}
+                onChange={(e) => setCategoryFormData({ ...categoryFormData, slug: e.target.value })}
+                placeholder="category-slug (자동 생성)"
+              />
+            </div>
+            <div>
+              <Label htmlFor="cat_description">설명</Label>
+              <Textarea
+                id="cat_description"
+                value={categoryFormData.description}
+                onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
+                placeholder="카테고리 설명"
+                rows={2}
+              />
+            </div>
+            <div>
+              <Label htmlFor="cat_image_url">썸네일 이미지 URL</Label>
+              <Input
+                id="cat_image_url"
+                value={categoryFormData.image_url}
+                onChange={(e) => setCategoryFormData({ ...categoryFormData, image_url: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+            <div>
+              <Label htmlFor="parent_id">상위 카테고리</Label>
+              <select
+                id="parent_id"
+                value={categoryFormData.parent_id}
+                onChange={(e) => setCategoryFormData({ ...categoryFormData, parent_id: e.target.value })}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-base"
+              >
+                <option value="">없음 (대분류)</option>
+                {mainCategories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="cat_order">표시 순서</Label>
+              <Input
+                id="cat_order"
+                type="number"
+                value={categoryFormData.display_order}
+                onChange={(e) => setCategoryFormData({ ...categoryFormData, display_order: Number(e.target.value) })}
+              />
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => {
+                setIsCategoryDialogOpen(false);
+                resetCategoryForm();
+              }} className="min-h-[44px]">
+                <X className="mr-2 h-4 w-4" />
+                취소
+              </Button>
+              <Button onClick={handleSaveCategory} className="min-h-[44px]">
+                <Save className="mr-2 h-4 w-4" />
+                저장
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
