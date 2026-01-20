@@ -25,12 +25,19 @@ interface Category {
 
 // Default images for main categories
 const categoryImages: Record<string, string> = {
-  'educational': blackboardCabinetImage,
-  'office': categoryOfficeImage,
-  'chairs': officeChairImage,
-  'dining': categoryDiningImage,
-  'lab': categoryLabImage,
-  'military': categoryMilitaryImage,
+  educational: blackboardCabinetImage,
+  office: categoryOfficeImage,
+  chairs: officeChairImage,
+
+  // Main category slugs from DB
+  'dining-table': categoryDiningImage,
+  'lab-bench': categoryLabImage,
+
+  // Backward-compat keys (in case older slugs are used somewhere)
+  dining: categoryDiningImage,
+  lab: categoryLabImage,
+
+  military: categoryMilitaryImage,
 };
 
 // Badge labels for main categories
