@@ -9,8 +9,8 @@ import blackboardCabinetImage from '@/assets/category-blackboard-cabinet.png';
 import workstationImage from '@/assets/category-workstation.jpg';
 import cafeteriaImage from '@/assets/category-cafeteria.jpg';
 import categoryOfficeImage from '@/assets/category-office.jpg';
-import categoryDiningImage from '@/assets/category-dining.jpg';
-import categoryLabImage from '@/assets/category-lab.png';
+import categoryDiningImage from '@/assets/category-dining-new.jpg';
+import categoryLabImage from '@/assets/category-lab-new.png';
 import categoryMilitaryImage from '@/assets/category-military.jpg';
 
 interface Category {
