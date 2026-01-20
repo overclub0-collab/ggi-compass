@@ -316,6 +316,17 @@ const Admin = () => {
   };
 
   const handleSave = async () => {
+    // Validate JSON specs before proceeding
+    let parsedSpecs = {};
+    if (formData.specs) {
+      try {
+        parsedSpecs = JSON.parse(formData.specs);
+      } catch (e) {
+        toast.error('사양(specs) 필드의 JSON 형식이 올바르지 않습니다. 예: {"키": "값"}');
+        return;
+      }
+    }
+
     try {
       const productData = {
         slug: formData.slug,
@@ -324,7 +335,7 @@ const Admin = () => {
         image_url: formData.image_url || null,
         badges: formData.badges ? formData.badges.split(',').map(b => b.trim()) : [],
         features: formData.features ? formData.features.split('\n').filter(f => f.trim()) : [],
-        specs: formData.specs ? JSON.parse(formData.specs) : {},
+        specs: parsedSpecs,
         category: formData.category || null,
         main_category: formData.main_category || null,
         subcategory: formData.subcategory || null,
