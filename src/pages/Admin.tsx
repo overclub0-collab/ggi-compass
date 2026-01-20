@@ -34,59 +34,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-// Excel handling utilities (secure implementation without vulnerable xlsx package)
-const parseCSV = (text: string): Record<string, string>[] => {
-  const lines = text.split('\n').filter(line => line.trim());
-  if (lines.length < 2) return [];
-  
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-  const rows: Record<string, string>[] = [];
-  
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-    const row: Record<string, string> = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index] || '';
-    });
-    rows.push(row);
-  }
-  
-  return rows;
-};
-
-const generateCSV = (data: Record<string, any>[]): string => {
-  if (data.length === 0) return '';
-  
-  const headers = Object.keys(data[0]);
-  const csvContent = [
-    headers.join(','),
-    ...data.map(row => 
-      headers.map(header => {
-        const value = String(row[header] || '');
-        // Escape commas and quotes
-        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-          return `"${value.replace(/"/g, '""')}"`;
-        }
-        return value;
-      }).join(',')
-    )
-  ].join('\n');
-  
-  return csvContent;
-};
-
-const downloadCSV = (data: Record<string, any>[], filename: string) => {
-  const csv = generateCSV(data);
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
+// Import secure CSV and error utilities
+import { parseCSV, downloadCSV, validateFileSize, validateProduct, parseSpecs, MAX_CSV_ROWS } from '@/lib/csvUtils';
+import { getErrorMessage, logError } from '@/lib/errorUtils';
 import type { User } from '@supabase/supabase-js';
 
 interface Product {
@@ -172,7 +122,7 @@ const Admin = () => {
       .maybeSingle();
 
     if (error) {
-      console.error('Error checking admin role:', error);
+      logError('Admin role check', error);
       return false;
     }
     return !!data;
@@ -245,7 +195,7 @@ const Admin = () => {
       .order('display_order', { ascending: true });
 
     if (error) {
-      console.error('Error fetching categories:', error);
+      logError('Fetch categories', error);
     } else {
       setCategories((data || []) as Category[]);
     }
@@ -358,7 +308,8 @@ const Admin = () => {
       setFormData({ ...formData, image_url: publicUrl });
       toast.success('이미지가 업로드되었습니다.');
     } catch (error: any) {
-      toast.error(error.message || '이미지 업로드 중 오류가 발생했습니다.');
+      logError('Image upload', error);
+      toast.error(getErrorMessage(error));
     } finally {
       setIsImageUploading(false);
       if (imageInputRef.current) {
@@ -417,7 +368,8 @@ const Admin = () => {
       resetForm();
       fetchProducts();
     } catch (error: any) {
-      toast.error(error.message || '저장 중 오류가 발생했습니다.');
+      logError('Save product', error);
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -453,7 +405,8 @@ const Admin = () => {
       resetCategoryForm();
       fetchCategories();
     } catch (error: any) {
-      toast.error(error.message || '저장 중 오류가 발생했습니다.');
+      logError('Save category', error);
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -466,7 +419,8 @@ const Admin = () => {
       .eq('id', id);
 
     if (error) {
-      toast.error('삭제 중 오류가 발생했습니다.');
+      logError('Delete product', error);
+      toast.error(getErrorMessage(error));
     } else {
       toast.success('제품이 삭제되었습니다.');
       fetchProducts();
@@ -482,7 +436,8 @@ const Admin = () => {
       .eq('id', id);
 
     if (error) {
-      toast.error('삭제 중 오류가 발생했습니다.');
+      logError('Delete category', error);
+      toast.error(getErrorMessage(error));
     } else {
       toast.success('카테고리가 삭제되었습니다.');
       fetchCategories();
@@ -493,43 +448,87 @@ const Admin = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file size
+    const fileSizeError = validateFileSize(file);
+    if (fileSizeError) {
+      toast.error(fileSizeError);
+      return;
+    }
+
     setIsUploading(true);
 
     try {
       const text = await file.text();
       const jsonData = parseCSV(text);
 
-      const products = jsonData.map((row: any, index: number) => ({
-        slug: row['슬러그'] || row['slug'] || `product-${Date.now()}-${index}`,
-        title: row['품명'] || row['제품명'] || row['title'] || '',
-        description: row['제품설명'] || row['설명'] || row['description'] || null,
-        image_url: row['이미지URL'] || row['image_url'] || null,
-        badges: row['뱃지'] || row['badges'] 
-          ? String(row['뱃지'] || row['badges']).split(',').map((b: string) => b.trim())
-          : [],
-        features: row['특징'] || row['features']
-          ? String(row['특징'] || row['features']).split('|').map((f: string) => f.trim())
-          : [],
-        specs: (() => {
-          const specsStr = row['사양'] || row['specs'];
-          const size = row['규격'] || row['size'];
-          if (specsStr) {
-            try {
-              return JSON.parse(specsStr);
-            } catch {
-              return size ? { 규격: size } : {};
+      if (jsonData.length === 0) {
+        throw new Error('CSV 파일에 데이터가 없습니다.');
+      }
+
+      const products = [];
+      const errors: string[] = [];
+
+      for (let index = 0; index < jsonData.length; index++) {
+        const row = jsonData[index];
+        
+        const productData = {
+          slug: (row['슬러그'] || row['slug'] || `product-${Date.now()}-${index}`).substring(0, 100),
+          title: (row['품명'] || row['제품명'] || row['title'] || '').substring(0, 200),
+          description: (row['제품설명'] || row['설명'] || row['description'] || null)?.substring(0, 5000) || null,
+          image_url: (() => {
+            const url = row['이미지URL'] || row['image_url'] || null;
+            if (!url) return null;
+            // Validate URL format
+            if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
+              return url.substring(0, 500);
             }
-          }
-          return size ? { 규격: size } : {};
-        })(),
-        main_category: row['대분류'] || row['main_category'] || null,
-        subcategory: row['소분류'] || row['subcategory'] || null,
-        category: row['카테고리'] || row['category'] || null,
-        display_order: Number(row['순서'] || row['display_order']) || index,
-        procurement_id: row['조달식별번호'] || row['procurement_id'] || null,
-        price: row['가격'] || row['price'] || null,
-        is_active: true,
-      }));
+            return null;
+          })(),
+          badges: row['뱃지'] || row['badges'] 
+            ? String(row['뱃지'] || row['badges']).split(',').map((b: string) => b.trim().substring(0, 50)).slice(0, 10)
+            : [],
+          features: row['특징'] || row['features']
+            ? String(row['특징'] || row['features']).split('|').map((f: string) => f.trim().substring(0, 500)).slice(0, 20)
+            : [],
+          specs: (() => {
+            const specsStr = row['사양'] || row['specs'];
+            const size = row['규격'] || row['size'];
+            if (specsStr) {
+              return parseSpecs(specsStr);
+            }
+            return size ? { 규격: String(size).substring(0, 200) } : {};
+          })(),
+          main_category: (row['대분류'] || row['main_category'] || null)?.substring(0, 100) || null,
+          subcategory: (row['소분류'] || row['subcategory'] || null)?.substring(0, 100) || null,
+          category: (row['카테고리'] || row['category'] || null)?.substring(0, 100) || null,
+          display_order: Math.min(Math.max(Number(row['순서'] || row['display_order']) || index, 0), 10000),
+          procurement_id: (row['조달식별번호'] || row['procurement_id'] || null)?.substring(0, 50) || null,
+          price: (row['가격'] || row['price'] || null)?.substring(0, 50) || null,
+          is_active: true,
+        };
+
+        // Basic validation
+        if (!productData.title) {
+          errors.push(`행 ${index + 2}: 품명이 필요합니다.`);
+          continue;
+        }
+
+        const validation = validateProduct(productData);
+        if (!validation.success && 'error' in validation) {
+          errors.push(`행 ${index + 2}: ${validation.error}`);
+          continue;
+        }
+
+        products.push(productData);
+      }
+
+      if (errors.length > 0 && products.length === 0) {
+        throw new Error(`유효성 검사 실패:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? `\n... 외 ${errors.length - 5}개 오류` : ''}`);
+      }
+
+      if (products.length === 0) {
+        throw new Error('업로드할 유효한 제품이 없습니다.');
+      }
 
       const { error } = await supabase
         .from('products')
@@ -537,10 +536,20 @@ const Admin = () => {
 
       if (error) throw error;
 
-      toast.success(`${products.length}개의 제품이 업로드되었습니다.`);
+      let successMessage = `${products.length}개의 제품이 업로드되었습니다.`;
+      if (errors.length > 0) {
+        successMessage += ` (${errors.length}개 오류 건너뜀)`;
+      }
+      toast.success(successMessage);
       fetchProducts();
     } catch (error: any) {
-      toast.error(error.message || '엑셀 업로드 중 오류가 발생했습니다.');
+      logError('CSV upload', error);
+      // For CSV-specific validation errors, show them directly
+      if (error.message?.includes('CSV') || error.message?.includes('행') || error.message?.includes('유효성')) {
+        toast.error(error.message);
+      } else {
+        toast.error(getErrorMessage(error));
+      }
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {

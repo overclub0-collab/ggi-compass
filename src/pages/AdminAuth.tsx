@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Lock, Mail } from 'lucide-react';
+import { getErrorMessage, logError } from '@/lib/errorUtils';
 
 const AdminAuth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [signupDisabled, setSignupDisabled] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,6 +25,26 @@ const AdminAuth = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Check if admin already exists - if so, disable signup
+  useEffect(() => {
+    const checkAdminExists = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('user_roles')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'admin');
+        
+        if (!error && count && count > 0) {
+          setSignupDisabled(true);
+        }
+      } catch (error) {
+        logError('Check admin exists', error);
+      }
+    };
+    
+    checkAdminExists();
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -43,6 +65,13 @@ const AdminAuth = () => {
 
     try {
       if (isSignUp) {
+        // Double-check if signup should be disabled
+        if (signupDisabled) {
+          toast.error('새로운 계정 등록이 비활성화되었습니다. 관리자에게 문의하세요.');
+          setIsLoading(false);
+          return;
+        }
+        
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -62,7 +91,8 @@ const AdminAuth = () => {
         navigate('/admin');
       }
     } catch (error: any) {
-      toast.error(error.message || '인증 오류가 발생했습니다.');
+      logError('Auth', error);
+      toast.error(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -137,20 +167,22 @@ const AdminAuth = () => {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading || (isSignUp && signupDisabled)}>
                   {isLoading ? '처리 중...' : isSignUp ? '회원가입' : '로그인'}
                 </Button>
               </form>
 
-              <div className="mt-6 text-center">
-                <button
-                  type="button"
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  {isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입'}
-                </button>
-              </div>
+              {!signupDisabled && (
+                <div className="mt-6 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsSignUp(!isSignUp)}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입'}
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
