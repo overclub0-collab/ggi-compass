@@ -33,15 +33,6 @@ export interface ProductImportData {
   price: string | null;
   is_active: boolean;
 }
-  features: string[];
-  specs: Record<string, unknown>;
-  main_category: string | null;
-  subcategory: string | null;
-  display_order: number;
-  procurement_id: string | null;
-  price: string | null;
-  is_active: boolean;
-}
 
 /**
  * Parse CSV file and convert to product data
