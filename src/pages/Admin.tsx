@@ -16,17 +16,9 @@ import {
   FileSpreadsheet,
   Download,
   Upload,
-  Image as ImageIcon,
-  FolderTree
+  FolderTree,
+  Menu
 } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -34,9 +26,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-// Import secure CSV and error utilities
-import { parseCSV, downloadCSV, validateFileSize, validateProduct, parseSpecs, MAX_CSV_ROWS } from '@/lib/csvUtils';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { getErrorMessage, logError } from '@/lib/errorUtils';
+import { parseProductCSV, exportProductsToCSV, downloadProductTemplate } from '@/lib/excelUtils';
+import CategoryFilter from '@/components/admin/CategoryFilter';
+import ProductForm from '@/components/admin/ProductForm';
+import ProductTable from '@/components/admin/ProductTable';
 import type { User } from '@supabase/supabase-js';
 
 interface Product {
@@ -45,6 +46,7 @@ interface Product {
   title: string;
   description: string | null;
   image_url: string | null;
+  images?: string[] | null;
   badges: string[] | null;
   features: string[] | null;
   specs: Record<string, any> | null;
@@ -70,6 +72,22 @@ interface Category {
   image_url?: string;
 }
 
+const initialFormData = {
+  slug: '',
+  title: '',
+  description: '',
+  images: [] as string[],
+  image_url: '',
+  badges: '',
+  features: '',
+  specs: '',
+  main_category: '',
+  subcategory: '',
+  display_order: 0,
+  procurement_id: '',
+  price: '',
+};
+
 const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -81,27 +99,17 @@ const Admin = () => {
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isImageUploading, setIsImageUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Category filter state
+  const [filterMainCategory, setFilterMainCategory] = useState('');
+  const [filterSubcategory, setFilterSubcategory] = useState('');
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    slug: '',
-    title: '',
-    description: '',
-    image_url: '',
-    badges: '',
-    features: '',
-    specs: '',
-    category: '',
-    main_category: '',
-    subcategory: '',
-    display_order: 0,
-    procurement_id: '',
-    price: '',
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
@@ -204,27 +212,24 @@ const Admin = () => {
   const mainCategories = categories.filter(c => !c.parent_id);
   const getSubcategories = (parentId: string) => categories.filter(c => c.parent_id === parentId);
 
+  // Filtered products based on category selection
+  const filteredProducts = products.filter(product => {
+    if (filterMainCategory && filterMainCategory !== 'all') {
+      if (product.main_category !== filterMainCategory) return false;
+    }
+    if (filterSubcategory && filterSubcategory !== 'all') {
+      if (product.subcategory !== filterSubcategory) return false;
+    }
+    return true;
+  });
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/admin/auth');
   };
 
   const resetForm = () => {
-    setFormData({
-      slug: '',
-      title: '',
-      description: '',
-      image_url: '',
-      badges: '',
-      features: '',
-      specs: '',
-      category: '',
-      main_category: '',
-      subcategory: '',
-      display_order: 0,
-      procurement_id: '',
-      price: '',
-    });
+    setFormData(initialFormData);
     setEditingProduct(null);
   };
 
@@ -246,11 +251,11 @@ const Admin = () => {
       slug: product.slug,
       title: product.title,
       description: product.description || '',
+      images: product.images || (product.image_url ? [product.image_url] : []),
       image_url: product.image_url || '',
       badges: product.badges?.join(', ') || '',
       features: product.features?.join('\n') || '',
       specs: product.specs ? JSON.stringify(product.specs, null, 2) : '',
-      category: product.category || '',
       main_category: product.main_category || '',
       subcategory: product.subcategory || '',
       display_order: product.display_order || 0,
@@ -273,49 +278,8 @@ const Admin = () => {
     setIsCategoryDialogOpen(true);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('JPG, PNG, WebP, GIF 이미지만 업로드 가능합니다.');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('이미지 크기는 5MB 이하여야 합니다.');
-      return;
-    }
-
-    setIsImageUploading(true);
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `products/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
-
-      setFormData({ ...formData, image_url: publicUrl });
-      toast.success('이미지가 업로드되었습니다.');
-    } catch (error: any) {
-      logError('Image upload', error);
-      toast.error(getErrorMessage(error));
-    } finally {
-      setIsImageUploading(false);
-      if (imageInputRef.current) {
-        imageInputRef.current.value = '';
-      }
-    }
+  const handleFormChange = (data: Partial<typeof formData>) => {
+    setFormData(prev => ({ ...prev, ...data }));
   };
 
   const handleSave = async () => {
@@ -330,16 +294,21 @@ const Admin = () => {
       }
     }
 
+    if (!formData.title.trim()) {
+      toast.error('품명은 필수 입력 항목입니다.');
+      return;
+    }
+
     try {
       const productData = {
-        slug: formData.slug,
+        slug: formData.slug || `product-${Date.now()}`,
         title: formData.title,
         description: formData.description || null,
-        image_url: formData.image_url || null,
+        images: formData.images,
+        image_url: formData.images[0] || formData.image_url || null,
         badges: formData.badges ? formData.badges.split(',').map(b => b.trim()) : [],
         features: formData.features ? formData.features.split('\n').filter(f => f.trim()) : [],
         specs: parsedSpecs,
-        category: formData.category || null,
         main_category: formData.main_category || null,
         subcategory: formData.subcategory || null,
         display_order: formData.display_order,
@@ -448,95 +417,22 @@ const Admin = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size
-    const fileSizeError = validateFileSize(file);
-    if (fileSizeError) {
-      toast.error(fileSizeError);
-      return;
-    }
-
     setIsUploading(true);
 
     try {
-      const text = await file.text();
-      const jsonData = parseCSV(text);
+      const { products: parsedProducts, errors } = await parseProductCSV(file);
 
-      if (jsonData.length === 0) {
-        throw new Error('CSV 파일에 데이터가 없습니다.');
-      }
-
-      const products = [];
-      const errors: string[] = [];
-
-      for (let index = 0; index < jsonData.length; index++) {
-        const row = jsonData[index];
-        
-        const productData = {
-          slug: (row['슬러그'] || row['slug'] || `product-${Date.now()}-${index}`).substring(0, 100),
-          title: (row['품명'] || row['제품명'] || row['title'] || '').substring(0, 200),
-          description: (row['제품설명'] || row['설명'] || row['description'] || null)?.substring(0, 5000) || null,
-          image_url: (() => {
-            const url = row['이미지URL'] || row['image_url'] || null;
-            if (!url) return null;
-            // Validate URL format
-            if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
-              return url.substring(0, 500);
-            }
-            return null;
-          })(),
-          badges: row['뱃지'] || row['badges'] 
-            ? String(row['뱃지'] || row['badges']).split(',').map((b: string) => b.trim().substring(0, 50)).slice(0, 10)
-            : [],
-          features: row['특징'] || row['features']
-            ? String(row['특징'] || row['features']).split('|').map((f: string) => f.trim().substring(0, 500)).slice(0, 20)
-            : [],
-          specs: (() => {
-            const specsStr = row['사양'] || row['specs'];
-            const size = row['규격'] || row['size'];
-            if (specsStr) {
-              return parseSpecs(specsStr);
-            }
-            return size ? { 규격: String(size).substring(0, 200) } : {};
-          })(),
-          main_category: (row['대분류'] || row['main_category'] || null)?.substring(0, 100) || null,
-          subcategory: (row['소분류'] || row['subcategory'] || null)?.substring(0, 100) || null,
-          category: (row['카테고리'] || row['category'] || null)?.substring(0, 100) || null,
-          display_order: Math.min(Math.max(Number(row['순서'] || row['display_order']) || index, 0), 10000),
-          procurement_id: (row['조달식별번호'] || row['procurement_id'] || null)?.substring(0, 50) || null,
-          price: (row['가격'] || row['price'] || null)?.substring(0, 50) || null,
-          is_active: true,
-        };
-
-        // Basic validation
-        if (!productData.title) {
-          errors.push(`행 ${index + 2}: 품명이 필요합니다.`);
-          continue;
-        }
-
-        const validation = validateProduct(productData);
-        if (!validation.success && 'error' in validation) {
-          errors.push(`행 ${index + 2}: ${validation.error}`);
-          continue;
-        }
-
-        products.push(productData);
-      }
-
-      if (errors.length > 0 && products.length === 0) {
-        throw new Error(`유효성 검사 실패:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? `\n... 외 ${errors.length - 5}개 오류` : ''}`);
-      }
-
-      if (products.length === 0) {
+      if (parsedProducts.length === 0) {
         throw new Error('업로드할 유효한 제품이 없습니다.');
       }
 
       const { error } = await supabase
         .from('products')
-        .insert(products);
+        .insert(parsedProducts);
 
       if (error) throw error;
 
-      let successMessage = `${products.length}개의 제품이 업로드되었습니다.`;
+      let successMessage = `${parsedProducts.length}개의 제품이 업로드되었습니다.`;
       if (errors.length > 0) {
         successMessage += ` (${errors.length}개 오류 건너뜀)`;
       }
@@ -544,7 +440,6 @@ const Admin = () => {
       fetchProducts();
     } catch (error: any) {
       logError('CSV upload', error);
-      // For CSV-specific validation errors, show them directly
       if (error.message?.includes('CSV') || error.message?.includes('행') || error.message?.includes('유효성')) {
         toast.error(error.message);
       } else {
@@ -558,25 +453,18 @@ const Admin = () => {
     }
   };
 
-  const downloadTemplate = () => {
-    const template = [
-      {
-        '슬러그': 'example-product',
-        '품명': '예시 제품',
-        '규격': 'W1200 x D600 x H750',
-        '조달식별번호': '12345678',
-        '가격': '500000',
-        '제품설명': '제품 설명을 입력하세요',
-        '이미지URL': 'https://example.com/image.jpg',
-        '뱃지': 'MAS 등록|KS 인증',
-        '특징': '특징1|특징2|특징3',
-        '대분류': 'educational',
-        '소분류': 'blackboard-cabinet',
-        '순서': '1',
-      }
-    ];
+  const handleExportProducts = () => {
+    const dataToExport = filteredProducts.length > 0 ? filteredProducts : products;
+    const filename = filterMainCategory && filterMainCategory !== 'all' 
+      ? `제품_목록_${filterMainCategory}.csv`
+      : '제품_전체_목록.csv';
+    exportProductsToCSV(dataToExport, filename);
+    toast.success(`${dataToExport.length}개 제품을 내보냈습니다.`);
+  };
 
-    downloadCSV(template, '제품_업로드_템플릿.csv');
+  const clearFilters = () => {
+    setFilterMainCategory('');
+    setFilterSubcategory('');
   };
 
   if (!user || isAdmin === null) {
@@ -596,26 +484,70 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-primary">관리자 대시보드</h1>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+      {/* Header - Mobile Responsive */}
+      <header className="bg-card border-b sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Mobile Menu Button */}
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="md:hidden min-h-[44px] min-w-[44px]">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[280px]">
+                  <SheetHeader>
+                    <SheetTitle>관리자 메뉴</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6 space-y-2">
+                    <Button 
+                      variant={activeTab === 'products' ? 'default' : 'ghost'}
+                      className="w-full justify-start min-h-[44px]"
+                      onClick={() => { setActiveTab('products'); setMobileMenuOpen(false); }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      제품 관리
+                    </Button>
+                    <Button 
+                      variant={activeTab === 'categories' ? 'default' : 'ghost'}
+                      className="w-full justify-start min-h-[44px]"
+                      onClick={() => { setActiveTab('categories'); setMobileMenuOpen(false); }}
+                    >
+                      <FolderTree className="mr-2 h-4 w-4" />
+                      카테고리 관리
+                    </Button>
+                    <div className="pt-4 border-t">
+                      <Button variant="outline" className="w-full min-h-[44px]" onClick={handleLogout}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        로그아웃
+                      </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+              
+              <div>
+                <h1 className="text-lg sm:text-2xl font-bold text-primary">관리자 대시보드</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">{user.email}</p>
+              </div>
+            </div>
+            
+            <Button variant="outline" onClick={handleLogout} className="hidden md:flex min-h-[44px]">
+              <LogOut className="mr-2 h-4 w-4" />
+              로그아웃
+            </Button>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            로그아웃
-          </Button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Tab Navigation */}
-        <div className="flex gap-4 mb-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        {/* Desktop Tab Navigation */}
+        <div className="hidden md:flex gap-4 mb-6">
           <Button 
             variant={activeTab === 'products' ? 'default' : 'outline'}
             onClick={() => setActiveTab('products')}
+            className="min-h-[44px]"
           >
             <Plus className="mr-2 h-4 w-4" />
             제품 관리
@@ -623,8 +555,29 @@ const Admin = () => {
           <Button 
             variant={activeTab === 'categories' ? 'default' : 'outline'}
             onClick={() => setActiveTab('categories')}
+            className="min-h-[44px]"
           >
             <FolderTree className="mr-2 h-4 w-4" />
+            카테고리 관리
+          </Button>
+        </div>
+
+        {/* Mobile Tab Pills */}
+        <div className="flex md:hidden gap-2 mb-4 overflow-x-auto pb-2">
+          <Button 
+            size="sm"
+            variant={activeTab === 'products' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('products')}
+            className="min-h-[44px] whitespace-nowrap"
+          >
+            제품 관리
+          </Button>
+          <Button 
+            size="sm"
+            variant={activeTab === 'categories' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('categories')}
+            className="min-h-[44px] whitespace-nowrap"
+          >
             카테고리 관리
           </Button>
         </div>
@@ -632,351 +585,107 @@ const Admin = () => {
         {activeTab === 'products' && (
           <>
             {/* Product Actions */}
-            <div className="flex flex-wrap gap-4 mb-8">
-              <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                setIsDialogOpen(open);
-                if (!open) resetForm();
-              }}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    새 제품 추가
+            <div className="space-y-4 mb-6">
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2 sm:gap-4">
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                  setIsDialogOpen(open);
+                  if (!open) resetForm();
+                }}>
+                  <DialogTrigger asChild>
+                    <Button className="min-h-[44px]">
+                      <Plus className="mr-2 h-4 w-4" />
+                      <span className="hidden sm:inline">새 제품 추가</span>
+                      <span className="sm:hidden">추가</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingProduct ? '제품 수정' : '새 제품 추가'}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <ProductForm
+                      formData={formData}
+                      categories={categories}
+                      isEditing={!!editingProduct}
+                      onFormChange={handleFormChange}
+                      onSave={handleSave}
+                      onCancel={() => { setIsDialogOpen(false); resetForm(); }}
+                    />
+                  </DialogContent>
+                </Dialog>
+
+                <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCSVUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="min-h-[44px]"
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">{isUploading ? '업로드 중...' : 'CSV 대량 업로드'}</span>
+                    <span className="sm:hidden">{isUploading ? '...' : '업로드'}</span>
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingProduct ? '제품 수정' : '새 제품 추가'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="slug">슬러그 (URL)</Label>
-                        <Input
-                          id="slug"
-                          value={formData.slug}
-                          onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                          placeholder="product-name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="title">품명</Label>
-                        <Input
-                          id="title"
-                          value={formData.title}
-                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                          placeholder="제품명"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="procurement_id">조달식별번호</Label>
-                        <Input
-                          id="procurement_id"
-                          value={formData.procurement_id}
-                          onChange={(e) => setFormData({ ...formData, procurement_id: e.target.value })}
-                          placeholder="12345678"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="price">가격</Label>
-                        <Input
-                          id="price"
-                          value={formData.price}
-                          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                          placeholder="500,000"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="description">제품설명</Label>
-                      <Textarea
-                        id="description"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        placeholder="제품 설명"
-                        rows={3}
-                      />
-                    </div>
-
-                    {/* Image Upload Section */}
-                    <div>
-                      <Label>제품 이미지</Label>
-                      <div className="mt-2 space-y-3">
-                        {formData.image_url && (
-                          <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                            <img
-                              src={formData.image_url}
-                              alt="Preview"
-                              className="w-full h-full object-cover"
-                            />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              className="absolute top-2 right-2"
-                              onClick={() => setFormData({ ...formData, image_url: '' })}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                        
-                        <div className="flex gap-2">
-                          <input
-                            ref={imageInputRef}
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => imageInputRef.current?.click()}
-                            disabled={isImageUploading}
-                            className="flex-1"
-                          >
-                            {isImageUploading ? (
-                              <>업로드 중...</>
-                            ) : (
-                              <>
-                                <Upload className="mr-2 h-4 w-4" />
-                                이미지 업로드
-                              </>
-                            )}
-                          </Button>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-px bg-border" />
-                          <span className="text-xs text-muted-foreground">또는</span>
-                          <div className="flex-1 h-px bg-border" />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="image_url" className="text-xs text-muted-foreground">
-                            이미지 URL 직접 입력
-                          </Label>
-                          <Input
-                            id="image_url"
-                            value={formData.image_url}
-                            onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                            placeholder="https://example.com/image.jpg"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Category Selection */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="main_category">대분류</Label>
-                        <select
-                          id="main_category"
-                          value={formData.main_category}
-                          onChange={(e) => setFormData({ ...formData, main_category: e.target.value, subcategory: '' })}
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                        >
-                          <option value="">선택하세요</option>
-                          {mainCategories.map((cat) => (
-                            <option key={cat.id} value={cat.slug}>{cat.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <Label htmlFor="subcategory">소분류</Label>
-                        <select
-                          id="subcategory"
-                          value={formData.subcategory}
-                          onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                          disabled={!formData.main_category}
-                        >
-                          <option value="">선택하세요</option>
-                          {formData.main_category && 
-                            getSubcategories(mainCategories.find(c => c.slug === formData.main_category)?.id || '')
-                              .map((cat) => (
-                                <option key={cat.id} value={cat.slug}>{cat.name}</option>
-                              ))
-                          }
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="display_order">표시 순서</Label>
-                      <Input
-                        id="display_order"
-                        type="number"
-                        value={formData.display_order}
-                        onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="badges">뱃지 (쉼표로 구분)</Label>
-                      <Input
-                        id="badges"
-                        value={formData.badges}
-                        onChange={(e) => setFormData({ ...formData, badges: e.target.value })}
-                        placeholder="MAS 등록, KS 인증"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="features">주요 특징 (줄바꿈으로 구분)</Label>
-                      <Textarea
-                        id="features"
-                        value={formData.features}
-                        onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                        placeholder="특징 1&#10;특징 2&#10;특징 3"
-                        rows={4}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="specs">사양/규격 (JSON 형식)</Label>
-                      <Textarea
-                        id="specs"
-                        value={formData.specs}
-                        onChange={(e) => setFormData({ ...formData, specs: e.target.value })}
-                        placeholder='{"규격": "W1200 x D600 x H750", "재질": "스틸"}'
-                        rows={4}
-                      />
-                    </div>
-
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => {
-                        setIsDialogOpen(false);
-                        resetForm();
-                      }}>
-                        <X className="mr-2 h-4 w-4" />
-                        취소
-                      </Button>
-                      <Button onClick={handleSave}>
-                        <Save className="mr-2 h-4 w-4" />
-                        저장
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <div className="flex gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  onChange={handleCSVUpload}
-                  className="hidden"
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                >
-                  <FileSpreadsheet className="mr-2 h-4 w-4" />
-                  {isUploading ? '업로드 중...' : 'CSV 대량 업로드'}
-                </Button>
-                <Button variant="outline" onClick={downloadTemplate}>
-                  <Download className="mr-2 h-4 w-4" />
-                  템플릿 다운로드
-                </Button>
+                  <Button variant="outline" onClick={downloadProductTemplate} className="min-h-[44px]">
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">템플릿</span>
+                  </Button>
+                  <Button variant="outline" onClick={handleExportProducts} className="min-h-[44px]">
+                    <Download className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">내보내기</span>
+                  </Button>
+                </div>
               </div>
+
+              {/* Category Filter */}
+              <CategoryFilter
+                categories={categories}
+                selectedMainCategory={filterMainCategory}
+                selectedSubcategory={filterSubcategory}
+                onMainCategoryChange={(value) => {
+                  setFilterMainCategory(value);
+                  setFilterSubcategory('');
+                }}
+                onSubcategoryChange={setFilterSubcategory}
+                onClear={clearFilters}
+              />
+
+              {/* Filter Result Info */}
+              {(filterMainCategory || filterSubcategory) && (
+                <p className="text-sm text-muted-foreground">
+                  {filteredProducts.length}개 제품 표시 (전체 {products.length}개)
+                </p>
+              )}
             </div>
 
             {/* Products Table */}
-            <div className="bg-card rounded-xl shadow-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">순서</TableHead>
-                    <TableHead className="w-24">이미지</TableHead>
-                    <TableHead>품명</TableHead>
-                    <TableHead>대분류</TableHead>
-                    <TableHead>소분류</TableHead>
-                    <TableHead>조달식별번호</TableHead>
-                    <TableHead>가격</TableHead>
-                    <TableHead className="w-32">작업</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">
-                        로딩 중...
-                      </TableCell>
-                    </TableRow>
-                  ) : products.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        등록된 제품이 없습니다.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    products.map((product) => (
-                      <TableRow key={product.id}>
-                        <TableCell>{product.display_order}</TableCell>
-                        <TableCell>
-                          {product.image_url ? (
-                            <img
-                              src={product.image_url}
-                              alt={product.title}
-                              className="w-16 h-12 object-cover rounded"
-                            />
-                          ) : (
-                            <div className="w-16 h-12 bg-muted rounded flex items-center justify-center">
-                              <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium">{product.title}</TableCell>
-                        <TableCell>{product.main_category || '-'}</TableCell>
-                        <TableCell>{product.subcategory || '-'}</TableCell>
-                        <TableCell className="text-sm">{product.procurement_id || '-'}</TableCell>
-                        <TableCell className="text-sm">{product.price || '-'}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEdit(product)}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(product.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <ProductTable
+              products={filteredProducts}
+              isLoading={isLoading}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           </>
         )}
 
         {activeTab === 'categories' && (
           <>
             {/* Category Actions */}
-            <div className="flex flex-wrap gap-4 mb-8">
+            <div className="flex flex-wrap gap-4 mb-6">
               <Dialog open={isCategoryDialogOpen} onOpenChange={(open) => {
                 setIsCategoryDialogOpen(open);
                 if (!open) resetCategoryForm();
               }}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button className="min-h-[44px]">
                     <Plus className="mr-2 h-4 w-4" />
                     새 카테고리 추가
                   </Button>
@@ -1031,7 +740,7 @@ const Admin = () => {
                         id="parent_id"
                         value={categoryFormData.parent_id}
                         onChange={(e) => setCategoryFormData({ ...categoryFormData, parent_id: e.target.value })}
-                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-base"
                       >
                         <option value="">없음 (대분류)</option>
                         {mainCategories.map((cat) => (
@@ -1048,15 +757,15 @@ const Admin = () => {
                         onChange={(e) => setCategoryFormData({ ...categoryFormData, display_order: Number(e.target.value) })}
                       />
                     </div>
-                    <div className="flex justify-end gap-2">
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t">
                       <Button variant="outline" onClick={() => {
                         setIsCategoryDialogOpen(false);
                         resetCategoryForm();
-                      }}>
+                      }} className="min-h-[44px]">
                         <X className="mr-2 h-4 w-4" />
                         취소
                       </Button>
-                      <Button onClick={handleSaveCategory}>
+                      <Button onClick={handleSaveCategory} className="min-h-[44px]">
                         <Save className="mr-2 h-4 w-4" />
                         저장
                       </Button>
@@ -1067,7 +776,7 @@ const Admin = () => {
             </div>
 
             {/* Categories Display */}
-            <div className="bg-card rounded-xl shadow-lg p-6">
+            <div className="bg-card rounded-xl shadow-lg p-4 sm:p-6">
               <h3 className="text-lg font-bold mb-4">카테고리 구조</h3>
               <div className="space-y-4">
                 {mainCategories.length === 0 ? (
@@ -1075,8 +784,8 @@ const Admin = () => {
                 ) : (
                   mainCategories.map((mainCat) => (
                     <div key={mainCat.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                           <span className="text-sm text-muted-foreground">#{mainCat.display_order}</span>
                           <h4 className="font-bold text-primary">{mainCat.name}</h4>
                           <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
@@ -1084,34 +793,34 @@ const Admin = () => {
                           </span>
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEditCategory(mainCat)}>
+                          <Button size="sm" variant="outline" onClick={() => handleEditCategory(mainCat)} className="min-h-[44px] min-w-[44px]">
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteCategory(mainCat.id)}>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteCategory(mainCat.id)} className="min-h-[44px] min-w-[44px]">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
                       
                       {/* Subcategories */}
-                      <div className="ml-6 mt-3 space-y-2">
+                      <div className="ml-0 sm:ml-6 mt-3 space-y-2">
                         <p className="text-sm text-muted-foreground font-medium">소분류:</p>
                         {getSubcategories(mainCat.id).length === 0 ? (
                           <p className="text-sm text-muted-foreground italic">소분류 없음</p>
                         ) : (
                           getSubcategories(mainCat.id).map((subCat) => (
-                            <div key={subCat.id} className="flex items-center justify-between bg-muted/50 p-2 rounded">
-                              <div className="flex items-center gap-2">
+                            <div key={subCat.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-muted/50 p-3 rounded">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-xs text-muted-foreground">#{subCat.display_order}</span>
-                                <span>{subCat.name}</span>
+                                <span className="text-base">{subCat.name}</span>
                                 <span className="text-xs text-muted-foreground">({subCat.slug})</span>
                               </div>
-                              <div className="flex gap-1">
-                                <Button size="sm" variant="ghost" onClick={() => handleEditCategory(subCat)}>
-                                  <Edit2 className="h-3 w-3" />
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="ghost" onClick={() => handleEditCategory(subCat)} className="min-h-[44px] min-w-[44px]">
+                                  <Edit2 className="h-4 w-4" />
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={() => handleDeleteCategory(subCat.id)}>
-                                  <Trash2 className="h-3 w-3" />
+                                <Button size="sm" variant="ghost" onClick={() => handleDeleteCategory(subCat.id)} className="min-h-[44px] min-w-[44px]">
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>

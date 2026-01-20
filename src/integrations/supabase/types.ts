@@ -71,6 +71,7 @@ export type Database = {
           features: string[] | null
           id: string
           image_url: string | null
+          images: string[] | null
           is_active: boolean | null
           main_category: string | null
           price: string | null
@@ -91,6 +92,7 @@ export type Database = {
           features?: string[] | null
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_active?: boolean | null
           main_category?: string | null
           price?: string | null
@@ -111,6 +113,7 @@ export type Database = {
           features?: string[] | null
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_active?: boolean | null
           main_category?: string | null
           price?: string | null
