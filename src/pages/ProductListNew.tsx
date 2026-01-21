@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { CategorySidebar } from '@/components/CategorySidebar';
-import { Badge } from '@/components/ui/badge';
+import { ProductCard } from '@/components/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, ArrowRight, Search, X, SlidersHorizontal, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Search, X, SlidersHorizontal, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Product {
@@ -304,48 +304,19 @@ const ProductListNew = () => {
                   )}
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProducts.map((product, index) => (
-                    <Link
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                  {filteredProducts.map((product) => (
+                    <ProductCard
                       key={product.id}
-                      to={`/product/detail/${product.slug}`}
-                      className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                    >
-                      <div className="aspect-[4/3] overflow-hidden bg-muted">
-                        <img
-                          src={product.image_url || '/placeholder.svg'}
-                          alt={product.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder.svg';
-                          }}
-                        />
-                      </div>
-                      <div className="p-4">
-                        <h3 className="font-bold text-primary mb-1 group-hover:text-accent transition-colors line-clamp-1">
-                          {product.title}
-                        </h3>
-                        <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                          {product.description}
-                        </p>
-                        {product.procurement_id && (
-                          <p className="text-xs text-muted-foreground mb-2">
-                            조달식별번호: {product.procurement_id}
-                          </p>
-                        )}
-                        <div className="flex flex-wrap gap-1.5">
-                          {product.badges?.slice(0, 2).map((badge) => (
-                            <Badge
-                              key={badge}
-                              variant="secondary"
-                              className="bg-accent/10 text-accent border-0 text-xs"
-                            >
-                              {badge}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </Link>
+                      id={product.id}
+                      slug={product.slug}
+                      title={product.title}
+                      description={product.description}
+                      image_url={product.image_url}
+                      specs={product.specs}
+                      procurement_id={product.procurement_id}
+                      price={product.price}
+                    />
                   ))}
                 </div>
               )}
