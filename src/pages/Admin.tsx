@@ -628,8 +628,8 @@ const Admin = () => {
       <div className="flex-1 flex">
         {/* Desktop Sidebar - Only show for products tab */}
         {activeTab === 'products' && (
-          <aside className="hidden lg:block w-72 border-r bg-card overflow-y-auto">
-            <div className="p-3">
+          <aside className="hidden lg:block w-80 xl:w-96 border-r bg-card overflow-y-auto flex-shrink-0">
+            <div className="p-4">
               {CategoryTreeSidebar}
             </div>
           </aside>
@@ -724,7 +724,7 @@ const Admin = () => {
               </div>
 
               {/* Products Grid */}
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {isLoading ? (
                   <div className="col-span-full flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
