@@ -1,1 +1,7 @@
 project_id = "jvlpjqwwxzlceircfpis"
+
+[functions.submit-inquiry]
+verify_jwt = false
+
+[functions.lookup-inquiry]
+verify_jwt = false

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import ProductListNew from "./pages/ProductListNew";
 import ProductDetail from "./pages/ProductDetail";
+import InquiryPage from "./pages/InquiryPage";
 import Admin from "./pages/Admin";
 import AdminAuth from "./pages/AdminAuth";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,8 @@ const App = () => (
           <Route path="/product/:mainCategory" element={<ProductListNew />} />
           <Route path="/product/:mainCategory/:subCategory" element={<ProductListNew />} />
           <Route path="/product/detail/:productSlug" element={<ProductDetail />} />
+          {/* Inquiry page */}
+          <Route path="/inquiry" element={<InquiryPage />} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/products/category/:categorySlug" element={<ProductListNew />} />
           <Route path="/products/detail/:productId" element={<ProductDetail />} />

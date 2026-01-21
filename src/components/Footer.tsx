@@ -1,18 +1,8 @@
-import { useState } from 'react';
-import { Phone, Printer, Mail, MapPin, Send, Settings } from 'lucide-react';
+import { Phone, Printer, Mail, MapPin, Settings, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+
 export const Footer = () => {
-  const [email, setEmail] = useState('');
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      toast.success('신청이 완료되었습니다. 빠른 시일 내에 연락드리겠습니다.');
-      setEmail('');
-    }
-  };
   return <footer id="contact" className="bg-primary text-primary-foreground overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* Mobile: 1 column, Tablet: 2 columns, Desktop: 4 columns */}
@@ -78,27 +68,21 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Quick Support */}
+          {/* Quick Support - Changed to link to inquiry page */}
           <div className="sm:col-span-2 lg:col-span-1">
             <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-6 flex items-center gap-2">
               <span className="w-2 h-2 bg-accent rounded-full"></span>
               Quick Support
             </h3>
             <p className="text-sm text-primary-foreground/80 mb-4">
-              견적 요청 및 제품 카탈로그 신청을 위해 연락처를 남겨주세요.
+              견적 요청 및 제품 문의를 남겨주시면 담당자가 확인 후 연락드리겠습니다.
             </p>
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Input 
-                type="email" 
-                placeholder="이메일 주소" 
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-                className="bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground placeholder:text-primary-foreground/50 focus:border-accent min-h-[44px]" 
-              />
-              <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground px-4 min-h-[44px] min-w-[44px]">
-                <Send className="w-4 h-4" />
+            <Link to="/inquiry">
+              <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground min-h-[48px] font-semibold">
+                <MessageSquare className="w-5 h-5 mr-2" />
+                견적/문의하기
               </Button>
-            </form>
+            </Link>
           </div>
         </div>
       </div>

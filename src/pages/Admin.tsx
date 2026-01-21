@@ -16,7 +16,8 @@ import {
   Upload,
   Menu,
   Package,
-  Search
+  Search,
+  MessageSquare
 } from 'lucide-react';
 import {
   Dialog,
@@ -36,6 +37,7 @@ import { parseProductCSV, exportProductsToCSV, downloadProductTemplate } from '@
 import CategoryTree from '@/components/admin/CategoryTree';
 import ProductForm from '@/components/admin/ProductForm';
 import DraggableProductCard from '@/components/admin/DraggableProductCard';
+import { AdminInquiryList } from '@/components/admin/AdminInquiryList';
 import type { User } from '@supabase/supabase-js';
 
 interface Product {
@@ -101,6 +103,7 @@ const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'products' | 'inquiries'>('products');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
