@@ -61,6 +61,75 @@ export type Database = {
           },
         ]
       }
+      inquiries: {
+        Row: {
+          admin_reply: string | null
+          content: string
+          created_at: string
+          email: string
+          id: string
+          ip_address: string | null
+          name: string
+          password: string
+          phone: string
+          privacy_agreed: boolean
+          replied_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          admin_reply?: string | null
+          content: string
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+          name: string
+          password: string
+          phone: string
+          privacy_agreed?: boolean
+          replied_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          admin_reply?: string | null
+          content?: string
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+          name?: string
+          password?: string
+          phone?: string
+          privacy_agreed?: boolean
+          replied_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      inquiry_rate_limits: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           badges: string[] | null
