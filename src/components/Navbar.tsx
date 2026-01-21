@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import ggiLogo from '@/assets/ggi-ci-logo.png';
+import ggiLogo from '@/assets/ggi-logo-new.png';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Category {
