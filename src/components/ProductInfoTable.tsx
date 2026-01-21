@@ -26,7 +26,7 @@ export const ProductInfoTable = ({
   badges,
 }: ProductInfoTableProps) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Badges */}
       {badges && badges.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -42,32 +42,54 @@ export const ProductInfoTable = ({
         </div>
       )}
 
-      {/* Model Name - Most Prominent */}
+      {/* Model Name - Most Prominent (모델명 최상단 강조) */}
       {modelName && (
-        <h1 className="text-3xl md:text-4xl font-black text-primary leading-tight">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-primary leading-tight uppercase tracking-wide">
           {modelName}
         </h1>
       )}
 
-      {/* Product Title */}
-      <h2 className={`font-bold text-foreground ${modelName ? 'text-xl md:text-2xl' : 'text-3xl md:text-4xl text-primary'}`}>
+      {/* Product Title (품명) */}
+      <h2 className={`font-bold text-foreground ${modelName ? 'text-lg md:text-xl' : 'text-2xl md:text-3xl text-primary'}`}>
         {title}
       </h2>
 
-      {/* Info Table */}
+      {/* Info Table - 6 key fields displayed clearly */}
       <div className="bg-muted/50 rounded-xl overflow-hidden">
         <table className="w-full text-sm md:text-base">
           <tbody>
-            {specs && (
+            {/* 모델명 row */}
+            {modelName && (
               <tr className="border-b border-border/50">
                 <td className="py-3 px-4 font-semibold text-primary bg-muted/50 w-28 md:w-36 whitespace-nowrap">
+                  모델명
+                </td>
+                <td className="py-3 px-4 text-foreground font-bold uppercase">
+                  {modelName}
+                </td>
+              </tr>
+            )}
+            {/* 품명 row */}
+            <tr className="border-b border-border/50">
+              <td className="py-3 px-4 font-semibold text-primary bg-muted/50 w-28 md:w-36 whitespace-nowrap">
+                품명
+              </td>
+              <td className="py-3 px-4 text-foreground">
+                {title}
+              </td>
+            </tr>
+            {/* 규격 row - plain text, no parsing */}
+            {specs && (
+              <tr className="border-b border-border/50">
+                <td className="py-3 px-4 font-semibold text-primary bg-muted/50 whitespace-nowrap align-top">
                   규격
                 </td>
-                <td className="py-3 px-4 text-foreground whitespace-pre-wrap">
+                <td className="py-3 px-4 text-foreground whitespace-pre-line">
                   {specs}
                 </td>
               </tr>
             )}
+            {/* 조달식별번호 row */}
             {procurementId && (
               <tr className="border-b border-border/50">
                 <td className="py-3 px-4 font-semibold text-primary bg-muted/50 whitespace-nowrap">
@@ -78,6 +100,7 @@ export const ProductInfoTable = ({
                 </td>
               </tr>
             )}
+            {/* 가격 row */}
             <tr>
               <td className="py-3 px-4 font-semibold text-primary bg-muted/50 whitespace-nowrap">
                 조달가격

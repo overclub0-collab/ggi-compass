@@ -80,10 +80,11 @@ const ProductDetail = () => {
     );
   }
 
-  // specs is now a plain string (규격 field)
+  // specs is plain text (규격 field) - no JSON parsing needed
   const specsString = product.specs || null;
   
-  // No model name extraction needed since specs is now plain text
+  // Use slug as model name for display
+  const modelName = product.slug || null;
 
   // Prepare images array - combine images array and image_url
   const allImages: string[] = [];
@@ -130,7 +131,7 @@ const ProductDetail = () => {
             {/* Right: Product Info Table */}
             <div className="space-y-6">
               <ProductInfoTable
-                modelName={null}
+                modelName={modelName}
                 title={product.title}
                 specs={specsString}
                 procurementId={product.procurement_id}
