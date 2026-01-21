@@ -18,7 +18,7 @@ const navItems = [
   { id: 'about', label: '기업소개', isExternal: false },
   { id: 'procurement', label: '나라장터/조달', isExternal: true, href: 'https://shop.g2b.go.kr/' },
   { id: 'products', label: '주요제품', isExternal: false, hasMegaMenu: true },
-  { id: 'contact', label: '견적/문의', isExternal: false },
+  { id: 'contact', label: '견적/문의', isExternal: false, isInquiryLink: true },
 ];
 
 export const Navbar = () => {
@@ -179,6 +179,20 @@ export const Navbar = () => {
               );
             }
 
+            if (item.isInquiryLink) {
+              return (
+                <Link 
+                  key={item.id}
+                  to="/inquiry"
+                  className={cn(
+                    "text-foreground/70 hover:text-primary transition-colors py-2"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+
             return (
               <button 
                 key={item.id} 
@@ -192,12 +206,12 @@ export const Navbar = () => {
               </button>
             );
           })}
-          <button 
-            onClick={() => scrollToSection('contact')} 
+          <Link 
+            to="/inquiry"
             className="bg-primary text-primary-foreground px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-all font-bold shadow-md"
           >
             견적/문의
-          </button>
+          </Link>
         </div>
 
         {/* Mobile Menu Button - Touch-friendly 44px target */}
@@ -300,6 +314,19 @@ export const Navbar = () => {
                 );
               }
 
+              if (item.isInquiryLink) {
+                return (
+                  <Link 
+                    key={item.id}
+                    to="/inquiry"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block w-full text-left text-foreground/70 hover:text-primary hover:bg-muted transition-colors py-4 px-3 rounded-lg text-base font-medium"
+                  >
+                    {item.label}
+                  </Link>
+                );
+              }
+
               return (
                 <button 
                   key={item.id} 
@@ -313,12 +340,13 @@ export const Navbar = () => {
             
             {/* Mobile CTA Button */}
             <div className="pt-4 mt-4 border-t border-border">
-              <button 
-                onClick={() => scrollToSection('contact')} 
-                className="w-full bg-primary text-primary-foreground px-6 py-4 rounded-lg hover:bg-primary/90 transition-all font-bold shadow-md text-center"
+              <Link 
+                to="/inquiry"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block w-full bg-primary text-primary-foreground px-6 py-4 rounded-lg hover:bg-primary/90 transition-all font-bold shadow-md text-center"
               >
                 견적/문의하기
-              </button>
+              </Link>
             </div>
           </div>
         </div>

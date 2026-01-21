@@ -573,25 +573,27 @@ const Admin = () => {
       <header className="bg-card border-b sticky top-0 z-50">
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Mobile Menu Toggle */}
-            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden min-h-[44px] min-w-[44px]">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] p-0">
-                <SheetHeader className="p-4 border-b">
-                  <SheetTitle>카테고리 관리</SheetTitle>
-                </SheetHeader>
-                <div className="p-2 overflow-y-auto max-h-[calc(100vh-80px)]">
-                  {CategoryTreeSidebar}
-                </div>
-              </SheetContent>
-            </Sheet>
+            {/* Mobile Menu Toggle - Only show for products tab */}
+            {activeTab === 'products' && (
+              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="lg:hidden min-h-[44px] min-w-[44px]">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] p-0">
+                  <SheetHeader className="p-4 border-b">
+                    <SheetTitle>카테고리 관리</SheetTitle>
+                  </SheetHeader>
+                  <div className="p-2 overflow-y-auto max-h-[calc(100vh-80px)]">
+                    {CategoryTreeSidebar}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            )}
             
             <div>
-              <h1 className="text-lg sm:text-xl font-bold text-primary">통합 제품 관리</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-primary">관리자 대시보드</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">{user.email}</p>
             </div>
           </div>
@@ -601,135 +603,161 @@ const Admin = () => {
             <span className="hidden sm:inline">로그아웃</span>
           </Button>
         </div>
+
+        {/* Tab Navigation */}
+        <div className="px-4 pb-3 flex gap-1">
+          <Button
+            variant={activeTab === 'products' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('products')}
+            className="min-h-[40px]"
+          >
+            <Package className="h-4 w-4 mr-2" />
+            제품 관리
+          </Button>
+          <Button
+            variant={activeTab === 'inquiries' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('inquiries')}
+            className="min-h-[40px]"
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            문의 관리
+          </Button>
+        </div>
       </header>
 
       <div className="flex-1 flex">
-        {/* Desktop Sidebar */}
-        <aside className="hidden lg:block w-72 border-r bg-card overflow-y-auto">
-          <div className="p-3">
-            {CategoryTreeSidebar}
-          </div>
-        </aside>
+        {/* Desktop Sidebar - Only show for products tab */}
+        {activeTab === 'products' && (
+          <aside className="hidden lg:block w-72 border-r bg-card overflow-y-auto">
+            <div className="p-3">
+              {CategoryTreeSidebar}
+            </div>
+          </aside>
+        )}
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 space-y-4">
-            {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search */}
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="제품명, 조달번호로 검색..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 min-h-[44px]"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={() => {
-                    resetForm();
-                    if (selectedCategory) {
-                      handleAddProductToCategory(selectedCategory);
-                    } else {
-                      setIsProductDialogOpen(true);
-                    }
-                  }}
-                  className="min-h-[44px]"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">제품 추가</span>
-                  <span className="sm:hidden">추가</span>
-                </Button>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  onChange={handleCSVUpload}
-                  className="hidden"
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  className="min-h-[44px]"
-                >
-                  <Upload className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{isUploading ? '업로드 중...' : 'CSV 업로드'}</span>
-                </Button>
-                
-                <Button variant="outline" onClick={downloadProductTemplate} className="min-h-[44px]">
-                  <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">템플릿</span>
-                </Button>
-                
-                <Button variant="outline" onClick={handleExportProducts} className="min-h-[44px]">
-                  <Download className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">내보내기</span>
-                </Button>
-              </div>
-            </div>
-
-            {/* Current Category Info */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">
-                  {selectedCategory ? selectedCategory.name : '전체 제품'}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  ({filteredProducts.length}개)
-                </span>
-              </div>
-              {selectedCategory && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedCategory(null)}
-                  className="text-muted-foreground"
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  필터 해제
-                </Button>
-              )}
-            </div>
-
-            {/* Products Grid */}
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {isLoading ? (
-                <div className="col-span-full flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                </div>
-              ) : filteredProducts.length === 0 ? (
-                <div className="col-span-full text-center py-12 text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>등록된 제품이 없습니다</p>
-                  {selectedCategory && (
-                    <Button
-                      variant="link"
-                      className="mt-2"
-                      onClick={() => handleAddProductToCategory(selectedCategory)}
-                    >
-                      이 카테고리에 제품 추가하기
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                filteredProducts.map((product) => (
-                  <DraggableProductCard
-                    key={product.id}
-                    product={product}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
+          {activeTab === 'products' ? (
+            <div className="p-4 sm:p-6 space-y-4">
+              {/* Toolbar */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="제품명, 조달번호로 검색..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 min-h-[44px]"
                   />
-                ))
-              )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => {
+                      resetForm();
+                      if (selectedCategory) {
+                        handleAddProductToCategory(selectedCategory);
+                      } else {
+                        setIsProductDialogOpen(true);
+                      }
+                    }}
+                    className="min-h-[44px]"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">제품 추가</span>
+                    <span className="sm:hidden">추가</span>
+                  </Button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCSVUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="min-h-[44px]"
+                  >
+                    <Upload className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">{isUploading ? '업로드 중...' : 'CSV 업로드'}</span>
+                  </Button>
+                  
+                  <Button variant="outline" onClick={downloadProductTemplate} className="min-h-[44px]">
+                    <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">템플릿</span>
+                  </Button>
+                  
+                  <Button variant="outline" onClick={handleExportProducts} className="min-h-[44px]">
+                    <Download className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">내보내기</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Current Category Info */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">
+                    {selectedCategory ? selectedCategory.name : '전체 제품'}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    ({filteredProducts.length}개)
+                  </span>
+                </div>
+                {selectedCategory && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedCategory(null)}
+                    className="text-muted-foreground"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    필터 해제
+                  </Button>
+                )}
+              </div>
+
+              {/* Products Grid */}
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {isLoading ? (
+                  <div className="col-span-full flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  </div>
+                ) : filteredProducts.length === 0 ? (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                    <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>등록된 제품이 없습니다</p>
+                    {selectedCategory && (
+                      <Button
+                        variant="link"
+                        className="mt-2"
+                        onClick={() => handleAddProductToCategory(selectedCategory)}
+                      >
+                        이 카테고리에 제품 추가하기
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  filteredProducts.map((product) => (
+                    <DraggableProductCard
+                      key={product.id}
+                      product={product}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <AdminInquiryList />
+          )}
         </main>
       </div>
 
