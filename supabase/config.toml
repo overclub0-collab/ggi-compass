@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.lookup-inquiry]
 verify_jwt = false
+
+[functions.send-reply-email]
+verify_jwt = false
