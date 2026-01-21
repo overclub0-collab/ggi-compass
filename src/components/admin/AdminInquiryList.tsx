@@ -128,7 +128,32 @@ export const AdminInquiryList = ({ onInquiryUpdate }: AdminInquiryListProps) => 
       console.error('Update error:', error);
       toast.error('저장에 실패했습니다.');
     } else {
-      toast.success('답변이 저장되었습니다.');
+      // 답변이 있으면 이메일 발송
+      if (replyText.trim()) {
+        try {
+          const emailResponse = await supabase.functions.invoke('send-reply-email', {
+            body: {
+              customerName: selectedInquiry.name,
+              customerEmail: selectedInquiry.email,
+              inquiryTitle: selectedInquiry.title,
+              inquiryContent: selectedInquiry.content,
+              adminReply: replyText.trim(),
+            },
+          });
+          
+          if (emailResponse.error) {
+            console.error('Email send error:', emailResponse.error);
+            toast.success('답변이 저장되었습니다. (이메일 발송 실패)');
+          } else {
+            toast.success('답변이 저장되고 이메일이 발송되었습니다.');
+          }
+        } catch (emailError) {
+          console.error('Email error:', emailError);
+          toast.success('답변이 저장되었습니다. (이메일 발송 실패)');
+        }
+      } else {
+        toast.success('답변이 저장되었습니다.');
+      }
       setSelectedInquiry(null);
       fetchInquiries();
       onInquiryUpdate?.();
