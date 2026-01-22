@@ -96,7 +96,7 @@ export const Navbar = () => {
         </Link>
         
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center space-x-6 lg:space-x-8 text-sm font-medium h-full">
+        <div className="hidden md:flex items-center space-x-6 lg:space-x-8 text-sm font-medium h-full leading-none">
           {navItems.map(item => {
             if (item.isExternal) {
               return (
@@ -105,7 +105,7 @@ export const Navbar = () => {
                   href={item.href} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="text-foreground/70 hover:text-primary transition-colors py-2"
+                  className="text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none"
                 >
                   {item.label}
                 </a>
@@ -122,13 +122,13 @@ export const Navbar = () => {
                 >
                   <button 
                     className={cn(
-                      "text-foreground/70 hover:text-primary transition-colors flex items-center gap-1 py-2", 
+                      "text-foreground/70 hover:text-primary transition-colors flex items-center gap-1 py-2 leading-none", 
                       activeSection === item.id && "text-primary"
                     )}
                   >
-                    {item.label}
+                    <span className="flex items-center">{item.label}</span>
                     <ChevronDown className={cn(
-                      "h-4 w-4 transition-transform",
+                      "h-4 w-4 transition-transform flex-shrink-0",
                       megaMenuOpen && "rotate-180"
                     )} />
                   </button>
@@ -185,7 +185,7 @@ export const Navbar = () => {
                   key={item.id}
                   to="/inquiry"
                   className={cn(
-                    "text-foreground/70 hover:text-primary transition-colors py-2"
+                    "text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none"
                   )}
                 >
                   {item.label}
@@ -198,7 +198,7 @@ export const Navbar = () => {
                 key={item.id} 
                 onClick={() => scrollToSection(item.id)} 
                 className={cn(
-                  "text-foreground/70 hover:text-primary transition-colors py-2", 
+                  "text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none", 
                   activeSection === item.id && "text-primary"
                 )}
               >
