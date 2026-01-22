@@ -43,7 +43,7 @@ const categoryImages: Record<string, string> = {
 // Badge labels for main categories
 const categoryBadges: Record<string, string[]> = {
   'educational': ['MAS 등록', '조달청 등록'],
-  'office': ['KS 인증', '모듈형 설계'],
+  'office': ['조달청등록', '모듈형 설계'],
   'chairs': ['인체공학', '높이 조절형'],
 };
 
