@@ -17,7 +17,7 @@ const features = [{
 }, {
   icon: ShieldCheck,
   title: '품질 보증',
-  description: 'KS 규격 및 조달청 품질검사를 통과한 신뢰의 제품'
+  description: '조달청 품질검사를 통과한 신뢰의 제품'
 }];
 
 export const HeroSection = () => {
