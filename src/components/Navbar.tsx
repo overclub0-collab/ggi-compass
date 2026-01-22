@@ -18,7 +18,7 @@ const navItems = [
   { id: 'about', label: '기업소개', isExternal: false },
   { id: 'procurement', label: '나라장터/조달', isExternal: true, href: 'https://shop.g2b.go.kr/' },
   { id: 'products', label: '주요제품', isExternal: false, hasMegaMenu: true },
-  { id: 'contact', label: '견적/문의', isExternal: false, isInquiryLink: true },
+  { id: 'delivery-cases', label: '납품사례', isExternal: false, isDeliveryCasesLink: true },
 ];
 
 export const Navbar = () => {
@@ -179,11 +179,11 @@ export const Navbar = () => {
               );
             }
 
-            if (item.isInquiryLink) {
+            if (item.isDeliveryCasesLink) {
               return (
                 <Link 
                   key={item.id}
-                  to="/inquiry"
+                  to="/delivery-cases"
                   className={cn(
                     "text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none"
                   )}
@@ -314,11 +314,11 @@ export const Navbar = () => {
                 );
               }
 
-              if (item.isInquiryLink) {
+              if (item.isDeliveryCasesLink) {
                 return (
                   <Link 
                     key={item.id}
-                    to="/inquiry"
+                    to="/delivery-cases"
                     onClick={() => setMobileMenuOpen(false)}
                     className="block w-full text-left text-foreground/70 hover:text-primary hover:bg-muted transition-colors py-4 px-3 rounded-lg text-base font-medium"
                   >

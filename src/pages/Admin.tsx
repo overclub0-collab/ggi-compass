@@ -17,7 +17,8 @@ import {
   Menu,
   Package,
   Search,
-  MessageSquare
+  MessageSquare,
+  Building2
 } from 'lucide-react';
 import {
   Dialog,
@@ -38,6 +39,7 @@ import CategoryTree from '@/components/admin/CategoryTree';
 import ProductForm from '@/components/admin/ProductForm';
 import DraggableProductCard from '@/components/admin/DraggableProductCard';
 import { AdminInquiryList } from '@/components/admin/AdminInquiryList';
+import AdminDeliveryCaseList from '@/components/admin/AdminDeliveryCaseList';
 import type { User } from '@supabase/supabase-js';
 
 interface Product {
@@ -103,7 +105,7 @@ const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'products' | 'inquiries'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'inquiries' | 'delivery-cases'>('products');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -605,19 +607,27 @@ const Admin = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-4 pb-3 flex gap-1">
+        <div className="px-4 pb-3 flex gap-1 overflow-x-auto">
           <Button
             variant={activeTab === 'products' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('products')}
-            className="min-h-[40px]"
+            className="min-h-[40px] flex-shrink-0"
           >
             <Package className="h-4 w-4 mr-2" />
             제품 관리
           </Button>
           <Button
+            variant={activeTab === 'delivery-cases' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('delivery-cases')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <Building2 className="h-4 w-4 mr-2" />
+            납품사례
+          </Button>
+          <Button
             variant={activeTab === 'inquiries' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('inquiries')}
-            className="min-h-[40px]"
+            className="min-h-[40px] flex-shrink-0"
           >
             <MessageSquare className="h-4 w-4 mr-2" />
             문의 관리
@@ -755,8 +765,14 @@ const Admin = () => {
                 )}
               </div>
             </div>
+          ) : activeTab === 'delivery-cases' ? (
+            <div className="p-4 sm:p-6">
+              <AdminDeliveryCaseList />
+            </div>
           ) : (
-            <AdminInquiryList />
+            <div className="p-4 sm:p-6">
+              <AdminInquiryList />
+            </div>
           )}
         </main>
       </div>

@@ -61,6 +61,45 @@ export type Database = {
           },
         ]
       }
+      delivery_cases: {
+        Row: {
+          client_name: string
+          created_at: string
+          display_order: number | null
+          id: string
+          identifier: string | null
+          images: string[] | null
+          is_active: boolean | null
+          model_name: string | null
+          product_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_name: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          identifier?: string | null
+          images?: string[] | null
+          is_active?: boolean | null
+          model_name?: string | null
+          product_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          identifier?: string | null
+          images?: string[] | null
+          is_active?: boolean | null
+          model_name?: string | null
+          product_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inquiries: {
         Row: {
           admin_reply: string | null
