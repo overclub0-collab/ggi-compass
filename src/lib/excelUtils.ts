@@ -1,4 +1,5 @@
 import { parseCSV, downloadCSV, validateFileSize, validateProduct, parseSpecs, MAX_CSV_ROWS } from './csvUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ProductExportData {
   슬러그: string;
@@ -35,7 +36,75 @@ export interface ProductImportData {
 }
 
 /**
- * Parse CSV file and convert to product data
+ * Generate a random 4-character alphanumeric string
+ */
+const generateRandomSuffix = (): string => {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 4; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+/**
+ * Create a URL-safe slug from Korean text
+ */
+const createSlugFromTitle = (title: string): string => {
+  return title
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\uAC00-\uD7A3-]/g, '') // Keep alphanumeric, Korean, and hyphens
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 80);
+};
+
+/**
+ * Fetch all existing slugs from the database
+ */
+const fetchExistingSlugs = async (): Promise<Set<string>> => {
+  const { data, error } = await supabase
+    .from('products')
+    .select('slug');
+  
+  if (error) {
+    console.error('Error fetching existing slugs:', error);
+    return new Set();
+  }
+  
+  return new Set((data || []).map(p => p.slug));
+};
+
+/**
+ * Generate a unique slug by appending random suffix if needed
+ */
+const generateUniqueSlug = (
+  baseSlug: string, 
+  existingSlugs: Set<string>, 
+  batchSlugs: Set<string>
+): string => {
+  let slug = baseSlug;
+  let attempts = 0;
+  const maxAttempts = 10;
+  
+  // Check if slug already exists in DB or current batch
+  while ((existingSlugs.has(slug) || batchSlugs.has(slug)) && attempts < maxAttempts) {
+    const suffix = generateRandomSuffix();
+    slug = `${baseSlug}-${suffix}`.substring(0, 100);
+    attempts++;
+  }
+  
+  // If still not unique after max attempts, add timestamp
+  if (existingSlugs.has(slug) || batchSlugs.has(slug)) {
+    slug = `${baseSlug}-${Date.now()}`.substring(0, 100);
+  }
+  
+  return slug;
+};
+
+/**
+ * Parse CSV file and convert to product data with unique slugs
  */
 export const parseProductCSV = async (file: File): Promise<{
   products: ProductImportData[];
@@ -52,6 +121,10 @@ export const parseProductCSV = async (file: File): Promise<{
   if (jsonData.length === 0) {
     throw new Error('CSV 파일에 데이터가 없습니다.');
   }
+
+  // Fetch existing slugs from database
+  const existingSlugs = await fetchExistingSlugs();
+  const batchSlugs = new Set<string>(); // Track slugs within this batch
 
   const products: ProductImportData[] = [];
   const errors: string[] = [];
@@ -71,9 +144,24 @@ export const parseProductCSV = async (file: File): Promise<{
       }
     });
 
+    const title = (row['품명'] || row['제품명'] || row['title'] || '').substring(0, 200);
+    
+    // Generate base slug from CSV or title
+    let baseSlug = (row['슬러그'] || row['slug'] || '').trim();
+    if (!baseSlug && title) {
+      baseSlug = createSlugFromTitle(title);
+    }
+    if (!baseSlug) {
+      baseSlug = `product-${Date.now()}-${index}`;
+    }
+    
+    // Generate unique slug
+    const uniqueSlug = generateUniqueSlug(baseSlug, existingSlugs, batchSlugs);
+    batchSlugs.add(uniqueSlug); // Track this slug for the current batch
+
     const productData: ProductImportData = {
-      slug: (row['슬러그'] || row['slug'] || `product-${Date.now()}-${index}`).substring(0, 100),
-      title: (row['품명'] || row['제품명'] || row['title'] || '').substring(0, 200),
+      slug: uniqueSlug,
+      title,
       description: (row['제품설명'] || row['설명'] || row['description'] || null)?.substring(0, 5000) || null,
       image_url: images[0] || null,
       images,
