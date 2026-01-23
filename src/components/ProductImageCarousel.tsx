@@ -21,7 +21,7 @@ export const ProductImageCarousel = ({ images, productTitle }: ProductImageCarou
   const displayImages = validImages.length > 0 ? validImages : ['/placeholder.svg'];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-[800px] mx-auto">
       {/* Main Image Carousel */}
       <Carousel 
         className="w-full"
@@ -30,11 +30,11 @@ export const ProductImageCarousel = ({ images, productTitle }: ProductImageCarou
         <CarouselContent>
           {displayImages.map((image, index) => (
             <CarouselItem key={index}>
-              <div className="rounded-2xl overflow-hidden bg-white shadow-xl aspect-[4/3] flex items-center justify-center p-4">
+              <div className="rounded-2xl overflow-hidden bg-white shadow-xl aspect-[4/3] flex items-center justify-center p-4 md:p-6">
                 <img
                   src={image}
                   alt={`${productTitle} - 이미지 ${index + 1}`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-auto max-h-[500px] object-contain"
                   onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
                 />
               </div>
