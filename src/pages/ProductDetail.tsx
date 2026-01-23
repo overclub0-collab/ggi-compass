@@ -189,11 +189,11 @@ const ProductDetail = () => {
             {detailImages.length > 0 && (
               <div className="space-y-6">
                 <h2 className="text-xl md:text-2xl font-bold text-primary">상세 이미지</h2>
-                <div className="grid gap-6">
+                <div className="flex flex-col items-center gap-8">
                   {detailImages.map((image, index) => (
                     <div 
                       key={index} 
-                      className="rounded-2xl overflow-hidden bg-white shadow-lg"
+                      className="w-full max-w-[800px] rounded-2xl overflow-hidden bg-white shadow-lg p-4 mx-auto"
                     >
                       <img
                         src={image}
