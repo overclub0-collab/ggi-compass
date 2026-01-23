@@ -35,6 +35,11 @@ import {
 } from '@/components/ui/sheet';
 import { getErrorMessage, logError } from '@/lib/errorUtils';
 import { parseProductCSV, exportProductsToCSV, downloadProductTemplate } from '@/lib/excelUtils';
+import {
+  fetchAllExistingProductSlugs,
+  generateUniqueSlug,
+  stripRandomSuffix,
+} from '@/lib/productSlugUtils';
 import CategoryTree from '@/components/admin/CategoryTree';
 import ProductForm from '@/components/admin/ProductForm';
 import DraggableProductCard from '@/components/admin/DraggableProductCard';
@@ -503,23 +508,83 @@ const Admin = () => {
     setIsUploading(true);
 
     try {
-      const { products: parsedProducts, errors } = await parseProductCSV(file);
+      // Important: queries can default to 1000-row limits, so we page through all slugs.
+      const existingSlugs = await fetchAllExistingProductSlugs();
+
+      const { products: parsedProducts, errors } = await parseProductCSV(file, { existingSlugs });
 
       if (parsedProducts.length === 0) {
         throw new Error('업로드할 유효한 제품이 없습니다.');
       }
 
-      const { error } = await supabase
-        .from('products')
-        .insert(parsedProducts);
+      const isSlugConflictError = (err: any) => {
+        return (
+          err?.code === '23505' &&
+          (String(err?.message || '').includes('products_slug_key') ||
+            String(err?.details || '').includes('products_slug_key'))
+        );
+      };
 
-      if (error) throw error;
+      const extraErrors: string[] = [];
+      const newlyGeneratedSlugs = new Set<string>();
 
-      let successMessage = `${parsedProducts.length}개의 제품이 업로드되었습니다.`;
-      if (errors.length > 0) {
-        successMessage += ` (${errors.length}개 오류 건너뜀)`;
+      const insertChunkWithRetry = async (chunk: any[]): Promise<number> => {
+        const { error } = await supabase.from('products').insert(chunk);
+        if (!error) {
+          for (const p of chunk) existingSlugs.add(p.slug);
+          return chunk.length;
+        }
+
+        // If it's not a slug conflict, fail fast.
+        if (!isSlugConflictError(error)) throw error;
+
+        // Fallback: insert row-by-row, regenerating slugs on conflict.
+        let inserted = 0;
+        for (const original of chunk) {
+          let product = original;
+          let attempts = 0;
+
+          while (attempts < 8) {
+            const { error: rowError } = await supabase.from('products').insert([product]);
+            if (!rowError) {
+              inserted++;
+              existingSlugs.add(product.slug);
+              newlyGeneratedSlugs.add(product.slug);
+              break;
+            }
+
+            if (isSlugConflictError(rowError)) {
+              const base = stripRandomSuffix(product.slug) || product.slug;
+              const nextSlug = generateUniqueSlug(base, existingSlugs, newlyGeneratedSlugs);
+              product = { ...product, slug: nextSlug };
+              attempts++;
+              continue;
+            }
+
+            throw rowError;
+          }
+
+          if (attempts >= 8) {
+            extraErrors.push(`슬러그 중복으로 업로드 실패: ${original?.title || original?.slug}`);
+          }
+        }
+
+        return inserted;
+      };
+
+      // Insert in chunks to reduce the blast radius of a single conflict.
+      const chunkSize = 200;
+      let insertedCount = 0;
+      for (let i = 0; i < parsedProducts.length; i += chunkSize) {
+        const chunk = parsedProducts.slice(i, i + chunkSize);
+        insertedCount += await insertChunkWithRetry(chunk);
       }
+
+      let successMessage = `${insertedCount}개의 제품이 업로드되었습니다.`;
+      const skipped = errors.length + extraErrors.length;
+      if (skipped > 0) successMessage += ` (${skipped}개 오류/건너뜀)`;
       toast.success(successMessage);
+
       fetchProducts();
     } catch (error: any) {
       logError('CSV upload', error);
