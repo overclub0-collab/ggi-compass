@@ -20,6 +20,19 @@ interface InquiryRequest {
 const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_REQUESTS_PER_WINDOW = 3;
 
+// HTML escape function to prevent XSS/HTML injection
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '/': '&#x2F;',
+  };
+  return text.replace(/[&<>"'\/]/g, (char) => map[char]);
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -148,15 +161,22 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Inquiry created successfully: ${inquiry.id}`);
 
-    // Send email notification to admin
+    // Send email notification to admin with HTML-escaped content
     if (resendApiKey) {
       try {
         const resend = new Resend(resendApiKey);
         
+        // Escape all user-provided content to prevent HTML injection
+        const safeName = escapeHtml(body.name);
+        const safePhone = escapeHtml(body.phone);
+        const safeEmail = escapeHtml(body.email);
+        const safeTitle = escapeHtml(body.title);
+        const safeContent = escapeHtml(body.content);
+        
         await resend.emails.send({
           from: "GGI 문의알림 <onboarding@resend.dev>",
           to: ["ggigagu@naver.com"],
-          subject: `[GGI 새 문의] ${body.title}`,
+          subject: `[GGI 새 문의] ${safeTitle}`,
           html: `
             <div style="font-family: 'Pretendard', -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: #0066cc; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -166,24 +186,24 @@ const handler = async (req: Request): Promise<Response> => {
                 <table style="width: 100%; border-collapse: collapse;">
                   <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold; width: 100px;">작성자</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${body.name}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${safeName}</td>
                   </tr>
                   <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">연락처</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${body.phone}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${safePhone}</td>
                   </tr>
                   <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">이메일</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${body.email}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${safeEmail}</td>
                   </tr>
                   <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">제목</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${body.title}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${safeTitle}</td>
                   </tr>
                 </table>
                 <div style="margin-top: 20px;">
                   <p style="font-weight: bold; margin-bottom: 10px;">문의 내용:</p>
-                  <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #eee; white-space: pre-wrap;">${body.content}</div>
+                  <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #eee; white-space: pre-wrap;">${safeContent}</div>
                 </div>
                 <p style="margin-top: 20px; color: #666; font-size: 12px;">
                   접수 시간: ${new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}
