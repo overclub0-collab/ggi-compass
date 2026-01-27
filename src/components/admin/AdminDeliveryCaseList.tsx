@@ -16,6 +16,7 @@ interface DeliveryCase {
   model_name: string | null;
   identifier: string | null;
   images: string[];
+  thumbnail_index: number;
   is_active: boolean;
   display_order: number;
   created_at: string;
@@ -27,6 +28,7 @@ const initialFormData = {
   model_name: '',
   identifier: '',
   images: [] as string[],
+  thumbnail_index: 0,
 };
 
 const AdminDeliveryCaseList = () => {
@@ -71,6 +73,7 @@ const AdminDeliveryCaseList = () => {
       model_name: caseItem.model_name || '',
       identifier: caseItem.identifier || '',
       images: caseItem.images || [],
+      thumbnail_index: caseItem.thumbnail_index || 0,
     });
     setDialogOpen(true);
   };
@@ -99,12 +102,18 @@ const AdminDeliveryCaseList = () => {
 
     setSaving(true);
 
+    // Ensure thumbnail_index is within bounds
+    const validThumbnailIndex = formData.images.length > 0 
+      ? Math.min(formData.thumbnail_index, formData.images.length - 1) 
+      : 0;
+
     const payload = {
       client_name: formData.client_name.trim(),
       product_name: formData.product_name.trim() || null,
       model_name: formData.model_name.trim() || null,
       identifier: formData.identifier.trim() || null,
       images: formData.images,
+      thumbnail_index: validThumbnailIndex,
     };
 
     try {
@@ -312,14 +321,55 @@ const AdminDeliveryCaseList = () => {
               />
             </div>
 
-            {/* Images */}
+            {/* Images with Thumbnail Selection */}
             <div className="space-y-2">
               <Label>사진 업로드</Label>
               <DeliveryCaseImageDropzone
                 images={formData.images}
-                onChange={(images) => setFormData(prev => ({ ...prev, images }))}
+                onChange={(images) => {
+                  // Reset thumbnail_index if it's out of bounds
+                  const newThumbnailIndex = formData.thumbnail_index >= images.length ? 0 : formData.thumbnail_index;
+                  setFormData(prev => ({ ...prev, images, thumbnail_index: newThumbnailIndex }));
+                }}
                 maxImages={20}
               />
+              
+              {/* Thumbnail Selection */}
+              {formData.images.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <Label className="text-sm font-medium">대표 이미지 선택</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    리스트에 표시될 대표 이미지를 선택하세요
+                  </p>
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                    {formData.images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, thumbnail_index: idx }))}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                          formData.thumbnail_index === idx 
+                            ? 'border-primary ring-2 ring-primary/30' 
+                            : 'border-transparent hover:border-muted-foreground/30'
+                        }`}
+                      >
+                        <img
+                          src={img}
+                          alt={`썸네일 옵션 ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {formData.thumbnail_index === idx && (
+                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                            <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium">
+                              대표
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
