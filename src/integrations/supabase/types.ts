@@ -258,7 +258,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      delivery_cases_public: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string | null
+          images: string[] | null
+          is_active: boolean | null
+          model_name: string | null
+          product_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string | null
+          images?: string[] | null
+          is_active?: boolean | null
+          model_name?: string | null
+          product_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string | null
+          images?: string[] | null
+          is_active?: boolean | null
+          model_name?: string | null
+          product_name?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
