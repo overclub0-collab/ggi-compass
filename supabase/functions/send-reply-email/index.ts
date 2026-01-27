@@ -14,6 +14,19 @@ interface ReplyEmailRequest {
   adminReply: string;
 }
 
+// HTML escape function to prevent XSS/HTML injection
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '/': '&#x2F;',
+  };
+  return text.replace(/[&<>"'\/]/g, (char) => map[char]);
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -49,6 +62,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const resend = new Resend(resendApiKey);
     
+    // Escape all user-provided content to prevent HTML injection
+    const safeCustomerName = escapeHtml(body.customerName || '고객');
+    const safeInquiryTitle = escapeHtml(body.inquiryTitle);
+    const safeInquiryContent = escapeHtml(body.inquiryContent || '');
+    const safeAdminReply = escapeHtml(body.adminReply);
+    
     const emailHtml = `
       <div style="font-family: 'Pretendard', -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: #0066cc; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -56,7 +75,7 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
         <div style="background: #f9f9f9; padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px;">
           <p style="margin: 0 0 20px 0; color: #333;">
-            안녕하세요, <strong>${body.customerName || '고객'}</strong>님.
+            안녕하세요, <strong>${safeCustomerName}</strong>님.
           </p>
           <p style="margin: 0 0 20px 0; color: #666;">
             문의하신 내용에 대한 답변을 드립니다.
@@ -64,19 +83,19 @@ const handler = async (req: Request): Promise<Response> => {
           
           <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 20px;">
             <p style="font-weight: bold; color: #333; margin: 0 0 10px 0; font-size: 14px;">📋 문의 제목</p>
-            <p style="color: #666; margin: 0; font-size: 14px;">${body.inquiryTitle}</p>
+            <p style="color: #666; margin: 0; font-size: 14px;">${safeInquiryTitle}</p>
           </div>
           
-          ${body.inquiryContent ? `
+          ${safeInquiryContent ? `
           <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 20px;">
             <p style="font-weight: bold; color: #333; margin: 0 0 10px 0; font-size: 14px;">📝 문의 내용</p>
-            <p style="color: #666; margin: 0; font-size: 14px; white-space: pre-wrap;">${body.inquiryContent}</p>
+            <p style="color: #666; margin: 0; font-size: 14px; white-space: pre-wrap;">${safeInquiryContent}</p>
           </div>
           ` : ''}
           
           <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b3d9f7; margin-bottom: 20px;">
             <p style="font-weight: bold; color: #0066cc; margin: 0 0 10px 0; font-size: 14px;">💬 답변 내용</p>
-            <p style="color: #333; margin: 0; font-size: 14px; white-space: pre-wrap;">${body.adminReply}</p>
+            <p style="color: #333; margin: 0; font-size: 14px; white-space: pre-wrap;">${safeAdminReply}</p>
           </div>
           
           <p style="color: #666; font-size: 14px; margin: 20px 0 0 0;">
@@ -99,7 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
       from: "GGI 가구 <onboarding@resend.dev>",
       to: [body.customerEmail],
       reply_to: "ggigagu@naver.com",
-      subject: `[GGI] 문의 답변: ${body.inquiryTitle}`,
+      subject: `[GGI] 문의 답변: ${safeInquiryTitle}`,
       html: emailHtml,
     });
 
