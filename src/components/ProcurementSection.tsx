@@ -1,21 +1,20 @@
 import { CheckCircle, ArrowRight, Quote, Award, Building2 } from 'lucide-react';
-
-const benefits = [
-  '공공기관 여성기업 제품 의무구매 목표제(물품 5%) 적용',
-  '최대 5천만 원(부가세 포함) 이하 1인 수의계약 가능',
-  '조달청 물품 구매 적격심사 가점 부여 대상',
-];
-
-const processSteps = [
-  { step: '01', title: '제품 선정 및 식별번호 확인' },
-  { step: '02', title: '나라장터/S2B 주문 및 계약' },
-  { step: '03', title: '전문 설치팀 현장 배송 및 조립' },
-  { step: '04', title: '검수 완료 및 신속한 사후 관리' },
-];
-
+const benefits = ['공공기관 여성기업 제품 의무구매 목표제(물품 5%) 적용', '최대 5천만 원(부가세 포함) 이하 1인 수의계약 가능', '조달청 물품 구매 적격심사 가점 부여 대상'];
+const processSteps = [{
+  step: '01',
+  title: '제품 선정 및 식별번호 확인'
+}, {
+  step: '02',
+  title: '나라장터/S2B 주문 및 계약'
+}, {
+  step: '03',
+  title: '전문 설치팀 현장 배송 및 조립'
+}, {
+  step: '04',
+  title: '검수 완료 및 신속한 사후 관리'
+}];
 export const ProcurementSection = () => {
-  return (
-    <section id="procurement" className="py-16 sm:py-20 md:py-24 bg-secondary overflow-hidden">
+  return <section id="procurement" className="py-16 sm:py-20 md:py-24 bg-secondary overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* CEO 인사말 섹션 */}
         <div className="mb-12 sm:mb-16 md:mb-20">
@@ -81,7 +80,7 @@ export const ProcurementSection = () => {
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-accent rounded-full flex-shrink-0"></span>
-                    교육용 가구 (책상, 의자, 칠판, 사물함)
+                    교육용 가구 (책상, 의자, 칠판보조장, 사물함)
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-accent rounded-full flex-shrink-0"></span>
@@ -132,12 +131,10 @@ export const ProcurementSection = () => {
                 여성기업 우대 제도
               </h3>
               <ul className="space-y-3 sm:space-y-4">
-                {benefits.map((benefit, index) => (
-                  <li key={index} className="flex items-start gap-3 text-sm">
+                {benefits.map((benefit, index) => <li key={index} className="flex items-start gap-3 text-sm">
                     <CheckCircle className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
                     <span className="text-primary-foreground/90">{benefit}</span>
-                  </li>
-                ))}
+                  </li>)}
               </ul>
             </div>
 
@@ -148,18 +145,15 @@ export const ProcurementSection = () => {
                 계약 프로세스 안내
               </h3>
               <div className="space-y-3 sm:space-y-4">
-                {processSteps.map((item, index) => (
-                  <div key={index} className="flex items-center gap-3 sm:gap-4 group">
+                {processSteps.map((item, index) => <div key={index} className="flex items-center gap-3 sm:gap-4 group">
                     <span className="text-xl sm:text-2xl font-black text-accent">{item.step}</span>
                     <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform flex-shrink-0" />
                     <span className="text-sm font-medium text-foreground">{item.title}</span>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
