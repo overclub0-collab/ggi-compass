@@ -12,6 +12,7 @@ interface DeliveryCase {
   model_name: string | null;
   identifier: string | null;
   images: string[];
+  thumbnail_index: number;
   created_at: string;
 }
 
@@ -27,7 +28,6 @@ const DeliveryCases = () => {
 
   const fetchCases = async () => {
     setLoading(true);
-    // Use the public view that excludes sensitive client information
     const { data, error } = await supabase
       .from('delivery_cases_public' as any)
       .select('*')
@@ -35,10 +35,9 @@ const DeliveryCases = () => {
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      // Map to DeliveryCase interface, client_name is now hidden from public
       setCases(data.map((item: any) => ({
         ...item,
-        client_name: item.product_name || '납품 사례', // Use product_name as display or generic label
+        client_name: item.client_name || '납품 사례',
       })));
     }
     setLoading(false);
@@ -102,14 +101,14 @@ const DeliveryCases = () => {
                   key={caseItem.id}
                   className="bg-card rounded-xl overflow-hidden shadow-sm border border-border hover:shadow-lg transition-all duration-300 group"
                 >
-                  {/* Image Gallery Preview */}
+                  {/* Image Gallery Preview - Use thumbnail_index for representative image */}
                   {caseItem.images.length > 0 ? (
                     <div 
                       className="aspect-[4/3] relative overflow-hidden cursor-pointer"
-                      onClick={() => openGallery(caseItem, caseItem.images[0])}
+                      onClick={() => openGallery(caseItem, caseItem.images[caseItem.thumbnail_index] || caseItem.images[0])}
                     >
                       <img
-                        src={caseItem.images[0]}
+                        src={caseItem.images[caseItem.thumbnail_index] || caseItem.images[0]}
                         alt={caseItem.client_name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
@@ -127,13 +126,13 @@ const DeliveryCases = () => {
 
                   {/* Content */}
                   <div className="p-5 space-y-3">
-                    {/* Client Name - Emphasized */}
-                    <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    {/* Client Name - Primary emphasis with bold styling */}
+                    <h3 className="text-xl font-extrabold text-primary flex items-center gap-2">
                       <Building2 className="h-5 w-5 text-primary" />
                       {caseItem.client_name}
                     </h3>
 
-                    {/* Meta Info */}
+                    {/* Meta Info - Secondary styling */}
                     <div className="space-y-2 text-sm text-muted-foreground">
                       {caseItem.product_name && (
                         <div className="flex items-center gap-2">
@@ -145,12 +144,6 @@ const DeliveryCases = () => {
                         <div className="flex items-center gap-2">
                           <Tag className="h-4 w-4" />
                           <span>{caseItem.model_name}</span>
-                        </div>
-                      )}
-                      {caseItem.identifier && (
-                        <div className="flex items-center gap-2">
-                          <Hash className="h-4 w-4" />
-                          <span>{caseItem.identifier}</span>
                         </div>
                       )}
                     </div>
