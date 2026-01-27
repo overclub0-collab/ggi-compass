@@ -27,15 +27,19 @@ const DeliveryCases = () => {
 
   const fetchCases = async () => {
     setLoading(true);
+    // Use the public view that excludes sensitive client information
     const { data, error } = await supabase
-      .from('delivery_cases')
+      .from('delivery_cases_public' as any)
       .select('*')
-      .eq('is_active', true)
       .order('display_order', { ascending: true })
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      setCases(data);
+      // Map to DeliveryCase interface, client_name is now hidden from public
+      setCases(data.map((item: any) => ({
+        ...item,
+        client_name: item.product_name || '납품 사례', // Use product_name as display or generic label
+      })));
     }
     setLoading(false);
   };
