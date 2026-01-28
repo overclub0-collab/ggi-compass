@@ -18,7 +18,8 @@ import {
   Package,
   Search,
   MessageSquare,
-  Building2
+  Building2,
+  Users
 } from 'lucide-react';
 import {
   Dialog,
@@ -45,6 +46,7 @@ import ProductForm from '@/components/admin/ProductForm';
 import DraggableProductCard from '@/components/admin/DraggableProductCard';
 import { AdminInquiryList } from '@/components/admin/AdminInquiryList';
 import AdminDeliveryCaseList from '@/components/admin/AdminDeliveryCaseList';
+import AdminUserRoleManager from '@/components/admin/AdminUserRoleManager';
 import type { User } from '@supabase/supabase-js';
 
 interface Product {
@@ -110,7 +112,7 @@ const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'products' | 'inquiries' | 'delivery-cases'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'inquiries' | 'delivery-cases' | 'users'>('products');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -697,6 +699,14 @@ const Admin = () => {
             <MessageSquare className="h-4 w-4 mr-2" />
             문의 관리
           </Button>
+          <Button
+            variant={activeTab === 'users' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('users')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <Users className="h-4 w-4 mr-2" />
+            사용자 관리
+          </Button>
         </div>
       </header>
 
@@ -834,9 +844,14 @@ const Admin = () => {
             <div className="p-4 sm:p-6">
               <AdminDeliveryCaseList />
             </div>
-          ) : (
+          ) : activeTab === 'inquiries' ? (
             <div className="p-4 sm:p-6">
               <AdminInquiryList />
+            </div>
+          ) : (
+            <div className="p-4 sm:p-6">
+              <h2 className="text-xl font-bold mb-6">사용자 역할 관리</h2>
+              <AdminUserRoleManager />
             </div>
           )}
         </main>
