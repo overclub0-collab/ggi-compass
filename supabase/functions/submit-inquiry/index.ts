@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -132,7 +133,11 @@ const handler = async (req: Request): Promise<Response> => {
       ip_address: clientIP,
     });
 
-    // Insert inquiry
+    // Hash the password before storing
+    const hashedPassword = await bcrypt.hash(body.password);
+    console.log("Password hashed successfully");
+
+    // Insert inquiry with hashed password
     const { data: inquiry, error: insertError } = await supabase
       .from("inquiries")
       .insert({
@@ -141,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
         email: body.email.trim().substring(0, 255),
         title: body.title.trim().substring(0, 200),
         content: body.content.trim().substring(0, 5000),
-        password: body.password,
+        password: hashedPassword,
         ip_address: clientIP,
         privacy_agreed: body.privacyAgreed,
       })
