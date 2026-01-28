@@ -27,7 +27,32 @@ export const Navbar = () => {
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const location = useLocation();
+
+  // Minimum swipe distance (in px) to trigger close
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchEnd - touchStart;
+    const isRightSwipe = distance > minSwipeDistance;
+    if (isRightSwipe) {
+      setMobileMenuOpen(false);
+    }
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
   const isHomePage = location.pathname === '/';
 
   useEffect(() => {
@@ -237,6 +262,9 @@ export const Navbar = () => {
           {/* Mobile Menu Panel */}
           <div 
             className="md:hidden fixed inset-y-0 right-0 top-16 sm:top-20 w-full max-w-sm bg-white z-50 shadow-xl overflow-hidden animate-in slide-in-from-right duration-300"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             <div className="h-full overflow-y-auto overscroll-contain pb-safe">
               <div className="px-4 sm:px-6 py-4 space-y-1">
