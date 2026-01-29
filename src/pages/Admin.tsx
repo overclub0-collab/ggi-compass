@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,7 @@ import {
   Plus, 
   Save, 
   X, 
-  FileSpreadsheet,
   Download,
-  Upload,
   Menu,
   Package,
   Search,
@@ -35,18 +33,14 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { getErrorMessage, logError } from '@/lib/errorUtils';
-import { parseProductCSV, exportProductsToCSV, downloadProductTemplate } from '@/lib/excelUtils';
-import {
-  fetchAllExistingProductSlugs,
-  generateUniqueSlug,
-  stripRandomSuffix,
-} from '@/lib/productSlugUtils';
+import { exportProductsToCSV } from '@/lib/excelUtils';
 import CategoryTree from '@/components/admin/CategoryTree';
 import ProductForm from '@/components/admin/ProductForm';
 import DraggableProductCard from '@/components/admin/DraggableProductCard';
 import { AdminInquiryList } from '@/components/admin/AdminInquiryList';
 import AdminDeliveryCaseList from '@/components/admin/AdminDeliveryCaseList';
 import AdminUserRoleManager from '@/components/admin/AdminUserRoleManager';
+import ProductBulkUpload from '@/components/admin/ProductBulkUpload';
 import type { User } from '@supabase/supabase-js';
 
 interface Product {
@@ -107,14 +101,12 @@ const Admin = () => {
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'products' | 'inquiries' | 'delivery-cases' | 'users'>('products');
   
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState(initialFormData);
@@ -503,102 +495,6 @@ const Admin = () => {
     }
   };
 
-  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-
-    try {
-      // Important: queries can default to 1000-row limits, so we page through all slugs.
-      const existingSlugs = await fetchAllExistingProductSlugs();
-
-      const { products: parsedProducts, errors } = await parseProductCSV(file, { existingSlugs });
-
-      if (parsedProducts.length === 0) {
-        throw new Error('업로드할 유효한 제품이 없습니다.');
-      }
-
-      const isSlugConflictError = (err: any) => {
-        return (
-          err?.code === '23505' &&
-          (String(err?.message || '').includes('products_slug_key') ||
-            String(err?.details || '').includes('products_slug_key'))
-        );
-      };
-
-      const extraErrors: string[] = [];
-      const newlyGeneratedSlugs = new Set<string>();
-
-      const insertChunkWithRetry = async (chunk: any[]): Promise<number> => {
-        const { error } = await supabase.from('products').insert(chunk);
-        if (!error) {
-          for (const p of chunk) existingSlugs.add(p.slug);
-          return chunk.length;
-        }
-
-        // If it's not a slug conflict, fail fast.
-        if (!isSlugConflictError(error)) throw error;
-
-        // Fallback: insert row-by-row, regenerating slugs on conflict.
-        let inserted = 0;
-        for (const original of chunk) {
-          let product = original;
-          let attempts = 0;
-
-          while (attempts < 8) {
-            const { error: rowError } = await supabase.from('products').insert([product]);
-            if (!rowError) {
-              inserted++;
-              existingSlugs.add(product.slug);
-              newlyGeneratedSlugs.add(product.slug);
-              break;
-            }
-
-            if (isSlugConflictError(rowError)) {
-              const base = stripRandomSuffix(product.slug) || product.slug;
-              const nextSlug = generateUniqueSlug(base, existingSlugs, newlyGeneratedSlugs);
-              product = { ...product, slug: nextSlug };
-              attempts++;
-              continue;
-            }
-
-            throw rowError;
-          }
-
-          if (attempts >= 8) {
-            extraErrors.push(`슬러그 중복으로 업로드 실패: ${original?.title || original?.slug}`);
-          }
-        }
-
-        return inserted;
-      };
-
-      // Insert in chunks to reduce the blast radius of a single conflict.
-      const chunkSize = 200;
-      let insertedCount = 0;
-      for (let i = 0; i < parsedProducts.length; i += chunkSize) {
-        const chunk = parsedProducts.slice(i, i + chunkSize);
-        insertedCount += await insertChunkWithRetry(chunk);
-      }
-
-      let successMessage = `${insertedCount}개의 제품이 업로드되었습니다.`;
-      const skipped = errors.length + extraErrors.length;
-      if (skipped > 0) successMessage += ` (${skipped}개 오류/건너뜀)`;
-      toast.success(successMessage);
-
-      fetchProducts();
-    } catch (error: any) {
-      logError('CSV upload', error);
-      toast.error(error.message || getErrorMessage(error));
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
   const handleExportProducts = () => {
     const dataToExport = filteredProducts.length > 0 ? filteredProducts : products;
     const filename = selectedCategory 
@@ -755,27 +651,8 @@ const Admin = () => {
                     <span className="sm:hidden">추가</span>
                   </Button>
 
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv"
-                    onChange={handleCSVUpload}
-                    className="hidden"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="min-h-[44px]"
-                  >
-                    <Upload className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">{isUploading ? '업로드 중...' : 'CSV 업로드'}</span>
-                  </Button>
-                  
-                  <Button variant="outline" onClick={downloadProductTemplate} className="min-h-[44px]">
-                    <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">템플릿</span>
-                  </Button>
+                  {/* Bulk Upload Component */}
+                  <ProductBulkUpload onComplete={fetchProducts} />
                   
                   <Button variant="outline" onClick={handleExportProducts} className="min-h-[44px]">
                     <Download className="h-4 w-4 sm:mr-2" />
