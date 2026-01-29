@@ -13,8 +13,9 @@ interface LookupRequest {
 }
 
 // Rate limiting configuration for lookup attempts
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const MAX_LOOKUP_ATTEMPTS = 5; // 5 attempts per hour per IP
+// Stricter limits to prevent password guessing attacks
+const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_LOOKUP_ATTEMPTS = 3; // 3 attempts per 24 hours per IP
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
