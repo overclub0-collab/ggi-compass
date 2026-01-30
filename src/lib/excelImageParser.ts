@@ -23,6 +23,13 @@ export interface ExcelImageData {
   anchorCol: number;
 }
 
+type ExcelImageRange =
+  | string
+  | {
+      tl?: { row?: number; col?: number; nativeRow?: number; nativeCol?: number };
+      br?: { row?: number; col?: number; nativeRow?: number; nativeCol?: number };
+    };
+
 export interface ParsedExcelResult {
   rows: ExcelRowData[];
   errors: string[];
@@ -52,6 +59,94 @@ const validateImage = (image: ExcelImageData, rowNum: number): string | null => 
   return null;
 };
 
+const columnLettersToNumber = (letters: string) => {
+  // A -> 1, B -> 2, ... Z -> 26, AA -> 27
+  let sum = 0;
+  for (const ch of letters.toUpperCase()) {
+    const code = ch.charCodeAt(0);
+    if (code < 65 || code > 90) continue;
+    sum = sum * 26 + (code - 64);
+  }
+  return sum;
+};
+
+const parseA1 = (a1: string): { row: number; col: number } | null => {
+  const m = String(a1).trim().toUpperCase().match(/^([A-Z]+)(\d+)$/);
+  if (!m) return null;
+  const col = columnLettersToNumber(m[1]);
+  const row = Number(m[2]);
+  if (!Number.isFinite(row) || row <= 0 || col <= 0) return null;
+  return { row, col };
+};
+
+/**
+ * ExcelJS range formats vary by Excel version and image type.
+ * - Can be an object with tl/br (0-based)
+ * - Can be an A1 string like "G2" or "G2:H6"
+ * This normalizes to 1-based row/col and clamps into the worksheet bounds.
+ */
+const getAnchorRowCol = (
+  range: ExcelImageRange,
+  worksheetRowCount: number
+): { row: number; col: number } | null => {
+  try {
+    if (!range) return null;
+
+    if (typeof range === 'string') {
+      const first = range.split(':')[0];
+      const pos = parseA1(first);
+      if (!pos) return null;
+      const row = Math.max(2, Math.min(pos.row, Math.max(2, worksheetRowCount || pos.row)));
+      const col = Math.max(1, pos.col);
+      return { row, col };
+    }
+
+    const tl = range.tl;
+    if (!tl) return null;
+
+    // ExcelJS typically stores 0-based row/col for anchors.
+    const rawRow = (tl.nativeRow ?? tl.row);
+    const rawCol = (tl.nativeCol ?? tl.col);
+    if (rawRow === undefined || rawCol === undefined) return null;
+
+    const oneBasedRow = Number(rawRow) + 1;
+    const oneBasedCol = Number(rawCol) + 1;
+    if (!Number.isFinite(oneBasedRow) || !Number.isFinite(oneBasedCol)) return null;
+
+    const row = Math.max(2, Math.min(oneBasedRow, Math.max(2, worksheetRowCount || oneBasedRow)));
+    const col = Math.max(1, oneBasedCol);
+    return { row, col };
+  } catch {
+    return null;
+  }
+};
+
+const rowHasAnyData = (rowData: Record<string, string>) => {
+  return Object.values(rowData).some((v) => String(v || '').trim().length > 0);
+};
+
+const findNearestDataRowIndex = (
+  targetRowIndex: number,
+  dataRowIndexes: number[],
+  maxDistance: number
+): number | null => {
+  if (dataRowIndexes.length === 0) return null;
+  let best: number | null = null;
+  let bestDist = Number.POSITIVE_INFINITY;
+  for (const r of dataRowIndexes) {
+    const dist = Math.abs(r - targetRowIndex);
+    if (dist > maxDistance) continue;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = r;
+    } else if (dist === bestDist && best !== null) {
+      // tie-break: prefer previous row
+      if (r < best) best = r;
+    }
+  }
+  return best;
+};
+
 /**
  * Parse Excel file and extract both data and embedded images
  */
@@ -74,7 +169,9 @@ export const parseExcelWithImages = async (file: File): Promise<ParsedExcelResul
     const headerRow = worksheet.getRow(1);
     const headers: string[] = [];
     headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-      headers[colNumber] = String(cell.value || '').trim();
+      // Normalize headers (e.g., "품명 *" -> "품명") to be compatible with templates
+      const raw = String((cell as any).text ?? cell.value ?? '').trim();
+      headers[colNumber] = raw.replace(/\s*\*+\s*$/g, '').trim();
     });
     
     if (headers.filter(h => h).length === 0) {
@@ -83,51 +180,55 @@ export const parseExcelWithImages = async (file: File): Promise<ParsedExcelResul
     
     // Get all images and map them to rows
     const imagesByRow: Map<number, ExcelImageData[]> = new Map();
-    
-    // ExcelJS stores images in worksheet.getImages()
+
+    // ExcelJS stores drawing images here; range format varies (object or A1 string)
     const images = worksheet.getImages();
-    
+
     for (const image of images) {
-      const imageId = image.imageId;
-      const workbookImage = workbook.getImage(Number(imageId));
-      
-      if (!workbookImage || !workbookImage.buffer) continue;
-      
-      // Get anchor position (row where image is placed)
-      const anchor = image.range;
-      const anchorRow = anchor.tl.row + 1; // Convert to 1-based index
-      const anchorCol = anchor.tl.col + 1;
-      
-      // Convert buffer to Uint8Array
-      const bufferData = workbookImage.buffer;
-      const uint8Array = bufferData instanceof Uint8Array 
-        ? bufferData 
-        : new Uint8Array(bufferData as ArrayBuffer);
-      
-      const imageData: ExcelImageData = {
-        extension: workbookImage.extension || 'png',
-        buffer: uint8Array,
-        anchorRow,
-        anchorCol,
-      };
-      
-      // Validate image
-      const validationError = validateImage(imageData, anchorRow);
-      if (validationError) {
-        warnings.push(validationError);
+      try {
+        const imageId = (image as any).imageId;
+        const workbookImage = workbook.getImage(Number(imageId));
+
+        if (!workbookImage || !workbookImage.buffer) continue;
+
+        const anchor = getAnchorRowCol((image as any).range as ExcelImageRange, worksheet.rowCount);
+        if (!anchor) {
+          warnings.push('이미지 위치(Anchor)를 확인할 수 없어 해당 이미지를 건너뜁니다. (엑셀 이미지 타입/앵커 호환성)');
+          continue;
+        }
+
+        const bufferData = workbookImage.buffer;
+        const uint8Array = bufferData instanceof Uint8Array
+          ? bufferData
+          : new Uint8Array(bufferData as ArrayBuffer);
+
+        const imageData: ExcelImageData = {
+          extension: workbookImage.extension || 'png',
+          buffer: uint8Array,
+          anchorRow: anchor.row,
+          anchorCol: anchor.col,
+        };
+
+        const validationError = validateImage(imageData, anchor.row);
+        if (validationError) {
+          warnings.push(validationError);
+          continue;
+        }
+
+        if (!imagesByRow.has(anchor.row)) {
+          imagesByRow.set(anchor.row, []);
+        }
+
+        const rowImages = imagesByRow.get(anchor.row)!;
+        if (rowImages.length < MAX_IMAGES_PER_ROW) {
+          rowImages.push(imageData);
+        } else {
+          warnings.push(`행 ${anchor.row}: 이미지가 ${MAX_IMAGES_PER_ROW}개를 초과하여 일부가 무시됩니다.`);
+        }
+      } catch (e: any) {
+        // Never let a single image kill the whole file parsing
+        warnings.push(`이미지 파싱 중 일부 오류가 발생하여 해당 이미지를 건너뜁니다. (${e?.message || 'unknown'})`);
         continue;
-      }
-      
-      // Group images by row
-      if (!imagesByRow.has(anchorRow)) {
-        imagesByRow.set(anchorRow, []);
-      }
-      
-      const rowImages = imagesByRow.get(anchorRow)!;
-      if (rowImages.length < MAX_IMAGES_PER_ROW) {
-        rowImages.push(imageData);
-      } else {
-        warnings.push(`행 ${anchorRow}: 이미지가 ${MAX_IMAGES_PER_ROW}개를 초과하여 일부가 무시됩니다.`);
       }
     }
     
@@ -136,25 +237,59 @@ export const parseExcelWithImages = async (file: File): Promise<ParsedExcelResul
     for (let rowIndex = 2; rowIndex <= rowCount; rowIndex++) {
       const row = worksheet.getRow(rowIndex);
       const rowData: Record<string, string> = {};
-      let hasData = false;
-      
+
       row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
         const header = headers[colNumber];
-        if (header) {
-          const value = String(cell.value || '').trim();
-          rowData[header] = value;
-          if (value) hasData = true;
-        }
+        if (!header) return;
+        const value = String((cell as any).text ?? cell.value ?? '').trim();
+        rowData[header] = value;
       });
-      
-      // Skip empty rows
+
+      const hasData = rowHasAnyData(rowData);
+
+      // Skip empty rows (unless they contain images)
       if (!hasData && !imagesByRow.has(rowIndex)) continue;
-      
+
       rows.push({
         rowIndex,
         data: rowData,
         images: imagesByRow.get(rowIndex) || [],
       });
+    }
+
+    // Second pass: if an image is anchored just outside the intended data row,
+    // auto-map it to the nearest data row to avoid index errors and "empty row" products.
+    const dataRowIndexes = rows
+      .filter((r) => rowHasAnyData(r.data))
+      .map((r) => r.rowIndex);
+
+    if (dataRowIndexes.length > 0) {
+      const MAX_AUTO_MAP_DISTANCE = 2;
+
+      const imagesNeedingRemap = rows.filter((r) => !rowHasAnyData(r.data) && r.images.length > 0);
+      for (const imgRow of imagesNeedingRemap) {
+        const target = findNearestDataRowIndex(imgRow.rowIndex, dataRowIndexes, MAX_AUTO_MAP_DISTANCE);
+        if (!target) continue;
+
+        const targetRow = rows.find((r) => r.rowIndex === target);
+        if (!targetRow) continue;
+
+        const available = Math.max(0, MAX_IMAGES_PER_ROW - targetRow.images.length);
+        if (available <= 0) {
+          warnings.push(`행 ${imgRow.rowIndex}: 이미지가 인접 행으로 자동 매핑되지 못했습니다. (행당 최대 ${MAX_IMAGES_PER_ROW}개 초과)`);
+          continue;
+        }
+
+        const moved = imgRow.images.slice(0, available);
+        targetRow.images.push(...moved);
+        imgRow.images = imgRow.images.slice(moved.length);
+      }
+
+      // Remove rows that still have no data and no images
+      for (let i = rows.length - 1; i >= 0; i--) {
+        const r = rows[i];
+        if (!rowHasAnyData(r.data) && r.images.length === 0) rows.splice(i, 1);
+      }
     }
     
     if (rows.length === 0) {
@@ -178,34 +313,74 @@ export const uploadImageToStorage = async (
   imageIndex: number
 ): Promise<ImageUploadResult> => {
   try {
+    const normalizedExt = String(extension || 'png').toLowerCase();
+    const mimeExt = normalizedExt === 'jpg' ? 'jpeg' : normalizedExt;
+
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substring(2, 8);
-    const fileName = `${productSlug}-${imageIndex}-${timestamp}-${randomSuffix}.${extension}`;
+    const fileName = `${productSlug}-${imageIndex}-${timestamp}-${randomSuffix}.${normalizedExt}`;
     const filePath = `products/${fileName}`;
     
     // Create a proper ArrayBuffer from Uint8Array
     const arrayBuffer = new ArrayBuffer(imageBuffer.byteLength);
     new Uint8Array(arrayBuffer).set(imageBuffer);
-    const blob = new Blob([arrayBuffer], { type: `image/${extension}` });
+    const blob = new Blob([arrayBuffer], { type: `image/${mimeExt}` });
     
-    const { data, error } = await supabase.storage
-      .from('product-images')
-      .upload(filePath, blob, {
-        contentType: `image/${extension}`,
-        upsert: false,
-      });
-    
-    if (error) {
-      console.error('Image upload error:', error);
-      return { url: '', error: error.message };
+    const UPLOAD_TIMEOUT_MS = 45_000;
+    const MAX_RETRIES = 2;
+
+    const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+      return await Promise.race([
+        promise,
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error('업로드 시간이 초과되었습니다.')), ms)),
+      ]);
+    };
+
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    let lastError: any = null;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      const { error } = await withTimeout(
+        supabase.storage
+          .from('product-images')
+          .upload(filePath, blob, {
+            contentType: `image/${mimeExt}`,
+            upsert: false,
+          }),
+        UPLOAD_TIMEOUT_MS
+      ).catch((e) => ({ error: e } as any));
+
+      if (!error) {
+        const { data: urlData } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filePath);
+        return { url: urlData.publicUrl };
+      }
+
+      // If the upload succeeded but the client timed out/retried, we can see a 409.
+      // In that case, treat as success and return the public URL.
+      const msg = String((error as any)?.message || (error as any)?.error_description || error);
+      const status = (error as any)?.statusCode ?? (error as any)?.status;
+      if (
+        status === 409 ||
+        msg.toLowerCase().includes('already exists') ||
+        msg.toLowerCase().includes('exists')
+      ) {
+        const { data: urlData } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filePath);
+        return { url: urlData.publicUrl };
+      }
+
+      lastError = error;
+      if (attempt < MAX_RETRIES) {
+        await sleep(400 * Math.pow(2, attempt));
+      }
     }
+
+    console.error('Image upload error:', lastError);
+    return { url: '', error: lastError?.message || '이미지 업로드 실패' };
     
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(filePath);
-    
-    return { url: urlData.publicUrl };
   } catch (error: any) {
     console.error('Image upload exception:', error);
     return { url: '', error: error.message || '이미지 업로드 실패' };
@@ -222,24 +397,26 @@ export const uploadRowImages = async (
 ): Promise<{ urls: string[]; errors: string[] }> => {
   const urls: string[] = [];
   const errors: string[] = [];
-  
-  for (let i = 0; i < images.length; i++) {
-    const image = images[i];
-    onProgress?.(i + 1, images.length);
-    
-    const result = await uploadImageToStorage(
-      image.buffer,
-      image.extension,
-      productSlug,
-      i + 1
-    );
-    
-    if (result.error) {
-      errors.push(`이미지 ${i + 1} 업로드 실패: ${result.error}`);
-    } else if (result.url) {
-      urls.push(result.url);
+
+  // Upload per-row images concurrently (max 3), so large files don't feel "stuck"
+  const results = await Promise.allSettled(
+    images.map(async (image, idx) => {
+      onProgress?.(idx + 1, images.length);
+      return await uploadImageToStorage(image.buffer, image.extension, productSlug, idx + 1);
+    })
+  );
+
+  results.forEach((res, idx) => {
+    if (res.status === 'rejected') {
+      errors.push(`이미지 ${idx + 1} 업로드 실패: ${res.reason?.message || 'unknown'}`);
+      return;
     }
-  }
+    if (res.value.error) {
+      errors.push(`이미지 ${idx + 1} 업로드 실패: ${res.value.error}`);
+    } else if (res.value.url) {
+      urls.push(res.value.url);
+    }
+  });
   
   return { urls, errors };
 };
