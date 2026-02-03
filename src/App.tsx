@@ -8,6 +8,7 @@ import ProductListNew from "./pages/ProductListNew";
 import ProductDetail from "./pages/ProductDetail";
 import InquiryPage from "./pages/InquiryPage";
 import DeliveryCases from "./pages/DeliveryCases";
+import Catalogs from "./pages/Catalogs";
 import Admin from "./pages/Admin";
 import AdminAuth from "./pages/AdminAuth";
 import NotFound from "./pages/NotFound";
@@ -30,6 +31,8 @@ const App = () => (
           <Route path="/inquiry" element={<InquiryPage />} />
           {/* Delivery Cases page */}
           <Route path="/delivery-cases" element={<DeliveryCases />} />
+          {/* Catalogs page */}
+          <Route path="/catalogs" element={<Catalogs />} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/products/category/:categorySlug" element={<ProductListNew />} />
           <Route path="/products/detail/:productId" element={<ProductDetail />} />
