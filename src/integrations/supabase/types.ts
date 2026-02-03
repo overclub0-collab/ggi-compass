@@ -16,22 +16,78 @@ export type Database = {
     Tables: {
       catalog_downloads: {
         Row: {
+          catalog_id: string | null
           created_at: string
           id: string
           ip_address: string | null
           user_agent: string | null
         }
         Insert: {
+          catalog_id?: string | null
           created_at?: string
           id?: string
           ip_address?: string | null
           user_agent?: string | null
         }
         Update: {
+          catalog_id?: string | null
           created_at?: string
           id?: string
           ip_address?: string | null
           user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_downloads_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "catalogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalogs: {
+        Row: {
+          created_at: string
+          description: string | null
+          download_count: number | null
+          id: string
+          is_active: boolean | null
+          is_featured: boolean | null
+          pdf_url: string
+          priority: number | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          download_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          pdf_url: string
+          priority?: number | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          download_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          pdf_url?: string
+          priority?: number | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          year?: number | null
         }
         Relationships: []
       }

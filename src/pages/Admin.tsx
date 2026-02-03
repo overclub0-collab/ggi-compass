@@ -18,7 +18,8 @@ import {
   MessageSquare,
   Building2,
   Users,
-  LayoutDashboard
+  LayoutDashboard,
+  FileText
 } from 'lucide-react';
 import {
   Dialog,
@@ -42,6 +43,7 @@ import { AdminInquiryList } from '@/components/admin/AdminInquiryList';
 import AdminDeliveryCaseList from '@/components/admin/AdminDeliveryCaseList';
 import AdminUserRoleManager from '@/components/admin/AdminUserRoleManager';
 import ProductBulkUpload from '@/components/admin/ProductBulkUpload';
+import AdminCatalogManager from '@/components/admin/AdminCatalogManager';
 import { AdminDashboard } from '@/components/admin/dashboard/AdminDashboard';
 import type { User } from '@supabase/supabase-js';
 
@@ -107,7 +109,7 @@ const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'inquiries' | 'delivery-cases' | 'users'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users'>('dashboard');
   
   const navigate = useNavigate();
 
@@ -590,6 +592,14 @@ const Admin = () => {
             제품 관리
           </Button>
           <Button
+            variant={activeTab === 'catalogs' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('catalogs')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            카탈로그
+          </Button>
+          <Button
             variant={activeTab === 'delivery-cases' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('delivery-cases')}
             className="min-h-[40px] flex-shrink-0"
@@ -728,6 +738,10 @@ const Admin = () => {
                   ))
                 )}
               </div>
+            </div>
+          ) : activeTab === 'catalogs' ? (
+            <div className="p-4 sm:p-6">
+              <AdminCatalogManager />
             </div>
           ) : activeTab === 'delivery-cases' ? (
             <div className="p-4 sm:p-6">
