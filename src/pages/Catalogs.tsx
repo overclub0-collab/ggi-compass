@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Download, Calendar, FileText, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+import { PageLayout } from '@/components/layout/PageLayout';
 
 interface Catalog {
   id: string;
@@ -48,19 +47,16 @@ const Catalogs = () => {
 
   const handleDownload = async (catalog: Catalog) => {
     try {
-      // Track the download
       await supabase.from('catalog_downloads').insert({
         catalog_id: catalog.id,
         user_agent: navigator.userAgent,
       });
 
-      // Increment download count
       await supabase
         .from('catalogs')
         .update({ download_count: catalog.download_count + 1 })
         .eq('id', catalog.id);
 
-      // Update local state
       setCatalogs(prev => 
         prev.map(c => 
           c.id === catalog.id 
@@ -72,15 +68,12 @@ const Catalogs = () => {
       console.error('Failed to track download:', error);
     }
 
-    // Open PDF in new tab
     window.open(catalog.pdf_url, '_blank');
     toast.success(`${catalog.title} 카탈로그가 새 탭에서 열립니다.`);
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
+    <PageLayout>
       <main className="pt-20 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Header */}
@@ -104,10 +97,10 @@ const Catalogs = () => {
               {[1, 2, 3].map((i) => (
                 <Card key={i} className="overflow-hidden">
                   <Skeleton className="h-48 w-full" />
-                  <CardHeader>
+                  <CardContent className="pt-4">
                     <Skeleton className="h-6 w-3/4" />
                     <Skeleton className="h-4 w-1/2 mt-2" />
-                  </CardHeader>
+                  </CardContent>
                   <CardFooter>
                     <Skeleton className="h-10 w-full" />
                   </CardFooter>
@@ -137,6 +130,7 @@ const Catalogs = () => {
                       <img
                         src={catalog.thumbnail_url}
                         alt={catalog.title}
+                        loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
@@ -144,7 +138,6 @@ const Catalogs = () => {
                         <FileText className="w-16 h-16 text-primary/30" />
                       </div>
                     )}
-                    {/* Year Badge */}
                     {catalog.year && (
                       <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
                         {catalog.year}
@@ -190,9 +183,7 @@ const Catalogs = () => {
           )}
         </div>
       </main>
-
-      <Footer />
-    </div>
+    </PageLayout>
   );
 };
 

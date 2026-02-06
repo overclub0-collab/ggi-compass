@@ -41,6 +41,7 @@ export const ProductCard = ({
         <img
           src={image_url || '/placeholder.svg'}
           alt={title}
+          loading="lazy"
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
           onError={(e) => {
             e.currentTarget.src = '/placeholder.svg';

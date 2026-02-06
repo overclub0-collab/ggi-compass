@@ -1,13 +1,10 @@
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+import { PageLayout } from '@/components/layout/PageLayout';
 import { InquiryForm } from '@/components/InquiryForm';
 import { Phone, Mail, MapPin, Clock } from 'lucide-react';
 
 const InquiryPage = () => {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <Navbar />
-      
+    <PageLayout>
       <main className="pt-20 sm:pt-24 pb-16 sm:pb-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Header */}
@@ -95,9 +92,7 @@ const InquiryPage = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
-    </div>
+    </PageLayout>
   );
 };
 

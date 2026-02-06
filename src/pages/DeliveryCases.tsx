@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { Building2, Package, Tag, Hash, ImageIcon, X } from 'lucide-react';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { Building2, Package, Tag, ImageIcon, X } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface DeliveryCase {
@@ -54,9 +53,7 @@ const DeliveryCases = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
+    <PageLayout>
       {/* Hero Section */}
       <section className="pt-24 pb-12 sm:pt-32 sm:pb-16 bg-gradient-to-b from-primary/5 to-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
@@ -101,7 +98,7 @@ const DeliveryCases = () => {
                   key={caseItem.id}
                   className="bg-card rounded-xl overflow-hidden shadow-sm border border-border hover:shadow-lg transition-all duration-300 group"
                 >
-                  {/* Image Gallery Preview - Use thumbnail_index for representative image */}
+                  {/* Image Gallery Preview */}
                   {caseItem.images.length > 0 ? (
                     <div 
                       className="aspect-[4/3] relative overflow-hidden cursor-pointer"
@@ -110,6 +107,7 @@ const DeliveryCases = () => {
                       <img
                         src={caseItem.images[caseItem.thumbnail_index] || caseItem.images[0]}
                         alt={caseItem.client_name}
+                        loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       {caseItem.images.length > 1 && (
@@ -126,13 +124,11 @@ const DeliveryCases = () => {
 
                   {/* Content */}
                   <div className="p-5 space-y-3">
-                    {/* Client Name - Primary emphasis with bold styling */}
                     <h3 className="text-xl font-extrabold text-primary flex items-center gap-2">
                       <Building2 className="h-5 w-5 text-primary" />
                       {caseItem.client_name}
                     </h3>
 
-                    {/* Meta Info - Secondary styling */}
                     <div className="space-y-2 text-sm text-muted-foreground">
                       {caseItem.product_name && (
                         <div className="flex items-center gap-2">
@@ -148,7 +144,6 @@ const DeliveryCases = () => {
                       )}
                     </div>
 
-                    {/* Image Thumbnails */}
                     {caseItem.images.length > 1 && (
                       <div className="flex gap-2 pt-2 overflow-x-auto scrollbar-hide">
                         {caseItem.images.slice(0, 5).map((img, idx) => (
@@ -160,6 +155,7 @@ const DeliveryCases = () => {
                             <img
                               src={img}
                               alt={`${caseItem.client_name} ${idx + 1}`}
+                              loading="lazy"
                               className="w-full h-full object-cover"
                             />
                           </button>
@@ -197,7 +193,6 @@ const DeliveryCases = () => {
                 className="w-full max-h-[80vh] object-contain"
               />
               
-              {/* Thumbnail Navigation */}
               {selectedCase.images.length > 1 && (
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                   <div className="flex justify-center gap-2 overflow-x-auto">
@@ -225,9 +220,7 @@ const DeliveryCases = () => {
           )}
         </DialogContent>
       </Dialog>
-
-      <Footer />
-    </div>
+    </PageLayout>
   );
 };
 
