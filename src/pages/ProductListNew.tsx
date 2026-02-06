@@ -1,7 +1,6 @@
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+import { PageLayout } from '@/components/layout/PageLayout';
 import { CategorySidebar } from '@/components/CategorySidebar';
 import { ProductCard } from '@/components/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -192,8 +191,7 @@ const ProductListNew = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PageLayout>
       
       <main className="pt-20">
         <div className="max-w-7xl mx-auto px-6 py-8">
@@ -324,9 +322,7 @@ const ProductListNew = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
-    </div>
+    </PageLayout>
   );
 };
 

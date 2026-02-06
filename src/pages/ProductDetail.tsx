@@ -1,12 +1,13 @@
 import { useParams, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Phone, Mail, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductImageCarousel } from '@/components/ProductImageCarousel';
 import { ProductInfoTable } from '@/components/ProductInfoTable';
+import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 
 interface Product {
   id: string;
@@ -80,13 +81,9 @@ const ProductDetail = () => {
     );
   }
 
-  // specs is plain text (규격 field) - no JSON parsing needed
   const specsString = product.specs || null;
-  
-  // Use slug as model name for display
   const modelName = product.slug || null;
 
-  // Prepare images array - combine images array and image_url
   const allImages: string[] = [];
   if (product.images && product.images.length > 0) {
     allImages.push(...product.images.filter(img => img && img.trim() !== ''));
@@ -94,13 +91,10 @@ const ProductDetail = () => {
     allImages.push(product.image_url);
   }
 
-  // Get detail images (2nd and 3rd) for bottom section
   const detailImages = allImages.slice(1);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
+    <PageLayout>
       <main className="pt-20">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
           {/* Breadcrumb */}
@@ -122,13 +116,11 @@ const ProductDetail = () => {
 
           {/* Product Summary Section */}
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-            {/* Left: Image Carousel */}
             <ProductImageCarousel 
               images={allImages}
               productTitle={product.title}
             />
 
-            {/* Right: Product Info Table */}
             <div className="space-y-6">
               <ProductInfoTable
                 modelName={modelName}
@@ -139,7 +131,6 @@ const ProductDetail = () => {
                 badges={product.badges}
               />
 
-              {/* Description */}
               {product.description && (
                 <div className="pt-4 border-t border-border">
                   <p className="text-muted-foreground leading-relaxed">
@@ -155,14 +146,18 @@ const ProductDetail = () => {
                   제품에 대한 자세한 견적이나 문의사항이 있으시면 연락주세요.
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <Button className="bg-primary hover:bg-primary/90 min-h-[44px]">
-                    <Phone className="mr-2 h-4 w-4" />
-                    전화 문의
-                  </Button>
-                  <Button variant="outline" className="min-h-[44px]">
-                    <Mail className="mr-2 h-4 w-4" />
-                    이메일 문의
-                  </Button>
+                  <Link to="/inquiry">
+                    <Button className="bg-primary hover:bg-primary/90 min-h-[44px]">
+                      <Phone className="mr-2 h-4 w-4" />
+                      견적 문의
+                    </Button>
+                  </Link>
+                  <a href="mailto:ggigagu@naver.com">
+                    <Button variant="outline" className="min-h-[44px]">
+                      <Mail className="mr-2 h-4 w-4" />
+                      이메일 문의
+                    </Button>
+                  </a>
                 </div>
               </div>
             </div>
@@ -170,7 +165,6 @@ const ProductDetail = () => {
 
           {/* Detailed Description Section */}
           <div className="mt-12 md:mt-16 space-y-8">
-            {/* Features */}
             {product.features && product.features.length > 0 && (
               <div className="bg-card rounded-2xl p-6 md:p-8 shadow-sm">
                 <h2 className="text-xl md:text-2xl font-bold text-primary mb-6">주요 특징</h2>
@@ -185,7 +179,6 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Detail Images (2nd and 3rd from upload) */}
             {detailImages.length > 0 && (
               <div className="space-y-6">
                 <h2 className="text-xl md:text-2xl font-bold text-primary">상세 이미지</h2>
@@ -198,6 +191,7 @@ const ProductDetail = () => {
                       <img
                         src={image}
                         alt={`${product.title} 상세 이미지 ${index + 1}`}
+                        loading="lazy"
                         className="w-full h-auto object-contain"
                         onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
                       />
@@ -209,9 +203,7 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
-    </div>
+    </PageLayout>
   );
 };
 
