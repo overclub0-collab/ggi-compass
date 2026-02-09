@@ -9,6 +9,7 @@ import ProductDetail from "./pages/ProductDetail";
 import InquiryPage from "./pages/InquiryPage";
 import DeliveryCases from "./pages/DeliveryCases";
 import Catalogs from "./pages/Catalogs";
+import SpacePlanner from "./pages/SpacePlanner";
 import Admin from "./pages/Admin";
 import AdminAuth from "./pages/AdminAuth";
 import NotFound from "./pages/NotFound";
@@ -33,6 +34,8 @@ const App = () => (
           <Route path="/delivery-cases" element={<DeliveryCases />} />
           {/* Catalogs page */}
           <Route path="/catalogs" element={<Catalogs />} />
+          {/* Space Planner */}
+          <Route path="/planner" element={<SpacePlanner />} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/products/category/:categorySlug" element={<ProductListNew />} />
           <Route path="/products/detail/:productId" element={<ProductDetail />} />
