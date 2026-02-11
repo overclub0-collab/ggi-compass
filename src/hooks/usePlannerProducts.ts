@@ -51,26 +51,51 @@ export const usePlannerProducts = (categoryId: string | null) => {
     queryFn: async (): Promise<FurnitureItem[]> => {
       if (!categoryId) return [];
 
-      // Get this category and its children
+      // Get this category and its children (slugs + names for matching)
       const { data: categories } = await supabase
         .from('categories')
-        .select('id')
+        .select('id, slug, name')
         .or(`id.eq.${categoryId},parent_id.eq.${categoryId}`);
 
-      const catIds = (categories || []).map(c => c.id);
-      if (catIds.length === 0) return [];
+      if (!categories || categories.length === 0) return [];
+
+      const catSlugs = categories.map(c => c.slug);
+      const catNames = categories.map(c => c.name);
+      const catIds = categories.map(c => c.id);
+
+      // Products may use UUID category, text category name, or main_category/subcategory slugs
+      // Build an OR filter to match all possible patterns
+      const filters = [
+        ...catIds.map(id => `category.eq.${id}`),
+        ...catSlugs.map(s => `main_category.eq.${s}`),
+        ...catSlugs.map(s => `subcategory.eq.${s}`),
+      ];
 
       const { data: products, error } = await supabase
         .from('products')
         .select('id, title, slug, price, thumbnail_url, category, main_category, subcategory, specs')
         .eq('is_active', true)
-        .in('category', catIds)
+        .or(filters.join(','))
         .order('display_order');
 
       if (error) throw error;
 
-      return (products || []).map(p => {
-        // Try to parse dimensions from specs JSON
+      // Also try matching by Korean category name text (some products use '교육가구' etc.)
+      const { data: textMatched } = await supabase
+        .from('products')
+        .select('id, title, slug, price, thumbnail_url, category, main_category, subcategory, specs')
+        .eq('is_active', true)
+        .in('category', catNames)
+        .order('display_order');
+
+      // Merge and deduplicate
+      const allProducts = [...(products || [])];
+      const existingIds = new Set(allProducts.map(p => p.id));
+      (textMatched || []).forEach(p => {
+        if (!existingIds.has(p.id)) allProducts.push(p);
+      });
+
+      return allProducts.map(p => {
         let width = 800;
         let height = 600;
         let depth = 400;
@@ -78,7 +103,6 @@ export const usePlannerProducts = (categoryId: string | null) => {
         if (p.specs) {
           try {
             const specs = typeof p.specs === 'string' ? JSON.parse(p.specs) : p.specs;
-            // Look for dimension-like fields
             if (specs.width) width = parseInt(specs.width) || 800;
             if (specs.height) height = parseInt(specs.height) || 600;
             if (specs.depth) depth = parseInt(specs.depth) || 400;
@@ -97,7 +121,7 @@ export const usePlannerProducts = (categoryId: string | null) => {
           name: p.title,
           category: categoryId,
           width,
-          height: height, // depth for top-view
+          height,
           depth,
           price: priceNum,
           thumbnail: p.thumbnail_url || '',

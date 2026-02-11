@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { useRef, useMemo } from 'react';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, Text, Edges } from '@react-three/drei';
 import { PlacedFurniture, RoomDimensions } from '@/types/planner';
 import * as THREE from 'three';
@@ -12,11 +12,22 @@ interface PlannerCanvas3DProps {
   onSelect: (id: string | null) => void;
 }
 
-// SketchUp-style colors
-const WALL_COLOR = '#f5f5f0';
-const FLOOR_COLOR = '#e8e8e0';
-const EDGE_COLOR = '#333333';
-const SELECTED_EDGE = '#0058a3';
+// SketchUp-style matte palette
+const WALL_COLOR = '#f0ede6';
+const FLOOR_COLOR = '#e2dfd6';
+const EDGE_COLOR = '#2a2a2a';
+const SELECTED_EDGE = '#0066cc';
+
+// Custom SketchUp-style matte material
+function SketchMaterial({ color, opacity = 0.92 }: { color: string; opacity?: number }) {
+  return (
+    <meshLambertMaterial
+      color={color}
+      transparent={opacity < 1}
+      opacity={opacity}
+    />
+  );
+}
 
 function FurnitureBox({ item, isSelected, onSelect }: {
   item: PlacedFurniture;
@@ -25,12 +36,11 @@ function FurnitureBox({ item, isSelected, onSelect }: {
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
 
-  const w = item.furniture.width / 1000; // m
-  const d = item.furniture.height / 1000; // depth in m
-  const h = (item.furniture as any).depth ? (item.furniture as any).depth / 1000 : 0.75; // height defaults to 0.75m
+  const w = item.furniture.width / 1000;
+  const d = item.furniture.height / 1000;
+  const h = (item.furniture.depth || 750) / 1000;
 
-  // Convert 2D canvas position to 3D world position
-  const roomScale = 0.1; // same scale as 2D
+  const roomScale = 0.1;
   const posX = (item.x / roomScale) / 1000 + w / 2;
   const posZ = (item.y / roomScale) / 1000 + d / 2;
 
@@ -51,26 +61,23 @@ function FurnitureBox({ item, isSelected, onSelect }: {
         receiveShadow
       >
         <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial
-          color={color}
-          transparent
-          opacity={0.85}
-        />
+        <SketchMaterial color={color} opacity={0.88} />
         <Edges
           threshold={15}
           color={isSelected ? SELECTED_EDGE : EDGE_COLOR}
-          lineWidth={isSelected ? 2 : 1}
+          lineWidth={isSelected ? 3 : 1.5}
         />
       </mesh>
       {/* Label on top */}
       <Text
-        position={[0, h / 2 + 0.05, 0]}
+        position={[0, h / 2 + 0.06, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.12}
-        color="#333"
+        fontSize={0.13}
+        color="#222"
         anchorX="center"
         anchorY="middle"
         maxWidth={w * 0.9}
+        font={undefined}
       >
         {item.furniture.name}
       </Text>
@@ -81,36 +88,43 @@ function FurnitureBox({ item, isSelected, onSelect }: {
 function Room({ dimensions }: { dimensions: RoomDimensions }) {
   const w = dimensions.width / 1000;
   const d = dimensions.height / 1000;
-  const wallH = 2.8; // 2.8m walls
-  const wallThickness = 0.08;
+  const wallH = 2.8;
+  const wallThickness = 0.06;
 
   return (
     <group>
-      {/* Floor */}
+      {/* Floor - matte */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[w / 2, 0, d / 2]} receiveShadow>
         <planeGeometry args={[w, d]} />
-        <meshStandardMaterial color={FLOOR_COLOR} />
+        <meshLambertMaterial color={FLOOR_COLOR} />
       </mesh>
 
       {/* Back wall */}
       <mesh position={[w / 2, wallH / 2, 0]} castShadow>
         <boxGeometry args={[w, wallH, wallThickness]} />
-        <meshStandardMaterial color={WALL_COLOR} />
-        <Edges threshold={15} color={EDGE_COLOR} />
+        <meshLambertMaterial color={WALL_COLOR} />
+        <Edges threshold={15} color={EDGE_COLOR} lineWidth={1.5} />
       </mesh>
 
       {/* Left wall */}
       <mesh position={[0, wallH / 2, d / 2]} castShadow>
         <boxGeometry args={[wallThickness, wallH, d]} />
-        <meshStandardMaterial color={WALL_COLOR} />
-        <Edges threshold={15} color={EDGE_COLOR} />
+        <meshLambertMaterial color={WALL_COLOR} />
+        <Edges threshold={15} color={EDGE_COLOR} lineWidth={1.5} />
       </mesh>
 
-      {/* Right wall (transparent) */}
+      {/* Right wall (transparent ghost) */}
       <mesh position={[w, wallH / 2, d / 2]}>
         <boxGeometry args={[wallThickness, wallH, d]} />
-        <meshStandardMaterial color={WALL_COLOR} transparent opacity={0.15} />
-        <Edges threshold={15} color={EDGE_COLOR} />
+        <meshLambertMaterial color={WALL_COLOR} transparent opacity={0.12} />
+        <Edges threshold={15} color={EDGE_COLOR} lineWidth={0.8} />
+      </mesh>
+
+      {/* Front wall (transparent ghost) */}
+      <mesh position={[w / 2, wallH / 2, d]}>
+        <boxGeometry args={[w, wallH, wallThickness]} />
+        <meshLambertMaterial color={WALL_COLOR} transparent opacity={0.12} />
+        <Edges threshold={15} color={EDGE_COLOR} lineWidth={0.8} />
       </mesh>
 
       {/* Grid on floor */}
@@ -118,14 +132,34 @@ function Room({ dimensions }: { dimensions: RoomDimensions }) {
         position={[w / 2, 0.001, d / 2]}
         args={[w, d]}
         cellSize={0.5}
-        cellThickness={0.5}
-        cellColor="#ccc"
+        cellThickness={0.6}
+        cellColor="#bbb"
         sectionSize={1}
-        sectionThickness={1}
-        sectionColor="#999"
-        fadeDistance={20}
+        sectionThickness={1.2}
+        sectionColor="#888"
+        fadeDistance={25}
         infiniteGrid={false}
       />
+
+      {/* Dimension labels */}
+      <Text
+        position={[w / 2, 0.02, d + 0.3]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={0.18}
+        color="#555"
+        anchorX="center"
+      >
+        {(w).toFixed(1)}m
+      </Text>
+      <Text
+        position={[-0.3, 0.02, d / 2]}
+        rotation={[-Math.PI / 2, 0, Math.PI / 2]}
+        fontSize={0.18}
+        color="#555"
+        anchorX="center"
+      >
+        {(d).toFixed(1)}m
+      </Text>
     </group>
   );
 }
@@ -136,15 +170,19 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect }: Omit<P
 
   return (
     <>
-      <ambientLight intensity={0.6} />
+      {/* Soft ambient + directional for SketchUp feel */}
+      <ambientLight intensity={0.75} />
       <directionalLight
-        position={[w, 6, d]}
-        intensity={0.8}
+        position={[w + 2, 8, d + 2]}
+        intensity={0.6}
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
       />
-      <directionalLight position={[-2, 4, -2]} intensity={0.3} />
+      <directionalLight position={[-3, 5, -3]} intensity={0.2} />
+
+      {/* Sky color */}
+      <color attach="background" args={['#f5f3ee']} />
 
       <Room dimensions={roomDimensions} />
 
@@ -161,8 +199,9 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect }: Omit<P
         target={[w / 2, 0.5, d / 2]}
         maxPolarAngle={Math.PI / 2.1}
         minDistance={2}
-        maxDistance={15}
+        maxDistance={20}
         enableDamping
+        dampingFactor={0.08}
       />
     </>
   );
@@ -180,6 +219,7 @@ export const PlannerCanvas3D = ({
         shadows
         camera={{ position: [8, 6, 8], fov: 50 }}
         style={{ width: '100%', height: '100%' }}
+        gl={{ antialias: true }}
         onClick={(e) => e.stopPropagation()}
       >
         <Scene
