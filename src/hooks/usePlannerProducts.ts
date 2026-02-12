@@ -101,8 +101,8 @@ export const usePlannerProducts = (categoryId: string | null) => {
         let depth = 400;
 
         if (p.specs && typeof p.specs === 'string') {
-          // Try parsing "W×D×H mm" format (e.g. "1400×800×730mm", "650×450×720mm")
-          const dimMatch = p.specs.match(/(\d+)\s*[×xX*]\s*(\d+)\s*[×xX*]\s*(\d+)/);
+          // Try parsing "W×D×H mm" format - use \D+ to match ANY non-digit separator
+          const dimMatch = p.specs.match(/(\d{2,5})\D+(\d{2,5})\D+(\d{2,5})/);
           if (dimMatch) {
             width = parseInt(dimMatch[1]) || 800;
             height = parseInt(dimMatch[2]) || 600; // depth in top-view
