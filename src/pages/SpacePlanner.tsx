@@ -26,6 +26,7 @@ const SpacePlanner = () => {
     addFurniture,
     updateFurniturePosition,
     rotateFurniture,
+    changeFurnitureColor,
     removeFurniture,
     clearAll,
     getTotalPrice,
@@ -158,7 +159,15 @@ const SpacePlanner = () => {
           onRotate={rotateFurniture}
           onDelete={removeFurniture}
           onClose={() => setSelectedId(null)}
+          onColorChange={changeFurnitureColor}
         />
+      </div>
+
+      {/* Brand Trust Badges */}
+      <div className="h-8 bg-primary/5 border-t border-border flex items-center justify-center gap-6 text-xs text-muted-foreground">
+        <span className="font-medium">✅ 여성기업 인증</span>
+        <span className="font-medium">🏛️ 나라장터 조달 등록</span>
+        <span className="font-medium">📋 GGI 공간 스타일링 시뮬레이터</span>
       </div>
 
       {/* Bottom - Quote Summary */}

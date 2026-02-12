@@ -1,8 +1,8 @@
-import { useRef, useMemo } from 'react';
-import { Canvas, useLoader } from '@react-three/fiber';
-import { OrbitControls, Grid, Text, Edges } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Grid, Text } from '@react-three/drei';
 import { PlacedFurniture, RoomDimensions } from '@/types/planner';
-import * as THREE from 'three';
+import { FurnitureObject } from './FurnitureModels';
+import { Edges } from '@react-three/drei';
 
 interface PlannerCanvas3DProps {
   roomDimensions: RoomDimensions;
@@ -12,114 +12,9 @@ interface PlannerCanvas3DProps {
   onSelect: (id: string | null) => void;
 }
 
-// SketchUp-style palette
 const WALL_COLOR = '#f0ede6';
 const FLOOR_COLOR = '#e2dfd6';
 const EDGE_COLOR = '#2a2a2a';
-const SELECTED_EDGE = '#0066cc';
-
-function TexturedBox({ item, isSelected, onSelect }: {
-  item: PlacedFurniture;
-  isSelected: boolean;
-  onSelect: (id: string) => void;
-}) {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  const w = item.furniture.width / 1000;
-  const d = item.furniture.height / 1000;
-  const h = (item.furniture.depth || 750) / 1000;
-
-  const roomScale = 0.1;
-  const posX = (item.x / roomScale) / 1000 + w / 2;
-  const posZ = (item.y / roomScale) / 1000 + d / 2;
-
-  const baseColor = item.furniture.color || '#c8b89a';
-
-  // Load texture from thumbnail if available
-  const texture = useMemo(() => {
-    if (!item.furniture.thumbnail) return null;
-    try {
-      const loader = new THREE.TextureLoader();
-      const tex = loader.load(item.furniture.thumbnail);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      return tex;
-    } catch {
-      return null;
-    }
-  }, [item.furniture.thumbnail]);
-
-  // Create materials array: [+x, -x, +y, -y, +z, -z]
-  // Front (+z) and top (+y) get texture, rest get base color
-  const materials = useMemo(() => {
-    const baseMat = new THREE.MeshLambertMaterial({ color: baseColor });
-    
-    if (texture) {
-      const texMat = new THREE.MeshLambertMaterial({ map: texture });
-      const topMat = new THREE.MeshLambertMaterial({ color: baseColor, transparent: true, opacity: 0.95 });
-      return [
-        baseMat,     // right
-        baseMat,     // left
-        topMat,      // top
-        baseMat,     // bottom
-        texMat,      // front (facing camera)
-        texMat,      // back
-      ];
-    }
-    return [baseMat, baseMat, baseMat, baseMat, baseMat, baseMat];
-  }, [texture, baseColor]);
-
-  return (
-    <group
-      position={[posX, h / 2, posZ]}
-      rotation={[0, -(item.rotation * Math.PI) / 180, 0]}
-    >
-      <mesh
-        ref={meshRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(item.id);
-        }}
-        castShadow
-        receiveShadow
-        material={materials}
-      >
-        <boxGeometry args={[w, h, d]} />
-        <Edges
-          threshold={15}
-          color={isSelected ? SELECTED_EDGE : EDGE_COLOR}
-          lineWidth={isSelected ? 3 : 1.5}
-        />
-      </mesh>
-      {/* Label on top */}
-      <Text
-        position={[0, h / 2 + 0.06, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.11}
-        color="#222"
-        anchorX="center"
-        anchorY="middle"
-        maxWidth={w * 0.9}
-        font={undefined}
-      >
-        {item.furniture.name}
-      </Text>
-      {/* Dimension label below name */}
-      <Text
-        position={[0, h / 2 + 0.03, 0.12]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.07}
-        color="#777"
-        anchorX="center"
-        anchorY="middle"
-        font={undefined}
-      >
-        {item.furniture.width}×{item.furniture.height}×{item.furniture.depth || 750}
-      </Text>
-    </group>
-  );
-}
 
 function Room({ dimensions }: { dimensions: RoomDimensions }) {
   const w = dimensions.width / 1000;
@@ -220,7 +115,7 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect }: Omit<P
       <Room dimensions={roomDimensions} />
 
       {placedFurniture.map(item => (
-        <TexturedBox
+        <FurnitureObject
           key={item.id}
           item={item}
           isSelected={selectedId === item.id}

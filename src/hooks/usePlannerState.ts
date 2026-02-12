@@ -95,6 +95,13 @@ export const usePlannerState = () => {
     }));
   }, []);
 
+  const changeFurnitureColor = useCallback((id: string, color: string) => {
+    setPlacedFurniture(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      return { ...item, furniture: { ...item.furniture, color } };
+    }));
+  }, []);
+
   const removeFurniture = useCallback((id: string) => {
     setPlacedFurniture(prev => prev.filter(item => item.id !== id));
     if (selectedId === id) setSelectedId(null);
@@ -123,6 +130,7 @@ export const usePlannerState = () => {
     addFurniture,
     updateFurniturePosition,
     rotateFurniture,
+    changeFurnitureColor,
     removeFurniture,
     clearAll,
     getTotalPrice,
