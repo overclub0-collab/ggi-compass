@@ -100,17 +100,26 @@ export const usePlannerProducts = (categoryId: string | null) => {
         let height = 600;
         let depth = 400;
 
-        if (p.specs) {
-          try {
-            const specs = typeof p.specs === 'string' ? JSON.parse(p.specs) : p.specs;
-            if (specs.width) width = parseInt(specs.width) || 800;
-            if (specs.height) height = parseInt(specs.height) || 600;
-            if (specs.depth) depth = parseInt(specs.depth) || 400;
-            if (specs['가로']) width = parseInt(specs['가로']) || 800;
-            if (specs['세로']) height = parseInt(specs['세로']) || 600;
-            if (specs['높이']) depth = parseInt(specs['높이']) || 400;
-          } catch {
-            // ignore parse errors
+        if (p.specs && typeof p.specs === 'string') {
+          // Try parsing "W×D×H mm" format (e.g. "1400×800×730mm", "650×450×720mm")
+          const dimMatch = p.specs.match(/(\d+)\s*[×xX*]\s*(\d+)\s*[×xX*]\s*(\d+)/);
+          if (dimMatch) {
+            width = parseInt(dimMatch[1]) || 800;
+            height = parseInt(dimMatch[2]) || 600; // depth in top-view
+            depth = parseInt(dimMatch[3]) || 400;  // vertical height
+          } else {
+            // Try JSON format as fallback
+            try {
+              const specs = JSON.parse(p.specs);
+              if (specs.width) width = parseInt(specs.width) || 800;
+              if (specs.height) height = parseInt(specs.height) || 600;
+              if (specs.depth) depth = parseInt(specs.depth) || 400;
+              if (specs['가로']) width = parseInt(specs['가로']) || 800;
+              if (specs['세로']) height = parseInt(specs['세로']) || 600;
+              if (specs['높이']) depth = parseInt(specs['높이']) || 400;
+            } catch {
+              // ignore parse errors
+            }
           }
         }
 
