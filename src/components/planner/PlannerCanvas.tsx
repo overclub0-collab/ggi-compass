@@ -183,12 +183,18 @@ export const PlannerCanvas = ({
                 boxShadow: 'inset 0 0 10px rgba(0,0,0,0.1)',
               }}
             >
-              <span 
-                className="text-[10px] font-medium text-foreground/70 text-center px-1 truncate"
+              <div
+                className="flex flex-col items-center gap-0"
                 style={{ transform: `rotate(-${item.rotation}deg)`, maxWidth: '90%' }}
               >
-                {item.furniture.name}
-              </span>
+                <span className="text-[10px] font-medium text-foreground/70 text-center px-1 truncate w-full">
+                  {item.furniture.name}
+                </span>
+                <span className="text-[8px] text-foreground/50 font-mono">
+                  {item.furniture.width}×{item.furniture.height}×
+                  <span className="font-bold text-primary/80">H{item.furniture.depth || 750}</span>
+                </span>
+              </div>
             </div>
           );
         })}

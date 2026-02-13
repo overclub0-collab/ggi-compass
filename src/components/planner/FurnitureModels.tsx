@@ -412,6 +412,7 @@ export function FurnitureObject({ item, isSelected, onSelect }: {
   const baseColor = item.furniture.color || '#c8b89a';
   const furnitureType = useMemo(() => detectFurnitureType(item), [item]);
 
+
   const ModelComponent = useMemo(() => {
     switch (furnitureType) {
       case 'desk': return DeskModel;
