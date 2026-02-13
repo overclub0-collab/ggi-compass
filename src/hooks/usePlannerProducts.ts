@@ -22,7 +22,6 @@ export const usePlannerCategories = () => {
 
       if (error) throw error;
 
-      // Build tree: only return top-level categories
       const topLevel = (data || []).filter(c => !c.parent_id);
       const tree: CategoryNode[] = topLevel.map(cat => ({
         id: cat.id,
@@ -45,13 +44,79 @@ export const usePlannerCategories = () => {
   });
 };
 
+/**
+ * Parse dimension string like "650×600×1980mm", "1400*800*730", "1400x800x730mm" etc.
+ * Returns [width, depth, height] in mm or null if parsing fails.
+ */
+function parseDimensions(specs: string): [number, number, number] | null {
+  if (!specs || typeof specs !== 'string') return null;
+
+  // Remove all whitespace first
+  const cleaned = specs.replace(/\s+/g, '');
+
+  // Try multiple separator patterns explicitly
+  // Pattern 1: digits separated by ×, x, X, *, by 
+  const patterns = [
+    /(\d{2,5})[×xX*✕](\d{2,5})[×xX*✕](\d{2,5})/,
+    /(\d{2,5})\D+(\d{2,5})\D+(\d{2,5})/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = cleaned.match(pattern);
+    if (match) {
+      const w = parseInt(match[1], 10);
+      const d = parseInt(match[2], 10);
+      const h = parseInt(match[3], 10);
+      if (w > 0 && d > 0 && h > 0) {
+        return [w, d, h];
+      }
+    }
+  }
+
+  // Try on original (non-cleaned) string too
+  for (const pattern of patterns) {
+    const match = specs.match(pattern);
+    if (match) {
+      const w = parseInt(match[1], 10);
+      const d = parseInt(match[2], 10);
+      const h = parseInt(match[3], 10);
+      if (w > 0 && d > 0 && h > 0) {
+        return [w, d, h];
+      }
+    }
+  }
+
+  // Fallback: extract all number sequences of 2-5 digits
+  const allNums = specs.match(/\d{2,5}/g);
+  if (allNums && allNums.length >= 3) {
+    const w = parseInt(allNums[0], 10);
+    const d = parseInt(allNums[1], 10);
+    const h = parseInt(allNums[2], 10);
+    if (w > 0 && d > 0 && h > 0) {
+      return [w, d, h];
+    }
+  }
+
+  // Try JSON format as last resort
+  try {
+    const obj = JSON.parse(specs);
+    const w = parseInt(obj.width || obj['가로'] || '0', 10);
+    const d = parseInt(obj.depth || obj['세로'] || '0', 10);
+    const h = parseInt(obj.height || obj['높이'] || '0', 10);
+    if (w > 0 && d > 0 && h > 0) return [w, d, h];
+  } catch {
+    // not JSON
+  }
+
+  return null;
+}
+
 export const usePlannerProducts = (categoryId: string | null) => {
   return useQuery({
     queryKey: ['planner-products', categoryId],
     queryFn: async (): Promise<FurnitureItem[]> => {
       if (!categoryId) return [];
 
-      // Get this category and its children (slugs + names for matching)
       const { data: categories } = await supabase
         .from('categories')
         .select('id, slug, name')
@@ -63,8 +128,6 @@ export const usePlannerProducts = (categoryId: string | null) => {
       const catNames = categories.map(c => c.name);
       const catIds = categories.map(c => c.id);
 
-      // Products may use UUID category, text category name, or main_category/subcategory slugs
-      // Build an OR filter to match all possible patterns
       const filters = [
         ...catIds.map(id => `category.eq.${id}`),
         ...catSlugs.map(s => `main_category.eq.${s}`),
@@ -80,7 +143,6 @@ export const usePlannerProducts = (categoryId: string | null) => {
 
       if (error) throw error;
 
-      // Also try matching by Korean category name text (some products use '교육가구' etc.)
       const { data: textMatched } = await supabase
         .from('products')
         .select('id, title, slug, price, thumbnail_url, category, main_category, subcategory, specs')
@@ -88,7 +150,6 @@ export const usePlannerProducts = (categoryId: string | null) => {
         .in('category', catNames)
         .order('display_order');
 
-      // Merge and deduplicate
       const allProducts = [...(products || [])];
       const existingIds = new Set(allProducts.map(p => p.id));
       (textMatched || []).forEach(p => {
@@ -98,29 +159,16 @@ export const usePlannerProducts = (categoryId: string | null) => {
       return allProducts.map(p => {
         let width = 800;
         let height = 600;
-        let depth = 400;
+        let depth = 750;
 
-        if (p.specs && typeof p.specs === 'string') {
-          // Try parsing "W×D×H mm" format - use \D+ to match ANY non-digit separator
-          const dimMatch = p.specs.match(/(\d{2,5})\D+(\d{2,5})\D+(\d{2,5})/);
-          if (dimMatch) {
-            width = parseInt(dimMatch[1]) || 800;
-            height = parseInt(dimMatch[2]) || 600; // depth in top-view
-            depth = parseInt(dimMatch[3]) || 400;  // vertical height
-          } else {
-            // Try JSON format as fallback
-            try {
-              const specs = JSON.parse(p.specs);
-              if (specs.width) width = parseInt(specs.width) || 800;
-              if (specs.height) height = parseInt(specs.height) || 600;
-              if (specs.depth) depth = parseInt(specs.depth) || 400;
-              if (specs['가로']) width = parseInt(specs['가로']) || 800;
-              if (specs['세로']) height = parseInt(specs['세로']) || 600;
-              if (specs['높이']) depth = parseInt(specs['높이']) || 400;
-            } catch {
-              // ignore parse errors
-            }
-          }
+        const dims = parseDimensions(p.specs || '');
+        if (dims) {
+          width = dims[0];
+          height = dims[1]; // depth in top-view (2D)
+          depth = dims[2];  // vertical height (3D)
+          console.log(`[Planner] ${p.title}: ${width}×${height}×${depth}mm from specs "${p.specs}"`);
+        } else if (p.specs) {
+          console.warn(`[Planner] Could not parse specs for "${p.title}": "${p.specs}"`);
         }
 
         const priceNum = p.price ? parseInt(p.price.replace(/[^0-9]/g, '')) || 0 : 0;

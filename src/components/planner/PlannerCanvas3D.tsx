@@ -101,16 +101,18 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect }: Omit<P
 
   return (
     <>
-      <ambientLight intensity={0.75} />
+      <ambientLight intensity={0.5} />
       <directionalLight
-        position={[w + 2, 8, d + 2]}
-        intensity={0.6}
+        position={[w + 3, 10, d + 3]}
+        intensity={0.8}
         castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-bias={-0.0001}
       />
-      <directionalLight position={[-3, 5, -3]} intensity={0.2} />
-      <color attach="background" args={['#f5f3ee']} />
+      <directionalLight position={[-4, 6, -2]} intensity={0.25} />
+      <hemisphereLight args={['#b1c4de', '#8b7355', 0.3]} />
+      <color attach="background" args={['#f0eee8']} />
 
       <Room dimensions={roomDimensions} />
 
