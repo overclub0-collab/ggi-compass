@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { 
   LogOut, 
@@ -19,8 +20,19 @@ import {
   Building2,
   Users,
   LayoutDashboard,
-  FileText
+  FileText,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  FolderOpen
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -95,6 +107,8 @@ const initialFormData = {
   price: '',
 };
 
+const ITEMS_PER_PAGE = 20;
+
 const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -110,6 +124,9 @@ const Admin = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users'>('dashboard');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [bulkCategoryTarget, setBulkCategoryTarget] = useState<string>('');
   
   const navigate = useNavigate();
 
@@ -241,6 +258,84 @@ const Admin = () => {
     
     return true;
   });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const pagedProducts = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
+
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q);
+    setCurrentPage(1);
+    setSelectedIds(new Set());
+  };
+  const handleCategorySelect = (cat: Category | null) => {
+    setSelectedCategory(cat);
+    setCurrentPage(1);
+    setSelectedIds(new Set());
+  };
+
+  // Bulk selection
+  const allPageSelected = pagedProducts.length > 0 && pagedProducts.every(p => selectedIds.has(p.id));
+  const toggleSelectAll = () => {
+    if (allPageSelected) {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        pagedProducts.forEach(p => next.delete(p.id));
+        return next;
+      });
+    } else {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        pagedProducts.forEach(p => next.add(p.id));
+        return next;
+      });
+    }
+  };
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`선택된 ${selectedIds.size}개 제품을 삭제하시겠습니까?`)) return;
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase.from('products').delete().in('id', ids);
+    if (error) {
+      toast.error('일괄 삭제 실패: ' + error.message);
+    } else {
+      toast.success(`${ids.length}개 제품이 삭제되었습니다.`);
+      setSelectedIds(new Set());
+      fetchProducts();
+    }
+  };
+
+  const handleBulkCategoryChange = async () => {
+    if (selectedIds.size === 0 || !bulkCategoryTarget) return;
+    const targetCat = categories.find(c => c.id === bulkCategoryTarget);
+    if (!targetCat) return;
+    const isMain = !targetCat.parent_id;
+    const parentCat = isMain ? null : categories.find(c => c.id === targetCat.parent_id);
+    const updateData = isMain
+      ? { main_category: targetCat.slug, subcategory: null }
+      : { main_category: parentCat?.slug || '', subcategory: targetCat.slug };
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase.from('products').update(updateData).in('id', ids);
+    if (error) {
+      toast.error('카테고리 변경 실패: ' + error.message);
+    } else {
+      toast.success(`${ids.length}개 제품의 카테고리가 변경되었습니다.`);
+      setSelectedIds(new Set());
+      setBulkCategoryTarget('');
+      fetchProducts();
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -527,7 +622,7 @@ const Admin = () => {
     <CategoryTree
       categories={categories}
       selectedCategory={selectedCategory}
-      onSelectCategory={setSelectedCategory}
+      onSelectCategory={handleCategorySelect}
       onAddProduct={handleAddProductToCategory}
       onEditCategory={handleEditCategory}
       onDeleteCategory={handleDeleteCategory}
@@ -644,18 +739,15 @@ const Admin = () => {
             <div className="p-4 sm:p-6 space-y-4">
               {/* Toolbar */}
               <div className="flex flex-col sm:flex-row gap-3">
-                {/* Search */}
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="제품명, 조달번호로 검색..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     className="pl-9 min-h-[44px]"
                   />
                 </div>
-
-                {/* Actions */}
                 <div className="flex flex-wrap gap-2">
                   <Button
                     onClick={() => {
@@ -672,10 +764,7 @@ const Admin = () => {
                     <span className="hidden sm:inline">제품 추가</span>
                     <span className="sm:hidden">추가</span>
                   </Button>
-
-                  {/* Bulk Upload Component */}
                   <ProductBulkUpload onComplete={fetchProducts} />
-                  
                   <Button variant="outline" onClick={handleExportProducts} className="min-h-[44px]">
                     <Download className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">내보내기</span>
@@ -683,27 +772,79 @@ const Admin = () => {
                 </div>
               </div>
 
-              {/* Current Category Info */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">
-                    {selectedCategory ? selectedCategory.name : '전체 제품'}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    ({filteredProducts.length}개)
-                  </span>
+              {/* Category Info + Bulk Toolbar */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={allPageSelected}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="현재 페이지 전체 선택"
+                    />
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium">
+                      {selectedCategory ? selectedCategory.name : '전체 제품'}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      (총 {filteredProducts.length}개 · 페이지 {currentPage}/{Math.max(totalPages, 1)})
+                    </span>
+                    {selectedIds.size > 0 && (
+                      <span className="text-sm font-semibold text-primary">{selectedIds.size}개 선택됨</span>
+                    )}
+                  </div>
+                  {selectedCategory && (
+                    <Button variant="ghost" size="sm" onClick={() => handleCategorySelect(null)} className="text-muted-foreground">
+                      <X className="h-4 w-4 mr-1" />필터 해제
+                    </Button>
+                  )}
                 </div>
-                {selectedCategory && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedCategory(null)}
-                    className="text-muted-foreground"
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    필터 해제
-                  </Button>
+
+                {/* Bulk Action Bar */}
+                {selectedIds.size > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                    <span className="text-sm font-medium text-primary">{selectedIds.size}개 선택</span>
+                    <div className="flex items-center gap-2 flex-1 flex-wrap">
+                      <Select value={bulkCategoryTarget} onValueChange={setBulkCategoryTarget}>
+                        <SelectTrigger className="h-8 w-48">
+                          <SelectValue placeholder="카테고리 일괄 변경..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map(cat => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.parent_id ? `  └ ${cat.name}` : cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!bulkCategoryTarget}
+                        onClick={handleBulkCategoryChange}
+                        className="h-8"
+                      >
+                        <FolderOpen className="h-3.5 w-3.5 mr-1" />
+                        카테고리 변경
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleBulkDelete}
+                        className="h-8"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1" />
+                        선택 삭제
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSelectedIds(new Set())}
+                        className="h-8 text-muted-foreground"
+                      >
+                        선택 해제
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -718,27 +859,78 @@ const Admin = () => {
                     <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     <p>등록된 제품이 없습니다</p>
                     {selectedCategory && (
-                      <Button
-                        variant="link"
-                        className="mt-2"
-                        onClick={() => handleAddProductToCategory(selectedCategory)}
-                      >
+                      <Button variant="link" className="mt-2" onClick={() => handleAddProductToCategory(selectedCategory)}>
                         이 카테고리에 제품 추가하기
                       </Button>
                     )}
                   </div>
                 ) : (
-                  filteredProducts.map((product) => (
+                  pagedProducts.map((product) => (
                     <DraggableProductCard
                       key={product.id}
                       product={product}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
+                      isSelected={selectedIds.has(product.id)}
+                      onToggleSelect={toggleSelect}
                     />
                   ))
                 )}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="h-9 px-3"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    이전
+                  </Button>
+                  <div className="flex gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                      .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                        if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
+                        acc.push(p);
+                        return acc;
+                      }, [])
+                      .map((p, i) =>
+                        p === '...' ? (
+                          <span key={`el-${i}`} className="flex items-center px-2 text-muted-foreground text-sm">…</span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p as number)}
+                            className={`w-9 h-9 rounded-md text-sm font-medium transition-colors ${
+                              currentPage === p
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-muted text-foreground'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        )
+                      )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="h-9 px-3"
+                  >
+                    다음
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
+
           ) : activeTab === 'catalogs' ? (
             <div className="p-4 sm:p-6">
               <AdminCatalogManager />

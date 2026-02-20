@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Edit2, Trash2, GripVertical, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +20,8 @@ interface DraggableProductCardProps {
   onEdit: (product: Product) => void;
   onDelete: (id: string) => void;
   isDragging?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
 const DraggableProductCard = ({
@@ -26,6 +29,8 @@ const DraggableProductCard = ({
   onEdit,
   onDelete,
   isDragging,
+  isSelected,
+  onToggleSelect,
 }: DraggableProductCardProps) => {
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('productId', product.id);
@@ -48,13 +53,19 @@ const DraggableProductCard = ({
       className={cn(
         "group bg-card border rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all duration-200",
         "hover:shadow-md hover:border-primary/30",
-        isDragging && "opacity-50 scale-95"
+        isDragging && "opacity-50 scale-95",
+        isSelected && "border-primary bg-primary/5 ring-1 ring-primary/30"
       )}
     >
       <div className="flex gap-3">
-        {/* Drag Handle */}
-        <div className="flex items-center text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-          <GripVertical className="h-5 w-5" />
+        {/* Checkbox */}
+        <div className="flex items-start pt-1">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect?.(product.id)}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`${product.title} 선택`}
+          />
         </div>
 
         {/* Product Image */}
