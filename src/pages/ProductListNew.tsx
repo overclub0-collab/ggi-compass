@@ -56,7 +56,7 @@ interface Category {
 }
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
-const DEFAULT_PAGE_SIZE = 12;
+const DEFAULT_PAGE_SIZE = 10;
 
 const ProductListNew = () => {
   const { mainCategory, subCategory } = useParams<{ mainCategory: string; subCategory?: string }>();
