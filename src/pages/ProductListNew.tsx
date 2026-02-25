@@ -321,7 +321,7 @@ const ProductListNew = () => {
                     {/* Page size */}
                     <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
                       <SelectTrigger className="w-full sm:w-36">
-                        <SelectValue />
+                        <SelectValue placeholder={`${pageSize}개씩 보기`}>{pageSize}개씩 보기</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {PAGE_SIZE_OPTIONS.map(n => (
@@ -370,7 +370,7 @@ const ProductListNew = () => {
                       id="select-all"
                       checked={allSelected}
                       onCheckedChange={toggleSelectAll}
-                      className="h-3.5 w-3.5"
+                      className="h-4 w-4"
                     />
                     <label htmlFor="select-all" className="cursor-pointer select-none">
                       현재 페이지 전체 선택
