@@ -56,6 +56,7 @@ import AdminDeliveryCaseList from '@/components/admin/AdminDeliveryCaseList';
 import AdminUserRoleManager from '@/components/admin/AdminUserRoleManager';
 import ProductBulkUpload from '@/components/admin/ProductBulkUpload';
 import AdminCatalogManager from '@/components/admin/AdminCatalogManager';
+import AdminCompanyInfo from '@/components/admin/AdminCompanyInfo';
 import { AdminDashboard } from '@/components/admin/dashboard/AdminDashboard';
 import type { User } from '@supabase/supabase-js';
 
@@ -123,7 +124,7 @@ const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users' | 'company'>('dashboard');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkCategoryTarget, setBulkCategoryTarget] = useState<string>('');
@@ -718,6 +719,14 @@ const Admin = () => {
             <Users className="h-4 w-4 mr-2" />
             사용자 관리
           </Button>
+          <Button
+            variant={activeTab === 'company' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('company')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <Building2 className="h-4 w-4 mr-2" />
+            기업소개
+          </Button>
         </div>
       </header>
 
@@ -780,6 +789,7 @@ const Admin = () => {
                       checked={allPageSelected}
                       onCheckedChange={toggleSelectAll}
                       aria-label="현재 페이지 전체 선택"
+                      className="h-3.5 w-3.5"
                     />
                     <Package className="h-5 w-5 text-muted-foreground" />
                     <span className="font-medium">
@@ -943,12 +953,14 @@ const Admin = () => {
             <div className="p-4 sm:p-6">
               <AdminInquiryList />
             </div>
-          ) : (
+          ) : activeTab === 'users' ? (
             <div className="p-4 sm:p-6">
               <h2 className="text-xl font-bold mb-6">사용자 역할 관리</h2>
               <AdminUserRoleManager />
             </div>
-          )}
+          ) : activeTab === 'company' ? (
+            <AdminCompanyInfo />
+          ) : null}
         </main>
       </div>
 
