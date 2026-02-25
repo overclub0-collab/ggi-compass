@@ -66,13 +66,14 @@ export const MobileMenu = ({
         <div className="flex-1 overflow-y-auto overscroll-contain">
           <nav className="p-4 space-y-1">
             {/* 기업소개 */}
-            <button
-              onClick={() => handleScrollToSection('about')}
+            <Link
+              to="/about"
+              onClick={handleLinkClick}
               className="w-full flex items-center gap-4 text-foreground hover:text-primary hover:bg-muted transition-colors py-4 px-4 rounded-xl text-lg font-medium"
             >
               <Home className="h-5 w-5 text-primary" />
               기업소개
-            </button>
+            </Link>
 
             {/* 나라장터/조달 */}
             <a
