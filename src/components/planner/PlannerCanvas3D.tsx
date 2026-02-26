@@ -147,7 +147,7 @@ export const PlannerCanvas3D = ({
     <div className="flex-1 bg-muted/30 relative" onContextMenu={(e) => e.preventDefault()}>
       {/* Tooltip hint */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
-        좌클릭: 회전/확대 | 우클릭: 제품정보
+        클릭: 제품정보 | 드래그: 회전/확대
       </div>
       <Canvas
         shadows
