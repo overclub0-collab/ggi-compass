@@ -31,6 +31,7 @@ interface UseExcelUploadOptions {
 export const useExcelUpload = (options?: UseExcelUploadOptions) => {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
+  const [pendingFile, setPendingFile] = useState<{ file: File; rowCount: number } | null>(null);
 
   const isSlugConflictError = (err: any) => {
     return (
@@ -355,21 +356,61 @@ export const useExcelUpload = (options?: UseExcelUploadOptions) => {
   };
 
   /**
-   * Main upload handler - detects file type and processes accordingly
+   * Pre-parse file to get row count for confirmation
    */
-  const handleFileUpload = useCallback(async (file: File) => {
+  const preParseFile = useCallback(async (file: File) => {
+    if (!isExcelFile(file) && !isCSVFile(file)) {
+      toast.error('지원하지 않는 파일 형식입니다. CSV 또는 Excel(.xlsx) 파일을 업로드해주세요.');
+      return;
+    }
+
+    try {
+      if (isExcelFile(file)) {
+        const { rows } = await parseExcelWithImages(file);
+        if (rows.length === 0) {
+          toast.error('업로드할 유효한 제품이 없습니다.');
+          return;
+        }
+        setPendingFile({ file, rowCount: rows.length });
+      } else {
+        const { products } = await parseProductCSV(file, { existingSlugs: new Set() });
+        if (products.length === 0) {
+          toast.error('업로드할 유효한 제품이 없습니다.');
+          return;
+        }
+        setPendingFile({ file, rowCount: products.length });
+      }
+    } catch (error: any) {
+      logError('File pre-parse', error);
+      toast.error(error.message || getErrorMessage(error));
+    }
+  }, []);
+
+  /**
+   * Confirm and proceed with upload
+   */
+  const confirmUpload = useCallback(async () => {
+    if (!pendingFile) return;
+    const { file } = pendingFile;
+    setPendingFile(null);
+
     if (isExcelFile(file)) {
       await handleExcelUpload(file);
     } else if (isCSVFile(file)) {
       await handleCSVUpload(file);
-    } else {
-      toast.error('지원하지 않는 파일 형식입니다. CSV 또는 Excel(.xlsx) 파일을 업로드해주세요.');
     }
+  }, [pendingFile]);
+
+  const cancelUpload = useCallback(() => {
+    setPendingFile(null);
   }, []);
 
   return {
     isUploading,
     progress,
-    handleFileUpload,
+    pendingFile,
+    preParseFile,
+    confirmUpload,
+    cancelUpload,
   };
 };
