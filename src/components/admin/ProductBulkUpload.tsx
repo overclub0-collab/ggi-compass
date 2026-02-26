@@ -15,6 +15,7 @@ import {
 import { useExcelUpload } from '@/hooks/useExcelUpload';
 import { downloadProductTemplate } from '@/lib/excelUtils';
 import { downloadExcelTemplateWithImageGuide } from '@/lib/excelTemplateGenerator';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ProductBulkUploadProps {
   onComplete?: () => void;
@@ -24,6 +25,7 @@ const ProductBulkUpload = ({ onComplete }: ProductBulkUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isUploading, progress, pendingFile, preParseFile, confirmUpload, cancelUpload } = useExcelUpload({ onComplete });
   const [isParsing, setIsParsing] = useState(false);
+  const [skipDuplicates, setSkipDuplicates] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -39,7 +41,8 @@ const ProductBulkUpload = ({ onComplete }: ProductBulkUploadProps) => {
   };
 
   const handleConfirm = async () => {
-    await confirmUpload();
+    await confirmUpload(skipDuplicates);
+    setSkipDuplicates(false);
   };
 
   const getStatusText = () => {
@@ -107,7 +110,7 @@ const ProductBulkUpload = ({ onComplete }: ProductBulkUploadProps) => {
         <p>• 행당 최대 3개 이미지, 각 이미지 최대 5MB까지 지원</p>
       </div>
 
-      <AlertDialog open={!!pendingFile} onOpenChange={(open) => { if (!open) cancelUpload(); }}>
+      <AlertDialog open={!!pendingFile} onOpenChange={(open) => { if (!open) { cancelUpload(); setSkipDuplicates(false); } }}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>업로드 확인</AlertDialogTitle>
@@ -129,9 +132,16 @@ const ProductBulkUpload = ({ onComplete }: ProductBulkUploadProps) => {
                         <li>...외 {pendingFile.duplicates.length - 20}개</li>
                       )}
                     </ul>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      중복 품목은 새로운 슬러그로 등록됩니다.
-                    </p>
+                    <div className="mt-3 flex items-center space-x-2">
+                      <Checkbox
+                        id="skip-duplicates"
+                        checked={skipDuplicates}
+                        onCheckedChange={(checked) => setSkipDuplicates(checked === true)}
+                      />
+                      <label htmlFor="skip-duplicates" className="text-xs text-foreground cursor-pointer">
+                        중복 품목 제외하고 업로드 ({pendingFile.rowCount - pendingFile.duplicates.length}개만 등록)
+                      </label>
+                    </div>
                   </div>
                 )}
               </div>
