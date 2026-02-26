@@ -145,6 +145,7 @@ export type Database = {
           display_order: number
           id: string
           image_url: string | null
+          images: string[] | null
           is_active: boolean
           section_key: string
           title: string | null
@@ -156,6 +157,7 @@ export type Database = {
           display_order?: number
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_active?: boolean
           section_key: string
           title?: string | null
@@ -167,6 +169,7 @@ export type Database = {
           display_order?: number
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_active?: boolean
           section_key?: string
           title?: string | null
