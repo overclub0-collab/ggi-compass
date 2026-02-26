@@ -789,7 +789,7 @@ const Admin = () => {
                       checked={allPageSelected}
                       onCheckedChange={toggleSelectAll}
                       aria-label="현재 페이지 전체 선택"
-                      className="h-3.5 w-3.5"
+                      className="h-4 w-4"
                     />
                     <Package className="h-5 w-5 text-muted-foreground" />
                     <span className="font-medium">
