@@ -1,12 +1,13 @@
 import { useRef, useMemo } from 'react';
-import { Edges, Text } from '@react-three/drei';
+import { Edges, Text, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { PlacedFurniture } from '@/types/planner';
+import { ThreeEvent } from '@react-three/fiber';
 
 const EDGE_COLOR = '#1a1a1a';
 const SELECTED_EDGE = '#0066cc';
 
-// Material helpers for realistic rendering
+// Material helpers
 function woodMat(color: string, isSelected = false) {
   return (
     <meshStandardMaterial
@@ -55,6 +56,36 @@ function lighten(color: string, amount = 0.1): string {
   return `#${c.getHexString()}`;
 }
 
+// Textured front face component - applies product thumbnail to front
+function TexturedFrontFace({ w, h, d, thumbnail, isSelected }: {
+  w: number; h: number; d: number; thumbnail: string; isSelected: boolean;
+}) {
+  const texture = useTexture(thumbnail);
+
+  // Fit texture proportionally
+  useMemo(() => {
+    if (texture) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+    }
+  }, [texture]);
+
+  return (
+    <mesh position={[0, h / 2, d / 2 + 0.003]} castShadow>
+      <planeGeometry args={[w * 0.95, h * 0.95]} />
+      <meshStandardMaterial
+        map={texture}
+        transparent
+        roughness={0.6}
+        metalness={0.05}
+        emissive={isSelected ? '#001133' : '#000000'}
+        emissiveIntensity={isSelected ? 0.1 : 0}
+      />
+    </mesh>
+  );
+}
+
 // ========== Desk / Table ==========
 function DeskModel({ w, d, h, color, isSelected }: {
   w: number; d: number; h: number; color: string; isSelected: boolean;
@@ -67,13 +98,11 @@ function DeskModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Table top with rounded edges feel */}
       <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[w, topH, d]} />
         {woodMat(color, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
       </mesh>
-      {/* Metal legs */}
       {[
         [-(w / 2 - 0.04), 0, -(d / 2 - 0.04)],
         [(w / 2 - 0.04), 0, -(d / 2 - 0.04)],
@@ -86,7 +115,6 @@ function DeskModel({ w, d, h, color, isSelected }: {
           <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
         </mesh>
       ))}
-      {/* Cross bar */}
       <mesh position={[0, legH * 0.15, 0]} castShadow>
         <boxGeometry args={[w * 0.7, 0.015, 0.015]} />
         {metalMat(darken(color, 0.5), isSelected)}
@@ -110,24 +138,20 @@ function ChairModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Seat cushion */}
       <mesh position={[0, seatY, d * 0.05]} castShadow receiveShadow>
         <boxGeometry args={[w * 0.95, seatH, d * 0.9]} />
         {plasticMat(color, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
       </mesh>
-      {/* Backrest with slight curve effect (2 panels) */}
       <mesh position={[0, seatY + backH * 0.55, -(d / 2 - backThick / 2)]} castShadow>
         <boxGeometry args={[w * 0.88, backH * 0.85, backThick]} />
         {plasticMat(lighten(color, 0.05), isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={1} />
       </mesh>
-      {/* Back frame top rail */}
       <mesh position={[0, seatY + backH, -(d / 2 - backThick / 2)]} castShadow>
         <boxGeometry args={[w * 0.92, 0.025, backThick + 0.005]} />
         {metalMat(darken(color, 0.3), isSelected)}
       </mesh>
-      {/* 4 Legs */}
       {[
         [-(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
         [(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
@@ -154,13 +178,11 @@ function StorageModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Main body */}
       <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[w, h, d]} />
         {metalMat(color, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
       </mesh>
-      {/* Horizontal dividers */}
       {Array.from({ length: rows - 1 }, (_, i) => {
         const y = (h / rows) * (i + 1);
         return (
@@ -170,7 +192,6 @@ function StorageModel({ w, d, h, color, isSelected }: {
           </mesh>
         );
       })}
-      {/* Vertical dividers */}
       {Array.from({ length: cols - 1 }, (_, i) => {
         const x = -(w / 2) + (w / cols) * (i + 1);
         return (
@@ -180,7 +201,6 @@ function StorageModel({ w, d, h, color, isSelected }: {
           </mesh>
         );
       })}
-      {/* Door handles per cell */}
       {Array.from({ length: rows }, (_, r) =>
         Array.from({ length: cols }, (_, c) => {
           const cellW = w / cols;
@@ -212,46 +232,38 @@ function BlackboardCabinetModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Bottom cabinet */}
       <mesh position={[0, cabinetH / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[w, cabinetH, d]} />
         {woodMat(color, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
       </mesh>
-      {/* Cabinet door line */}
       <mesh position={[0, cabinetH / 2, d / 2 + 0.001]}>
         <boxGeometry args={[0.006, cabinetH * 0.85, 0.001]} />
         <meshStandardMaterial color={darken(color, 0.35)} roughness={0.4} metalness={0.3} />
       </mesh>
-      {/* Door handles */}
       {[-0.04, 0.04].map((xOff, i) => (
         <mesh key={i} position={[xOff, cabinetH / 2, d / 2 + 0.01]} rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.006, 0.006, 0.05, 8]} />
           <meshStandardMaterial color="#777" roughness={0.3} metalness={0.9} />
         </mesh>
       ))}
-      {/* Whiteboard panel */}
       <mesh position={[0, cabinetH + boardH / 2, -(d / 2 - boardThick / 2)]} castShadow>
         <boxGeometry args={[w - frameThick * 2, boardH - frameThick, boardThick]} />
         <meshStandardMaterial color="#f0ede6" roughness={0.2} metalness={0.05} />
         <Edges threshold={15} color={edgeColor} lineWidth={1} />
       </mesh>
-      {/* Board frame - top */}
       <mesh position={[0, cabinetH + boardH, -(d / 2 - boardThick / 2)]}>
         <boxGeometry args={[w + 0.02, frameThick, boardThick + 0.01]} />
         {woodMat(darken(color, 0.15), isSelected)}
       </mesh>
-      {/* Board frame - left */}
       <mesh position={[-(w / 2), cabinetH + boardH / 2, -(d / 2 - boardThick / 2)]}>
         <boxGeometry args={[frameThick, boardH, boardThick + 0.01]} />
         {woodMat(darken(color, 0.15), isSelected)}
       </mesh>
-      {/* Board frame - right */}
       <mesh position={[(w / 2), cabinetH + boardH / 2, -(d / 2 - boardThick / 2)]}>
         <boxGeometry args={[frameThick, boardH, boardThick + 0.01]} />
         {woodMat(darken(color, 0.15), isSelected)}
       </mesh>
-      {/* Chalk tray */}
       <mesh position={[0, cabinetH + 0.01, -(d / 2 - 0.04)]}>
         <boxGeometry args={[w * 0.9, 0.02, 0.06]} />
         {woodMat(darken(color, 0.1), isSelected)}
@@ -272,37 +284,31 @@ function SofaModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Seat base */}
       <mesh position={[0, seatH / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[w, seatH, d]} />
         {plasticMat(color, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
       </mesh>
-      {/* Seat cushion */}
       <mesh position={[0, seatH + 0.03, d * 0.05]} castShadow>
         <boxGeometry args={[w * 0.85, 0.06, d * 0.75]} />
         {plasticMat(lighten(color, 0.06), isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
       </mesh>
-      {/* Back cushion */}
       <mesh position={[0, seatH + backH * 0.45, -(d / 2 - 0.09)]} castShadow>
         <boxGeometry args={[w * 0.85, backH * 0.7, 0.16]} />
         {plasticMat(lighten(color, 0.1), isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={1} />
       </mesh>
-      {/* Left armrest */}
       <mesh position={[-(w / 2 - armW / 2), seatH + backH * 0.28, 0]} castShadow>
         <boxGeometry args={[armW, backH * 0.55, d * 0.88]} />
         {plasticMat(darken(color, 0.06), isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
       </mesh>
-      {/* Right armrest */}
       <mesh position={[(w / 2 - armW / 2), seatH + backH * 0.28, 0]} castShadow>
         <boxGeometry args={[armW, backH * 0.55, d * 0.88]} />
         {plasticMat(darken(color, 0.06), isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
       </mesh>
-      {/* Small feet */}
       {[
         [-(w / 2 - 0.06), 0, -(d / 2 - 0.06)],
         [(w / 2 - 0.06), 0, -(d / 2 - 0.06)],
@@ -330,24 +336,20 @@ function ShelfModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Left side panel */}
       <mesh position={[-(w / 2 - sideThick / 2), h / 2, 0]} castShadow>
         <boxGeometry args={[sideThick, h, d]} />
         {woodMat(darken(color, 0.1), isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
       </mesh>
-      {/* Right side panel */}
       <mesh position={[(w / 2 - sideThick / 2), h / 2, 0]} castShadow>
         <boxGeometry args={[sideThick, h, d]} />
         {woodMat(darken(color, 0.1), isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
       </mesh>
-      {/* Back panel */}
       <mesh position={[0, h / 2, -(d / 2 - 0.005)]} castShadow>
         <boxGeometry args={[w - sideThick * 2, h, 0.008]} />
         {woodMat(lighten(color, 0.05), isSelected)}
       </mesh>
-      {/* Shelves */}
       {Array.from({ length: shelfCount + 1 }, (_, i) => {
         const y = (h / shelfCount) * i;
         return (
@@ -402,8 +404,8 @@ export function FurnitureObject({ item, isSelected, onSelect }: {
 
   // Convert mm to meters
   const w = item.furniture.width / 1000;
-  const d = item.furniture.height / 1000;   // "height" in 2D = depth in 3D
-  const h = (item.furniture.depth || 750) / 1000; // depth = vertical height
+  const d = item.furniture.height / 1000;
+  const h = (item.furniture.depth || 750) / 1000;
 
   const roomScale = 0.1;
   const posX = (item.x / roomScale) / 1000 + w / 2;
@@ -411,7 +413,7 @@ export function FurnitureObject({ item, isSelected, onSelect }: {
 
   const baseColor = item.furniture.color || '#c8b89a';
   const furnitureType = useMemo(() => detectFurnitureType(item), [item]);
-
+  const hasThumbnail = !!item.furniture.thumbnail;
 
   const ModelComponent = useMemo(() => {
     switch (furnitureType) {
@@ -425,17 +427,34 @@ export function FurnitureObject({ item, isSelected, onSelect }: {
     }
   }, [furnitureType]);
 
+  // Right-click to select, prevent left-click from selecting (orbit controls)
+  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
+    // Right click (button 2)
+    if (e.nativeEvent.button === 2) {
+      e.stopPropagation();
+      onSelect(item.id);
+    }
+  };
+
   return (
     <group
       ref={groupRef}
       position={[posX, 0, posZ]}
       rotation={[0, -(item.rotation * Math.PI) / 180, 0]}
-      onClick={(e) => {
-        e.stopPropagation();
-        onSelect(item.id);
-      }}
+      onPointerDown={handlePointerDown}
     >
       <ModelComponent w={w} d={d} h={h} color={baseColor} isSelected={isSelected} />
+
+      {/* Product thumbnail texture on front face */}
+      {hasThumbnail && (
+        <TexturedFrontFace
+          w={w}
+          h={h}
+          d={d}
+          thumbnail={item.furniture.thumbnail}
+          isSelected={isSelected}
+        />
+      )}
 
       {/* Name label */}
       <Text
