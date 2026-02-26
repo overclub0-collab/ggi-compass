@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Save, Image as ImageIcon, GripVertical } from 'lucide-react';
+import { Save, GripVertical } from 'lucide-react';
+import CompanyImageDropzone from './CompanyImageDropzone';
 
 interface CompanySection {
   id: string;
@@ -14,6 +15,7 @@ interface CompanySection {
   title: string | null;
   content: string | null;
   image_url: string | null;
+  images: string[] | null;
   display_order: number;
   is_active: boolean;
 }
@@ -50,6 +52,12 @@ const AdminCompanyInfo = () => {
     );
   };
 
+  const handleImagesChange = (id: string, images: string[]) => {
+    setSections(prev =>
+      prev.map(s => (s.id === id ? { ...s, images, image_url: images[0] || null } : s))
+    );
+  };
+
   const handleSave = async (section: CompanySection) => {
     setSavingId(section.id);
     const { error } = await supabase
@@ -57,7 +65,8 @@ const AdminCompanyInfo = () => {
       .update({
         title: section.title,
         content: section.content,
-        image_url: section.image_url,
+        image_url: section.images?.[0] || section.image_url,
+        images: section.images || [],
         is_active: section.is_active,
         display_order: section.display_order,
       })
@@ -133,19 +142,13 @@ const AdminCompanyInfo = () => {
             </div>
 
             <div>
-              <Label className="text-xs font-medium">이미지 URL</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  value={section.image_url || ''}
-                  onChange={(e) => handleChange(section.id, 'image_url', e.target.value)}
-                  placeholder="https://..."
-                  className="flex-1"
+              <Label className="text-xs font-medium">이미지</Label>
+              <div className="mt-1">
+                <CompanyImageDropzone
+                  images={section.images || (section.image_url ? [section.image_url] : [])}
+                  onChange={(imgs) => handleImagesChange(section.id, imgs)}
+                  maxImages={10}
                 />
-                {section.image_url && (
-                  <div className="w-12 h-12 rounded-lg border overflow-hidden flex-shrink-0">
-                    <img src={section.image_url} alt="" className="w-full h-full object-cover" />
-                  </div>
-                )}
               </div>
             </div>
           </div>
