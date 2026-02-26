@@ -46,23 +46,21 @@ export const PlannerCanvas = ({
     onDrop(furniture, Math.max(0, x), Math.max(0, y));
   };
 
-  // Left-click = start dragging (move only)
+  // Left-click = select and show detail panel, then start dragging
   const handleMouseDown = useCallback((e: React.MouseEvent, item: PlacedFurniture) => {
-    if (e.button !== 0) return; // Only left button for drag
+    if (e.button !== 0) return;
     e.stopPropagation();
+    onSelect(item.id);
     setDragging(item.id);
     setDragOffset({
       x: e.clientX - item.x,
       y: e.clientY - item.y,
     });
-  }, []);
-
-  // Right-click = select and show detail panel
-  const handleContextMenu = useCallback((e: React.MouseEvent, item: PlacedFurniture) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onSelect(item.id);
   }, [onSelect]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+  }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!dragging || !canvasRef.current) return;
@@ -132,7 +130,7 @@ export const PlannerCanvas = ({
     <div className="flex-1 bg-muted/30 p-4 overflow-auto flex items-center justify-center">
       {/* Tooltip hint */}
       <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
-        좌클릭: 이동 | 우클릭: 제품정보
+        클릭: 제품정보 & 이동 | 빈 공간 클릭: 선택 해제
       </div>
       <div
         ref={canvasRef}
@@ -177,7 +175,7 @@ export const PlannerCanvas = ({
             <div
               key={item.id}
               onMouseDown={(e) => handleMouseDown(e, item)}
-              onContextMenu={(e) => handleContextMenu(e, item)}
+              onContextMenu={(e) => handleContextMenu(e)}
               onTouchStart={(e) => handleTouchStart(e, item)}
               className={cn(
                 "absolute cursor-move transition-shadow flex items-center justify-center",

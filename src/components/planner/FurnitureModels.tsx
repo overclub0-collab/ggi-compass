@@ -427,10 +427,9 @@ export function FurnitureObject({ item, isSelected, onSelect }: {
     }
   }, [furnitureType]);
 
-  // Right-click to select, prevent left-click from selecting (orbit controls)
+  // Left-click to select and show detail panel
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
-    // Right click (button 2)
-    if (e.nativeEvent.button === 2) {
+    if (e.nativeEvent.button === 0) {
       e.stopPropagation();
       onSelect(item.id);
     }
