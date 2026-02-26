@@ -28,10 +28,16 @@ interface UseExcelUploadOptions {
   onComplete?: () => void;
 }
 
+export interface PendingFileInfo {
+  file: File;
+  rowCount: number;
+  duplicates: string[];
+}
+
 export const useExcelUpload = (options?: UseExcelUploadOptions) => {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
-  const [pendingFile, setPendingFile] = useState<{ file: File; rowCount: number } | null>(null);
+  const [pendingFile, setPendingFile] = useState<PendingFileInfo | null>(null);
 
   const isSlugConflictError = (err: any) => {
     return (
@@ -365,20 +371,34 @@ export const useExcelUpload = (options?: UseExcelUploadOptions) => {
     }
 
     try {
+      // Fetch existing product titles for duplicate check
+      const { data: existingProducts } = await supabase
+        .from('products')
+        .select('title');
+      const existingTitles = new Set(
+        (existingProducts || []).map((p) => p.title?.trim().toLowerCase())
+      );
+
+      let titles: string[] = [];
+
       if (isExcelFile(file)) {
         const { rows } = await parseExcelWithImages(file);
         if (rows.length === 0) {
           toast.error('업로드할 유효한 제품이 없습니다.');
           return;
         }
-        setPendingFile({ file, rowCount: rows.length });
+        titles = rows.map((r) => (r.data['품명'] || r.data['제품명'] || r.data['title'] || '').trim());
+        const duplicates = titles.filter((t) => t && existingTitles.has(t.toLowerCase()));
+        setPendingFile({ file, rowCount: rows.length, duplicates });
       } else {
         const { products } = await parseProductCSV(file, { existingSlugs: new Set() });
         if (products.length === 0) {
           toast.error('업로드할 유효한 제품이 없습니다.');
           return;
         }
-        setPendingFile({ file, rowCount: products.length });
+        titles = products.map((p: any) => (p.title || '').trim());
+        const duplicates = titles.filter((t) => t && existingTitles.has(t.toLowerCase()));
+        setPendingFile({ file, rowCount: products.length, duplicates });
       }
     } catch (error: any) {
       logError('File pre-parse', error);

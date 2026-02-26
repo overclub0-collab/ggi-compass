@@ -108,11 +108,33 @@ const ProductBulkUpload = ({ onComplete }: ProductBulkUploadProps) => {
       </div>
 
       <AlertDialog open={!!pendingFile} onOpenChange={(open) => { if (!open) cancelUpload(); }}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>업로드 확인</AlertDialogTitle>
-            <AlertDialogDescription>
-              <strong>{pendingFile?.rowCount}개</strong>의 품목을 업로드하는 것이 맞습니까?
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  <strong>{pendingFile?.rowCount}개</strong>의 품목을 업로드하는 것이 맞습니까?
+                </p>
+                {pendingFile?.duplicates && pendingFile.duplicates.length > 0 && (
+                  <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm">
+                    <p className="font-semibold text-destructive mb-1">
+                      ⚠️ 중복 품목 {pendingFile.duplicates.length}개 발견
+                    </p>
+                    <ul className="list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto text-muted-foreground">
+                      {pendingFile.duplicates.slice(0, 20).map((name, i) => (
+                        <li key={i}>{name}</li>
+                      ))}
+                      {pendingFile.duplicates.length > 20 && (
+                        <li>...외 {pendingFile.duplicates.length - 20}개</li>
+                      )}
+                    </ul>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      중복 품목은 새로운 슬러그로 등록됩니다.
+                    </p>
+                  </div>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
