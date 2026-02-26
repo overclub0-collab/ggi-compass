@@ -144,13 +144,17 @@ export const PlannerCanvas3D = ({
   onSelect,
 }: PlannerCanvas3DProps) => {
   return (
-    <div className="flex-1 bg-muted/30" onClick={() => onSelect(null)}>
+    <div className="flex-1 bg-muted/30 relative" onContextMenu={(e) => e.preventDefault()}>
+      {/* Tooltip hint */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
+        좌클릭: 회전/확대 | 우클릭: 제품정보
+      </div>
       <Canvas
         shadows
         camera={{ position: [8, 6, 8], fov: 50 }}
         style={{ width: '100%', height: '100%' }}
         gl={{ antialias: true }}
-        onClick={(e) => e.stopPropagation()}
+        onContextMenu={(e) => e.preventDefault()}
       >
         <Scene
           roomDimensions={roomDimensions}

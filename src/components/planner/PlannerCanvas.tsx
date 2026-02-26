@@ -46,14 +46,22 @@ export const PlannerCanvas = ({
     onDrop(furniture, Math.max(0, x), Math.max(0, y));
   };
 
+  // Left-click = start dragging (move only)
   const handleMouseDown = useCallback((e: React.MouseEvent, item: PlacedFurniture) => {
+    if (e.button !== 0) return; // Only left button for drag
     e.stopPropagation();
-    onSelect(item.id);
     setDragging(item.id);
     setDragOffset({
       x: e.clientX - item.x,
       y: e.clientY - item.y,
     });
+  }, []);
+
+  // Right-click = select and show detail panel
+  const handleContextMenu = useCallback((e: React.MouseEvent, item: PlacedFurniture) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(item.id);
   }, [onSelect]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -81,7 +89,7 @@ export const PlannerCanvas = ({
     }
   }, [dragging, handleMouseMove, handleMouseUp]);
 
-  // Touch event handlers for mobile
+  // Touch: long press to select, normal touch to drag
   const handleTouchStart = useCallback((e: React.TouchEvent, item: PlacedFurniture) => {
     e.stopPropagation();
     const touch = e.touches[0];
@@ -122,11 +130,16 @@ export const PlannerCanvas = ({
 
   return (
     <div className="flex-1 bg-muted/30 p-4 overflow-auto flex items-center justify-center">
+      {/* Tooltip hint */}
+      <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
+        좌클릭: 이동 | 우클릭: 제품정보
+      </div>
       <div
         ref={canvasRef}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         onClick={() => onSelect(null)}
+        onContextMenu={(e) => e.preventDefault()}
         className="relative bg-white border-2 border-border shadow-lg"
         style={{
           width: canvasWidth,
@@ -137,7 +150,7 @@ export const PlannerCanvas = ({
             linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
             linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)
           `,
-          backgroundSize: `${100 * scale}px ${100 * scale}px`, // 10cm grid
+          backgroundSize: `${100 * scale}px ${100 * scale}px`,
         }}
       >
         {/* Dimension labels */}
@@ -164,6 +177,7 @@ export const PlannerCanvas = ({
             <div
               key={item.id}
               onMouseDown={(e) => handleMouseDown(e, item)}
+              onContextMenu={(e) => handleContextMenu(e, item)}
               onTouchStart={(e) => handleTouchStart(e, item)}
               className={cn(
                 "absolute cursor-move transition-shadow flex items-center justify-center",

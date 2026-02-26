@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Monitor, Armchair, Archive, Square, BookOpen, Sofa, Loader2, FlaskConical, UtensilsCrossed, Shield, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Monitor, Armchair, Archive, Square, BookOpen, Sofa, Loader2, FlaskConical, UtensilsCrossed, Shield, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FurnitureItem } from '@/types/planner';
@@ -29,12 +29,18 @@ const categoryIcons: Record<string, React.ElementType> = {
 export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
   const { data: categories, isLoading: catLoading } = usePlannerCategories();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [expandedMainId, setExpandedMainId] = useState<string | null>(null);
   const { data: products, isLoading: prodLoading } = usePlannerProducts(selectedCategoryId);
   const [currentPage, setCurrentPage] = useState(0);
 
-  // Auto-select first category when loaded
-  if (categories && categories.length > 0 && !selectedCategoryId) {
-    setSelectedCategoryId(categories[0].id);
+  // Auto-expand first main category
+  if (categories && categories.length > 0 && !expandedMainId) {
+    setExpandedMainId(categories[0].id);
+    if (categories[0].children.length > 0) {
+      setSelectedCategoryId(categories[0].children[0].id);
+    } else {
+      setSelectedCategoryId(categories[0].id);
+    }
   }
 
   const totalPages = useMemo(() => {
@@ -48,10 +54,17 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
     return products.slice(start, start + ITEMS_PER_PAGE);
   }, [products, currentPage]);
 
-  // Reset page when category changes
   const handleCategoryChange = (catId: string) => {
     setSelectedCategoryId(catId);
     setCurrentPage(0);
+  };
+
+  const handleToggleMain = (mainId: string) => {
+    if (expandedMainId === mainId) {
+      setExpandedMainId(null);
+    } else {
+      setExpandedMainId(mainId);
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, furniture: FurnitureItem) => {
@@ -61,36 +74,89 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
   };
 
   return (
-    <div className="w-64 bg-card border-r border-border flex flex-col h-full">
-      {/* Category Icons */}
-      <div className="p-3 border-b border-border">
-        <h2 className="text-sm font-bold text-primary mb-3">제품 카테고리</h2>
+    <div className="w-72 bg-card border-r border-border flex flex-col h-full">
+      {/* Category Tree */}
+      <div className="border-b border-border">
+        <div className="p-3 pb-2">
+          <h2 className="text-sm font-bold text-primary flex items-center gap-1.5">
+            <FolderOpen className="h-4 w-4" />
+            제품 카테고리
+          </h2>
+        </div>
         {catLoading ? (
           <div className="flex items-center justify-center py-4">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-2">
-            {(categories || []).map((cat) => {
-              const Icon = categoryIcons[cat.slug] || Archive;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategoryChange(cat.id)}
-                  className={cn(
-                    "flex flex-col items-center gap-1 p-2 rounded-lg transition-all",
-                    "hover:bg-accent/20",
-                    selectedCategoryId === cat.id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="text-[10px] font-medium leading-tight text-center">{cat.name}</span>
-                </button>
-              );
-            })}
-          </div>
+          <ScrollArea className="max-h-[240px]">
+            <div className="px-2 pb-2 space-y-0.5">
+              {(categories || []).map((mainCat) => {
+                const Icon = categoryIcons[mainCat.slug] || Archive;
+                const isExpanded = expandedMainId === mainCat.id;
+                const isMainSelected = selectedCategoryId === mainCat.id;
+                const hasChildren = mainCat.children.length > 0;
+
+                return (
+                  <div key={mainCat.id}>
+                    {/* Main Category */}
+                    <button
+                      onClick={() => {
+                        handleToggleMain(mainCat.id);
+                        if (!hasChildren) {
+                          handleCategoryChange(mainCat.id);
+                        }
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all",
+                        "hover:bg-accent/20",
+                        isMainSelected && !hasChildren
+                          ? "bg-primary text-primary-foreground font-semibold"
+                          : "text-foreground"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="flex-1 text-left truncate font-medium">{mainCat.name}</span>
+                      {hasChildren && (
+                        isExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
+                    </button>
+
+                    {/* Subcategories */}
+                    {isExpanded && hasChildren && (
+                      <div className="ml-5 pl-3 border-l-2 border-border space-y-0.5 mt-0.5 mb-1">
+                        {/* All in this main category */}
+                        <button
+                          onClick={() => handleCategoryChange(mainCat.id)}
+                          className={cn(
+                            "w-full text-left px-3 py-1.5 rounded-md text-xs transition-colors",
+                            selectedCategoryId === mainCat.id
+                              ? "bg-primary text-primary-foreground font-semibold"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                          )}
+                        >
+                          전체보기
+                        </button>
+                        {mainCat.children.map((sub) => (
+                          <button
+                            key={sub.id}
+                            onClick={() => handleCategoryChange(sub.id)}
+                            className={cn(
+                              "w-full text-left px-3 py-1.5 rounded-md text-xs transition-colors",
+                              selectedCategoryId === sub.id
+                                ? "bg-primary text-primary-foreground font-semibold"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                            )}
+                          >
+                            {sub.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         )}
       </div>
 
@@ -107,7 +173,6 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
             </p>
           ) : (
             <>
-              {/* Product count */}
               <p className="text-[10px] text-muted-foreground mb-1">
                 총 {products!.length}개 · {currentPage + 1}/{totalPages} 페이지
               </p>
