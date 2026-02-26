@@ -138,7 +138,7 @@ export const useExcelUpload = (options?: UseExcelUploadOptions) => {
   /**
    * Handle Excel file upload with embedded images
    */
-  const handleExcelUpload = async (file: File) => {
+  const handleExcelUpload = async (file: File, skipTitles: Set<string> | null = null) => {
     setIsUploading(true);
     setProgress({ current: 0, total: 0, currentProduct: '파싱 중...', status: 'parsing' });
 
@@ -147,7 +147,20 @@ export const useExcelUpload = (options?: UseExcelUploadOptions) => {
       const batchSlugs = new Set<string>();
 
       // Parse Excel file
-      const { rows, errors: parseErrors, warnings } = await parseExcelWithImages(file);
+      let { rows, errors: parseErrors, warnings } = await parseExcelWithImages(file);
+
+      // Filter out duplicates if requested
+      if (skipTitles) {
+        const beforeCount = rows.length;
+        rows = rows.filter(r => {
+          const title = (r.data['품명'] || r.data['제품명'] || r.data['title'] || '').trim().toLowerCase();
+          return !title || !skipTitles.has(title);
+        });
+        const skippedCount = beforeCount - rows.length;
+        if (skippedCount > 0) {
+          toast.info(`중복 품목 ${skippedCount}개를 제외했습니다.`);
+        }
+      }
 
       if (rows.length === 0) {
         throw new Error('업로드할 유효한 제품이 없습니다.' + (parseErrors.length > 0 ? ` (${parseErrors.join(', ')})` : ''));
@@ -276,12 +289,25 @@ export const useExcelUpload = (options?: UseExcelUploadOptions) => {
   /**
    * Handle CSV file upload (existing logic)
    */
-  const handleCSVUpload = async (file: File) => {
+  const handleCSVUpload = async (file: File, skipTitles: Set<string> | null = null) => {
     setIsUploading(true);
 
     try {
       const existingSlugs = await fetchAllExistingProductSlugs();
-      const { products: parsedProducts, errors } = await parseProductCSV(file, { existingSlugs });
+      let { products: parsedProducts, errors } = await parseProductCSV(file, { existingSlugs });
+
+      // Filter out duplicates if requested
+      if (skipTitles) {
+        const beforeCount = parsedProducts.length;
+        parsedProducts = parsedProducts.filter((p: any) => {
+          const title = (p.title || '').trim().toLowerCase();
+          return !title || !skipTitles.has(title);
+        });
+        const skippedCount = beforeCount - parsedProducts.length;
+        if (skippedCount > 0) {
+          toast.info(`중복 품목 ${skippedCount}개를 제외했습니다.`);
+        }
+      }
 
       if (parsedProducts.length === 0) {
         throw new Error('업로드할 유효한 제품이 없습니다.');
@@ -409,15 +435,18 @@ export const useExcelUpload = (options?: UseExcelUploadOptions) => {
   /**
    * Confirm and proceed with upload
    */
-  const confirmUpload = useCallback(async () => {
+  const confirmUpload = useCallback(async (skipDuplicates = false) => {
     if (!pendingFile) return;
-    const { file } = pendingFile;
+    const { file, duplicates } = pendingFile;
+    const duplicateTitlesSet = skipDuplicates && duplicates.length > 0
+      ? new Set(duplicates.map(d => d.trim().toLowerCase()))
+      : null;
     setPendingFile(null);
 
     if (isExcelFile(file)) {
-      await handleExcelUpload(file);
+      await handleExcelUpload(file, duplicateTitlesSet);
     } else if (isCSVFile(file)) {
-      await handleCSVUpload(file);
+      await handleCSVUpload(file, duplicateTitlesSet);
     }
   }, [pendingFile]);
 
