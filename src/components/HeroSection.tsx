@@ -1,7 +1,6 @@
-import { ExternalLink, Play, BadgeCheck, Building2, Leaf, ShieldCheck, Layout } from 'lucide-react';
+import { ExternalLink, BadgeCheck, Building2, Leaf, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CatalogDownloadButton } from '@/components/CatalogDownloadButton';
-import { Link } from 'react-router-dom';
 import heroClassroom from '@/assets/hero-classroom.jpg';
 const features = [{
   icon: BadgeCheck,
@@ -21,15 +20,6 @@ const features = [{
   description: '조달청 품질검사를 통과한 신뢰의 제품'
 }];
 export const HeroSection = () => {
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      window.scrollTo({
-        top: element.offsetTop - 80,
-        behavior: 'smooth'
-      });
-    }
-  };
   return <section id="hero" className="relative min-h-screen overflow-hidden">
       {/* Hero Background - Real classroom image with blue overlay (IKEA style) */}
       <div className="absolute inset-0 bg-cover bg-center" style={{
@@ -65,16 +55,6 @@ export const HeroSection = () => {
               <span>조달청 나라장터 바로가기</span>
             </Button>
             <CatalogDownloadButton variant="hero" />
-            <Button size="lg" asChild className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border border-white/40 font-bold px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base shadow-lg w-full sm:w-auto justify-center">
-              <Link to="/planner">
-                <Layout className="w-5 h-5 mr-2 flex-shrink-0" />
-                <span>공간 시뮬레이터</span>
-              </Link>
-            </Button>
-            <Button size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border border-white/40 font-bold px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base shadow-lg w-full sm:w-auto justify-center" onClick={() => scrollToSection('about')}>
-              <Play className="w-5 h-5 mr-2 flex-shrink-0" />
-              <span>브랜드 스토리</span>
-            </Button>
           </div>
           
           {/* Fixed mobile catalog button */}
