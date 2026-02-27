@@ -32,9 +32,6 @@ export const ProcurementSection = () => {
                 </h2>
                 <div className="space-y-3 sm:space-y-4 text-sm sm:text-base text-muted-foreground leading-relaxed">
                   <p>
-                    교육의 미래를 함께 만들어가는 <strong className="text-foreground">여성기업 주식회사 지지아이</strong>입니다.
-                  </p>
-                  <p>
                     저희는 신생기업이지만, 사무용 가구와 교육용 가구 분야에서 오랜 경험과 전문성을 갖춘 팀이 모여 
                     새로운 도전을 시작했습니다. 단순히 가구를 공급하는 것이 아닌, 
                     <strong className="text-foreground"> 학생들의 학습 환경과 교직원분들의 업무 효율을 높이는 최적의 공간</strong>을 
