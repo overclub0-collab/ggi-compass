@@ -141,45 +141,10 @@ export const Navbar = () => {
 
                     {/* Mega Menu */}
                     {megaMenuOpen && (
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2">
-                        <div className="bg-white rounded-xl shadow-2xl border border-border p-6 min-w-[500px] lg:min-w-[600px]">
-                          <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-                            {mainCategories.map((mainCat) => (
-                              <div key={mainCat.id} className="space-y-3">
-                                <Link
-                                  to={`/product/${mainCat.slug}`}
-                                  className="text-primary font-bold text-sm hover:text-accent transition-colors block"
-                                  onClick={() => setMegaMenuOpen(false)}
-                                >
-                                  {mainCat.name}
-                                </Link>
-                                <div className="space-y-1">
-                                  {getSubcategories(mainCat.id).map((subCat) => (
-                                    <Link
-                                      key={subCat.id}
-                                      to={`/product/${mainCat.slug}/${subCat.slug}`}
-                                      className="text-muted-foreground text-sm hover:text-primary transition-colors block py-1"
-                                      onClick={() => setMegaMenuOpen(false)}
-                                    >
-                                      {subCat.name}
-                                    </Link>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="mt-4 pt-4 border-t">
-                            <Link
-                              to="/product/all"
-                              className="text-accent font-medium text-sm hover:text-primary transition-colors flex items-center gap-1"
-                              onClick={() => setMegaMenuOpen(false)}
-                            >
-                              전체 제품 보기
-                              <ChevronRight className="h-4 w-4" />
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
+                      <MegaMenu 
+                        categories={categories} 
+                        onClose={() => setMegaMenuOpen(false)} 
+                      />
                     )}
                   </div>
                 );
