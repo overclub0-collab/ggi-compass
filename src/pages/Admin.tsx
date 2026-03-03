@@ -1027,12 +1027,10 @@ const Admin = () => {
               />
             </div>
             <div>
-              <Label htmlFor="cat_image_url">썸네일 이미지 URL</Label>
-              <Input
-                id="cat_image_url"
-                value={categoryFormData.image_url}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, image_url: e.target.value })}
-                placeholder="https://example.com/image.jpg"
+              <Label>메가메뉴 썸네일 이미지</Label>
+              <CategoryImageUpload
+                imageUrl={categoryFormData.image_url}
+                onChange={(url) => setCategoryFormData({ ...categoryFormData, image_url: url })}
               />
             </div>
             <div>
