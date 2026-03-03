@@ -49,6 +49,7 @@ import {
 import { getErrorMessage, logError } from '@/lib/errorUtils';
 import { exportProductsToCSV } from '@/lib/excelUtils';
 import CategoryTree from '@/components/admin/CategoryTree';
+import CategoryImageUpload from '@/components/admin/CategoryImageUpload';
 import ProductForm from '@/components/admin/ProductForm';
 import DraggableProductCard from '@/components/admin/DraggableProductCard';
 import { AdminInquiryList } from '@/components/admin/AdminInquiryList';
