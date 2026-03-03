@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Menu, ChevronDown, ChevronRight } from 'lucide-react';
+import { Menu, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import ggiLogo from '@/assets/ggi-logo-new.png';
 import { supabase } from '@/integrations/supabase/client';
 import { MobileMenu } from './mobile/MobileMenu';
+import { MegaMenu } from './MegaMenu';
 
 interface Category {
   id: string;
