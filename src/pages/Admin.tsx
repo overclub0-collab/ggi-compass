@@ -551,7 +551,7 @@ const Admin = () => {
   };
 
   const handleProductDrop = async (productId: string, targetCategory: Category) => {
-    const isMainCategory = !targetCategory.parent_id || targetCategory.parent_id === targetCategory.id;
+    const isMainCategory = !targetCategory.parent_id;
     
     try {
       let updateData: { main_category: string | null; subcategory: string | null };
