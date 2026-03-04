@@ -410,23 +410,12 @@ const Admin = () => {
 
   const handleEditCategory = (category: Category) => {
     setEditingCategory(category);
-    setCategoryFormData({
-      name: category.name,
-      slug: category.slug,
-      parent_id: category.parent_id || '',
-      display_order: category.display_order,
-      description: category.description || '',
-      image_url: category.image_url || '',
-    });
     setIsCategoryDialogOpen(true);
   };
 
   const handleAddCategory = (parentId: string | null) => {
-    resetCategoryForm();
+    setEditingCategory(null);
     setNewCategoryParentId(parentId);
-    if (parentId) {
-      setCategoryFormData(prev => ({ ...prev, parent_id: parentId }));
-    }
     setIsCategoryDialogOpen(true);
   };
 
