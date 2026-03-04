@@ -25,6 +25,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FolderOpen,
+  Folder,
   Image as ImageIcon
 } from 'lucide-react';
 import {
