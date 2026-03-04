@@ -536,14 +536,14 @@ const Admin = () => {
   };
 
   const handleProductDrop = async (productId: string, targetCategory: Category) => {
-    const isMainCategory = !targetCategory.parent_id;
+    const isMainCategory = !targetCategory.parent_id || targetCategory.parent_id === targetCategory.id;
     
     try {
       let updateData: { main_category: string | null; subcategory: string | null };
       
       if (isMainCategory) {
         updateData = {
-          main_category: targetCategory.name,
+          main_category: targetCategory.slug,
           subcategory: null,
         };
       } else {
@@ -553,8 +553,8 @@ const Admin = () => {
           return;
         }
         updateData = {
-          main_category: parentCategory.name,
-          subcategory: targetCategory.name,
+          main_category: parentCategory.slug,
+          subcategory: targetCategory.slug,
         };
       }
 
