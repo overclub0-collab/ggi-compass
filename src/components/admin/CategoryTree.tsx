@@ -230,17 +230,35 @@ const CategoryTree = ({
   return (
     <div className="space-y-2">
       {/* Header */}
-      <div className="flex items-center justify-between px-2 py-2 border-b">
-        <h3 className="font-semibold text-sm">카테고리</h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs"
-          onClick={() => onAddCategory(null)}
-        >
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          대분류 추가
-        </Button>
+      <div className="flex items-center justify-between px-2 py-2 border-b gap-1">
+        <h3 className="font-semibold text-sm flex-shrink-0">카테고리</h3>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => {
+              // Open subcategory dialog - pick first main category or prompt
+              if (mainCategories.length === 0) {
+                onAddCategory(null); // No main categories, create main first
+              } else {
+                onAddCategory(mainCategories[0].id);
+              }
+            }}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            소분류 추가
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => onAddCategory(null)}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            대분류 추가
+          </Button>
+        </div>
       </div>
 
       {/* All Products Option */}
