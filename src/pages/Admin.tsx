@@ -61,6 +61,7 @@ import AdminCatalogManager from '@/components/admin/AdminCatalogManager';
 import AdminCompanyInfo from '@/components/admin/AdminCompanyInfo';
 import { AdminDashboard } from '@/components/admin/dashboard/AdminDashboard';
 import AdminMegaMenuThumbnails from '@/components/admin/AdminMegaMenuThumbnails';
+import CategoryFormDialog from '@/components/admin/CategoryFormDialog';
 import type { User } from '@supabase/supabase-js';
 
 interface Product {
@@ -136,14 +137,6 @@ const Admin = () => {
 
   const [formData, setFormData] = useState(initialFormData);
 
-  const [categoryFormData, setCategoryFormData] = useState({
-    name: '',
-    slug: '',
-    parent_id: '',
-    display_order: 0,
-    description: '',
-    image_url: '',
-  });
 
   // Check if user has admin role
   const checkAdminRole = async (userId: string) => {
@@ -351,18 +344,6 @@ const Admin = () => {
     setEditingProduct(null);
   };
 
-  const resetCategoryForm = () => {
-    setCategoryFormData({
-      name: '',
-      slug: '',
-      parent_id: '',
-      display_order: 0,
-      description: '',
-      image_url: '',
-    });
-    setEditingCategory(null);
-    setNewCategoryParentId(null);
-  };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
@@ -409,23 +390,12 @@ const Admin = () => {
 
   const handleEditCategory = (category: Category) => {
     setEditingCategory(category);
-    setCategoryFormData({
-      name: category.name,
-      slug: category.slug,
-      parent_id: category.parent_id || '',
-      display_order: category.display_order,
-      description: category.description || '',
-      image_url: category.image_url || '',
-    });
     setIsCategoryDialogOpen(true);
   };
 
   const handleAddCategory = (parentId: string | null) => {
-    resetCategoryForm();
+    setEditingCategory(null);
     setNewCategoryParentId(parentId);
-    if (parentId) {
-      setCategoryFormData(prev => ({ ...prev, parent_id: parentId }));
-    }
     setIsCategoryDialogOpen(true);
   };
 
@@ -505,20 +475,20 @@ const Admin = () => {
     }
   };
 
-  const handleSaveCategory = async () => {
-    if (!categoryFormData.name.trim()) {
+  const handleSaveCategory = async (data: { name: string; slug: string; parent_id: string; display_order: number; description: string; image_url: string }) => {
+    if (!data.name.trim()) {
       toast.error('카테고리명은 필수입니다.');
       return;
     }
 
     try {
       const categoryData = {
-        name: categoryFormData.name,
-        slug: categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-'),
-        parent_id: categoryFormData.parent_id || null,
-        display_order: categoryFormData.display_order,
-        description: categoryFormData.description || null,
-        image_url: categoryFormData.image_url || null,
+        name: data.name,
+        slug: data.slug || data.name.toLowerCase().replace(/\s+/g, '-'),
+        parent_id: data.parent_id || null,
+        display_order: data.display_order,
+        description: data.description || null,
+        image_url: data.image_url || null,
       };
 
       if (editingCategory) {
@@ -539,7 +509,8 @@ const Admin = () => {
       }
 
       setIsCategoryDialogOpen(false);
-      resetCategoryForm();
+      setEditingCategory(null);
+      setNewCategoryParentId(null);
       fetchCategories();
     } catch (error: any) {
       logError('Save category', error);
@@ -1000,91 +971,20 @@ const Admin = () => {
       </Dialog>
 
       {/* Category Dialog */}
-      <Dialog open={isCategoryDialogOpen} onOpenChange={(open) => {
-        setIsCategoryDialogOpen(open);
-        if (!open) resetCategoryForm();
-      }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editingCategory ? '카테고리 수정' : '새 카테고리 추가'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="cat_name">카테고리명 *</Label>
-              <Input
-                id="cat_name"
-                value={categoryFormData.name}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                placeholder="카테고리 이름"
-              />
-            </div>
-            <div>
-              <Label htmlFor="cat_slug">슬러그 (URL)</Label>
-              <Input
-                id="cat_slug"
-                value={categoryFormData.slug}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, slug: e.target.value })}
-                placeholder="category-slug (자동 생성)"
-              />
-            </div>
-            <div>
-              <Label htmlFor="cat_description">설명</Label>
-              <Textarea
-                id="cat_description"
-                value={categoryFormData.description}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                placeholder="카테고리 설명"
-                rows={2}
-              />
-            </div>
-            <div>
-              <Label>메가메뉴 썸네일 이미지</Label>
-              <CategoryImageUpload
-                imageUrl={categoryFormData.image_url}
-                onChange={(url) => setCategoryFormData({ ...categoryFormData, image_url: url })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="parent_id">상위 카테고리</Label>
-              <select
-                id="parent_id"
-                value={categoryFormData.parent_id}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, parent_id: e.target.value })}
-                className="w-full h-10 px-3 rounded-md border border-input bg-background text-base"
-              >
-                <option value="">없음 (대분류)</option>
-                {mainCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="cat_order">표시 순서</Label>
-              <Input
-                id="cat_order"
-                type="number"
-                value={categoryFormData.display_order}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, display_order: Number(e.target.value) })}
-              />
-            </div>
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={() => {
-                setIsCategoryDialogOpen(false);
-                resetCategoryForm();
-              }} className="min-h-[44px]">
-                <X className="mr-2 h-4 w-4" />
-                취소
-              </Button>
-              <Button onClick={handleSaveCategory} className="min-h-[44px]">
-                <Save className="mr-2 h-4 w-4" />
-                저장
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CategoryFormDialog
+        open={isCategoryDialogOpen}
+        onOpenChange={(open) => {
+          setIsCategoryDialogOpen(open);
+          if (!open) {
+            setEditingCategory(null);
+            setNewCategoryParentId(null);
+          }
+        }}
+        editingCategory={editingCategory}
+        categories={categories}
+        initialParentId={newCategoryParentId}
+        onSave={handleSaveCategory}
+      />
     </div>
   );
 };
