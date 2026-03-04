@@ -539,18 +539,22 @@ const Admin = () => {
     const isMainCategory = !targetCategory.parent_id;
     
     try {
-      let updateData: { main_category: string; subcategory: string | null };
+      let updateData: { main_category: string | null; subcategory: string | null };
       
       if (isMainCategory) {
         updateData = {
-          main_category: targetCategory.slug,
+          main_category: targetCategory.name,
           subcategory: null,
         };
       } else {
         const parentCategory = categories.find(c => c.id === targetCategory.parent_id);
+        if (!parentCategory) {
+          toast.error('상위 카테고리를 찾을 수 없습니다.');
+          return;
+        }
         updateData = {
-          main_category: parentCategory?.slug || '',
-          subcategory: targetCategory.slug,
+          main_category: parentCategory.name,
+          subcategory: targetCategory.name,
         };
       }
 
