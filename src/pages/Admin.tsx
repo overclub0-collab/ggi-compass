@@ -24,7 +24,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  FolderOpen
+  FolderOpen,
+  Image as ImageIcon
 } from 'lucide-react';
 import {
   Select,
@@ -59,6 +60,7 @@ import ProductBulkUpload from '@/components/admin/ProductBulkUpload';
 import AdminCatalogManager from '@/components/admin/AdminCatalogManager';
 import AdminCompanyInfo from '@/components/admin/AdminCompanyInfo';
 import { AdminDashboard } from '@/components/admin/dashboard/AdminDashboard';
+import AdminMegaMenuThumbnails from '@/components/admin/AdminMegaMenuThumbnails';
 import type { User } from '@supabase/supabase-js';
 
 interface Product {
@@ -125,7 +127,7 @@ const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users' | 'company'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users' | 'company' | 'mega-menu'>('dashboard');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkCategoryTarget, setBulkCategoryTarget] = useState<string>('');
@@ -721,6 +723,14 @@ const Admin = () => {
             사용자 관리
           </Button>
           <Button
+            variant={activeTab === 'mega-menu' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('mega-menu')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <ImageIcon className="h-4 w-4 mr-2" />
+            메가메뉴
+          </Button>
+          <Button
             variant={activeTab === 'company' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('company')}
             className="min-h-[40px] flex-shrink-0"
@@ -959,6 +969,8 @@ const Admin = () => {
               <h2 className="text-xl font-bold mb-6">사용자 역할 관리</h2>
               <AdminUserRoleManager />
             </div>
+          ) : activeTab === 'mega-menu' ? (
+            <AdminMegaMenuThumbnails />
           ) : activeTab === 'company' ? (
             <AdminCompanyInfo />
           ) : null}
