@@ -24,7 +24,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  FolderOpen
+  FolderOpen,
+  Image as ImageIcon
 } from 'lucide-react';
 import {
   Select,
