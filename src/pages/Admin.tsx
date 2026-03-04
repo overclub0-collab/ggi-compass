@@ -969,6 +969,8 @@ const Admin = () => {
               <h2 className="text-xl font-bold mb-6">사용자 역할 관리</h2>
               <AdminUserRoleManager />
             </div>
+          ) : activeTab === 'mega-menu' ? (
+            <AdminMegaMenuThumbnails />
           ) : activeTab === 'company' ? (
             <AdminCompanyInfo />
           ) : null}
