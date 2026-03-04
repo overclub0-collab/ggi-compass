@@ -52,10 +52,9 @@ const Catalogs = () => {
         user_agent: navigator.userAgent,
       });
 
-      await supabase
-        .from('catalogs')
-        .update({ download_count: catalog.download_count + 1 })
-        .eq('id', catalog.id);
+      await supabase.rpc('increment_catalog_downloads', {
+        p_catalog_id: catalog.id,
+      });
 
       setCatalogs(prev => 
         prev.map(c => 
