@@ -61,6 +61,7 @@ import AdminCatalogManager from '@/components/admin/AdminCatalogManager';
 import AdminCompanyInfo from '@/components/admin/AdminCompanyInfo';
 import { AdminDashboard } from '@/components/admin/dashboard/AdminDashboard';
 import AdminMegaMenuThumbnails from '@/components/admin/AdminMegaMenuThumbnails';
+import CategoryFormDialog from '@/components/admin/CategoryFormDialog';
 import type { User } from '@supabase/supabase-js';
 
 interface Product {
