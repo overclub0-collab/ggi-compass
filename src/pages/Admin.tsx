@@ -723,6 +723,14 @@ const Admin = () => {
             사용자 관리
           </Button>
           <Button
+            variant={activeTab === 'mega-menu' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('mega-menu')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <ImageIcon className="h-4 w-4 mr-2" />
+            메가메뉴
+          </Button>
+          <Button
             variant={activeTab === 'company' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('company')}
             className="min-h-[40px] flex-shrink-0"
