@@ -127,6 +127,15 @@
     min-width: 44px;
   }
 
+  /* Exception for checkboxes and small UI controls */
+  [role="checkbox"],
+  button[data-state][data-slot="checkbox"],
+  .h-4.w-4,
+  .h-3.w-3 {
+    min-height: auto;
+    min-width: auto;
+  }
+
   /* Exception for inline links */
   p a, span a, li a {
     min-height: auto;

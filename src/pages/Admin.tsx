@@ -233,10 +233,17 @@ const Admin = () => {
   const filteredProducts = products.filter(product => {
     // Category filter
     if (selectedCategory) {
-      const isMainCategory = !selectedCategory.parent_id;
+      const isMainCategory = !selectedCategory.parent_id || selectedCategory.parent_id === selectedCategory.id;
       if (isMainCategory) {
         // Show products in this main category or its subcategories
-        if (product.main_category !== selectedCategory.slug) return false;
+        const subcategorySlugs = categories
+          .filter(c => c.parent_id === selectedCategory.id && c.id !== c.parent_id)
+          .map(c => c.slug);
+        if (product.main_category !== selectedCategory.slug && 
+            !subcategorySlugs.includes(product.subcategory || '')) {
+          // Also check if subcategory matches directly
+          if (product.main_category !== selectedCategory.slug) return false;
+        }
       } else {
         // Show only products in this specific subcategory
         if (product.subcategory !== selectedCategory.slug) return false;
@@ -317,11 +324,17 @@ const Admin = () => {
     if (selectedIds.size === 0 || !bulkCategoryTarget) return;
     const targetCat = categories.find(c => c.id === bulkCategoryTarget);
     if (!targetCat) return;
-    const isMain = !targetCat.parent_id;
+    const isMain = !targetCat.parent_id || targetCat.parent_id === targetCat.id;
     const parentCat = isMain ? null : categories.find(c => c.id === targetCat.parent_id);
+    
+    if (!isMain && !parentCat) {
+      toast.error('상위 카테고리를 찾을 수 없습니다.');
+      return;
+    }
+    
     const updateData = isMain
       ? { main_category: targetCat.slug, subcategory: null }
-      : { main_category: parentCat?.slug || '', subcategory: targetCat.slug };
+      : { main_category: parentCat!.slug, subcategory: targetCat.slug };
     const ids = Array.from(selectedIds);
     const { error } = await supabase.from('products').update(updateData).in('id', ids);
     if (error) {
@@ -369,7 +382,7 @@ const Admin = () => {
     resetForm();
     
     // Determine main_category and subcategory based on category hierarchy
-    const isMainCategory = !category.parent_id;
+    const isMainCategory = !category.parent_id || category.parent_id === category.id;
     if (isMainCategory) {
       setFormData(prev => ({
         ...prev,
@@ -536,10 +549,10 @@ const Admin = () => {
   };
 
   const handleProductDrop = async (productId: string, targetCategory: Category) => {
-    const isMainCategory = !targetCategory.parent_id;
+    const isMainCategory = !targetCategory.parent_id || targetCategory.parent_id === targetCategory.id;
     
     try {
-      let updateData: { main_category: string; subcategory: string | null };
+      let updateData: { main_category: string | null; subcategory: string | null };
       
       if (isMainCategory) {
         updateData = {
@@ -548,8 +561,12 @@ const Admin = () => {
         };
       } else {
         const parentCategory = categories.find(c => c.id === targetCategory.parent_id);
+        if (!parentCategory) {
+          toast.error('상위 카테고리를 찾을 수 없습니다.');
+          return;
+        }
         updateData = {
-          main_category: parentCategory?.slug || '',
+          main_category: parentCategory.slug,
           subcategory: targetCategory.slug,
         };
       }
