@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { FurnitureSidebar } from '@/components/planner/FurnitureSidebar';
 import { PlannerCanvas } from '@/components/planner/PlannerCanvas';
