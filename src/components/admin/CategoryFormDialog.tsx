@@ -236,11 +236,11 @@ const CategoryFormDialog = ({
 
           {/* Info banner */}
           {!isEditing && (
-            <div className={cn(
+          <div className={cn(
               "rounded-lg px-3 py-2 text-xs",
               categoryType === 'main'
-                ? "bg-blue-50 text-blue-700 border border-blue-200"
-                : "bg-amber-50 text-amber-700 border border-amber-200"
+                ? "bg-primary/5 text-primary border border-primary/20"
+                : "bg-accent text-accent-foreground border border-accent"
             )}>
               {categoryType === 'main'
                 ? '💡 대분류는 제품의 최상위 분류입니다. (예: 교육용가구, 사무용가구)'
