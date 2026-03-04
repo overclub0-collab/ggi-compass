@@ -25,6 +25,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FolderOpen,
+  Folder,
   Image as ImageIcon
 } from 'lucide-react';
 import {
@@ -816,31 +817,36 @@ const Admin = () => {
                     <span className="text-sm font-medium text-primary">{selectedIds.size}개 선택</span>
                     <div className="flex items-center gap-2 flex-1 flex-wrap">
                       <Select value={bulkCategoryTarget} onValueChange={setBulkCategoryTarget}>
-                        <SelectTrigger className="h-8 w-60">
-                          <SelectValue placeholder="이동할 카테고리 선택..." />
+                        <SelectTrigger className="h-8 w-64">
+                          <SelectValue placeholder="카테고리 일괄 변경..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="max-h-80">
                           {categories
                             .filter(c => !c.parent_id)
                             .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
-                            .map(mainCat => {
+                            .map((mainCat, idx) => {
                               const subs = categories
                                 .filter(c => c.parent_id === mainCat.id)
                                 .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
                               return (
-                                <SelectGroup key={mainCat.id}>
-                                  <SelectLabel className="text-xs font-bold text-primary py-1 pl-3">
-                                    📁 {mainCat.name}
-                                  </SelectLabel>
-                                  <SelectItem value={mainCat.id} className="pl-6 font-medium">
-                                    {mainCat.name} (대분류)
+                                <div key={mainCat.id}>
+                                  {idx > 0 && <div className="h-px bg-border my-1 mx-2" />}
+                                  <SelectItem value={mainCat.id} className="font-bold text-primary pl-2">
+                                    <span className="flex items-center gap-1.5">
+                                      <Folder className="h-3.5 w-3.5" />
+                                      {mainCat.name}
+                                      <span className="text-[10px] font-normal text-muted-foreground ml-1">대분류</span>
+                                    </span>
                                   </SelectItem>
                                   {subs.map(sub => (
-                                    <SelectItem key={sub.id} value={sub.id} className="pl-10">
-                                      └ {sub.name}
+                                    <SelectItem key={sub.id} value={sub.id} className="pl-8 text-sm">
+                                      <span className="flex items-center gap-1.5">
+                                        <span className="text-muted-foreground">└</span>
+                                        {sub.name}
+                                      </span>
                                     </SelectItem>
                                   ))}
-                                </SelectGroup>
+                                </div>
                               );
                             })}
                         </SelectContent>
