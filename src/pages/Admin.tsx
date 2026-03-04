@@ -137,14 +137,6 @@ const Admin = () => {
 
   const [formData, setFormData] = useState(initialFormData);
 
-  const [categoryFormData, setCategoryFormData] = useState({
-    name: '',
-    slug: '',
-    parent_id: '',
-    display_order: 0,
-    description: '',
-    image_url: '',
-  });
 
   // Check if user has admin role
   const checkAdminRole = async (userId: string) => {
