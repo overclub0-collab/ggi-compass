@@ -233,10 +233,17 @@ const Admin = () => {
   const filteredProducts = products.filter(product => {
     // Category filter
     if (selectedCategory) {
-      const isMainCategory = !selectedCategory.parent_id;
+      const isMainCategory = !selectedCategory.parent_id || selectedCategory.parent_id === selectedCategory.id;
       if (isMainCategory) {
         // Show products in this main category or its subcategories
-        if (product.main_category !== selectedCategory.slug) return false;
+        const subcategorySlugs = categories
+          .filter(c => c.parent_id === selectedCategory.id && c.id !== c.parent_id)
+          .map(c => c.slug);
+        if (product.main_category !== selectedCategory.slug && 
+            !subcategorySlugs.includes(product.subcategory || '')) {
+          // Also check if subcategory matches directly
+          if (product.main_category !== selectedCategory.slug) return false;
+        }
       } else {
         // Show only products in this specific subcategory
         if (product.subcategory !== selectedCategory.slug) return false;
