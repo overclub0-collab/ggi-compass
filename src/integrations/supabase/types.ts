@@ -422,6 +422,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_catalog_downloads: {
+        Args: { p_catalog_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
