@@ -382,7 +382,7 @@ const Admin = () => {
     resetForm();
     
     // Determine main_category and subcategory based on category hierarchy
-    const isMainCategory = !category.parent_id;
+    const isMainCategory = !category.parent_id || category.parent_id === category.id;
     if (isMainCategory) {
       setFormData(prev => ({
         ...prev,
