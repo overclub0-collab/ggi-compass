@@ -344,18 +344,6 @@ const Admin = () => {
     setEditingProduct(null);
   };
 
-  const resetCategoryForm = () => {
-    setCategoryFormData({
-      name: '',
-      slug: '',
-      parent_id: '',
-      display_order: 0,
-      description: '',
-      image_url: '',
-    });
-    setEditingCategory(null);
-    setNewCategoryParentId(null);
-  };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
