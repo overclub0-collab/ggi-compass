@@ -30,7 +30,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -324,7 +326,7 @@ const Admin = () => {
     if (selectedIds.size === 0 || !bulkCategoryTarget) return;
     const targetCat = categories.find(c => c.id === bulkCategoryTarget);
     if (!targetCat) return;
-    const isMain = !targetCat.parent_id || targetCat.parent_id === targetCat.id;
+    const isMain = !targetCat.parent_id;
     const parentCat = isMain ? null : categories.find(c => c.id === targetCat.parent_id);
     
     if (!isMain && !parentCat) {
@@ -382,7 +384,7 @@ const Admin = () => {
     resetForm();
     
     // Determine main_category and subcategory based on category hierarchy
-    const isMainCategory = !category.parent_id || category.parent_id === category.id;
+    const isMainCategory = !category.parent_id;
     if (isMainCategory) {
       setFormData(prev => ({
         ...prev,
@@ -549,7 +551,7 @@ const Admin = () => {
   };
 
   const handleProductDrop = async (productId: string, targetCategory: Category) => {
-    const isMainCategory = !targetCategory.parent_id || targetCategory.parent_id === targetCategory.id;
+    const isMainCategory = !targetCategory.parent_id;
     
     try {
       let updateData: { main_category: string | null; subcategory: string | null };
@@ -814,15 +816,33 @@ const Admin = () => {
                     <span className="text-sm font-medium text-primary">{selectedIds.size}개 선택</span>
                     <div className="flex items-center gap-2 flex-1 flex-wrap">
                       <Select value={bulkCategoryTarget} onValueChange={setBulkCategoryTarget}>
-                        <SelectTrigger className="h-8 w-48">
-                          <SelectValue placeholder="카테고리 일괄 변경..." />
+                        <SelectTrigger className="h-8 w-60">
+                          <SelectValue placeholder="이동할 카테고리 선택..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map(cat => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              {cat.parent_id ? `  └ ${cat.name}` : cat.name}
-                            </SelectItem>
-                          ))}
+                          {categories
+                            .filter(c => !c.parent_id)
+                            .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+                            .map(mainCat => {
+                              const subs = categories
+                                .filter(c => c.parent_id === mainCat.id)
+                                .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+                              return (
+                                <SelectGroup key={mainCat.id}>
+                                  <SelectLabel className="text-xs font-bold text-primary py-1 pl-3">
+                                    📁 {mainCat.name}
+                                  </SelectLabel>
+                                  <SelectItem value={mainCat.id} className="pl-6 font-medium">
+                                    {mainCat.name} (대분류)
+                                  </SelectItem>
+                                  {subs.map(sub => (
+                                    <SelectItem key={sub.id} value={sub.id} className="pl-10">
+                                      └ {sub.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              );
+                            })}
                         </SelectContent>
                       </Select>
                       <Button
