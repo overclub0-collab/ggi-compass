@@ -495,20 +495,20 @@ const Admin = () => {
     }
   };
 
-  const handleSaveCategory = async () => {
-    if (!categoryFormData.name.trim()) {
+  const handleSaveCategory = async (data: { name: string; slug: string; parent_id: string; display_order: number; description: string; image_url: string }) => {
+    if (!data.name.trim()) {
       toast.error('카테고리명은 필수입니다.');
       return;
     }
 
     try {
       const categoryData = {
-        name: categoryFormData.name,
-        slug: categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-'),
-        parent_id: categoryFormData.parent_id || null,
-        display_order: categoryFormData.display_order,
-        description: categoryFormData.description || null,
-        image_url: categoryFormData.image_url || null,
+        name: data.name,
+        slug: data.slug || data.name.toLowerCase().replace(/\s+/g, '-'),
+        parent_id: data.parent_id || null,
+        display_order: data.display_order,
+        description: data.description || null,
+        image_url: data.image_url || null,
       };
 
       if (editingCategory) {
@@ -529,7 +529,8 @@ const Admin = () => {
       }
 
       setIsCategoryDialogOpen(false);
-      resetCategoryForm();
+      setEditingCategory(null);
+      setNewCategoryParentId(null);
       fetchCategories();
     } catch (error: any) {
       logError('Save category', error);
