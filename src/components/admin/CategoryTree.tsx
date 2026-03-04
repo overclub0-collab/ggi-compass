@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Edit2, Trash2, FolderOpen, Folder } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Edit2, Trash2, FolderOpen, Folder, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -76,7 +76,57 @@ const CategoryTree = ({
     }
   };
 
-  const renderCategory = (category: Category, isSubcategory: boolean = false) => {
+  const renderSubcategory = (category: Category) => {
+    const isSelected = selectedCategory?.id === category.id;
+    const isDragOver = dragOverCategory === category.id;
+
+    return (
+      <div key={category.id} className="ml-4 select-none">
+        <div
+          className={cn(
+            "group flex items-center gap-1.5 py-1.5 px-2 rounded-md cursor-pointer transition-all duration-200",
+            isSelected && "bg-primary/10 border border-primary/30",
+            !isSelected && "hover:bg-muted/50",
+            isDragOver && "bg-primary/20 ring-2 ring-primary ring-offset-1"
+          )}
+          onClick={() => onSelectCategory(category)}
+          onDragOver={(e) => handleDragOver(e, category.id)}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, category)}
+        >
+          <Tag className={cn(
+            "h-3.5 w-3.5 flex-shrink-0",
+            isSelected ? "text-primary" : "text-muted-foreground"
+          )} />
+          <span className={cn(
+            "flex-1 text-sm truncate",
+            isSelected ? "font-medium text-primary" : "text-foreground"
+          )}>
+            {category.name}
+          </span>
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="h-6 w-6"
+              onClick={(e) => { e.stopPropagation(); onAddProduct(category); }}
+              title="제품 추가">
+              <Plus className="h-3 w-3" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6"
+              onClick={(e) => { e.stopPropagation(); onEditCategory(category); }}
+              title="수정">
+              <Edit2 className="h-3 w-3" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"
+              onClick={(e) => { e.stopPropagation(); onDeleteCategory(category); }}
+              title="삭제">
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderMainCategory = (category: Category) => {
     const subcategories = getSubcategories(category.id);
     const hasSubcategories = subcategories.length > 0;
     const isExpanded = expandedCategories.has(category.id);
@@ -84,7 +134,7 @@ const CategoryTree = ({
     const isDragOver = dragOverCategory === category.id;
 
     return (
-      <div key={category.id} className={cn("select-none", isSubcategory && "ml-4")}>
+      <div key={category.id} className="select-none">
         <div
           className={cn(
             "group flex items-center gap-1 py-2 px-2 rounded-lg cursor-pointer transition-all duration-200",
@@ -97,26 +147,22 @@ const CategoryTree = ({
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, category)}
         >
-          {/* Expand/Collapse Button */}
-          {hasSubcategories ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 p-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleExpand(category.id);
-              }}
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </Button>
-          ) : (
-            <div className="w-6" />
-          )}
+          {/* Expand/Collapse */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 p-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleExpand(category.id);
+            }}
+          >
+            {hasSubcategories ? (
+              isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground/30" />
+            )}
+          </Button>
 
           {/* Folder Icon */}
           {isExpanded || isSelected ? (
@@ -127,58 +173,54 @@ const CategoryTree = ({
 
           {/* Category Name */}
           <span className={cn(
-            "flex-1 text-sm truncate",
-            isSelected && "font-medium text-primary",
-            !isSelected && "text-foreground"
+            "flex-1 text-sm truncate font-medium",
+            isSelected ? "text-primary" : "text-foreground"
           )}>
             {category.name}
           </span>
 
-          {/* Action Buttons - visible on hover */}
+          {/* Action Buttons */}
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Add Subcategory - prominent button */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-7 w-7 text-primary hover:text-primary hover:bg-primary/10"
               onClick={(e) => {
                 e.stopPropagation();
-                onAddProduct(category);
+                onAddCategory(category.id);
               }}
-              title="이 카테고리에 제품 추가"
+              title="소분류 추가"
             >
               <Plus className="h-3.5 w-3.5" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditCategory(category);
-              }}
-              title="카테고리 수정"
-            >
+            <Button variant="ghost" size="icon" className="h-7 w-7"
+              onClick={(e) => { e.stopPropagation(); onEditCategory(category); }}
+              title="수정">
               <Edit2 className="h-3.5 w-3.5" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-destructive hover:text-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteCategory(category);
-              }}
-              title="카테고리 삭제"
-            >
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+              onClick={(e) => { e.stopPropagation(); onDeleteCategory(category); }}
+              title="삭제">
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
 
         {/* Subcategories */}
-        {hasSubcategories && isExpanded && (
-          <div className="border-l-2 border-muted ml-4 mt-1">
-            {subcategories.map(subcat => renderCategory(subcat, true))}
+        {isExpanded && (
+          <div className="border-l-2 border-muted ml-4 mt-1 space-y-0.5">
+            {subcategories.map(subcat => renderSubcategory(subcat))}
+            {/* Inline "Add subcategory" button */}
+            <div className="ml-4">
+              <button
+                onClick={() => onAddCategory(category.id)}
+                className="flex items-center gap-1.5 py-1.5 px-2 text-xs text-muted-foreground hover:text-primary transition-colors rounded-md hover:bg-primary/5 w-full"
+              >
+                <Plus className="h-3 w-3" />
+                <span>소분류 추가</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -229,7 +271,7 @@ const CategoryTree = ({
         ) : (
           mainCategories
             .sort((a, b) => a.display_order - b.display_order)
-            .map(cat => renderCategory(cat))
+            .map(cat => renderMainCategory(cat))
         )}
       </div>
 
