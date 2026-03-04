@@ -317,11 +317,17 @@ const Admin = () => {
     if (selectedIds.size === 0 || !bulkCategoryTarget) return;
     const targetCat = categories.find(c => c.id === bulkCategoryTarget);
     if (!targetCat) return;
-    const isMain = !targetCat.parent_id;
+    const isMain = !targetCat.parent_id || targetCat.parent_id === targetCat.id;
     const parentCat = isMain ? null : categories.find(c => c.id === targetCat.parent_id);
+    
+    if (!isMain && !parentCat) {
+      toast.error('상위 카테고리를 찾을 수 없습니다.');
+      return;
+    }
+    
     const updateData = isMain
       ? { main_category: targetCat.slug, subcategory: null }
-      : { main_category: parentCat?.slug || '', subcategory: targetCat.slug };
+      : { main_category: parentCat!.slug, subcategory: targetCat.slug };
     const ids = Array.from(selectedIds);
     const { error } = await supabase.from('products').update(updateData).in('id', ids);
     if (error) {
