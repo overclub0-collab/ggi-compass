@@ -326,7 +326,7 @@ const Admin = () => {
     if (selectedIds.size === 0 || !bulkCategoryTarget) return;
     const targetCat = categories.find(c => c.id === bulkCategoryTarget);
     if (!targetCat) return;
-    const isMain = !targetCat.parent_id || targetCat.parent_id === targetCat.id;
+    const isMain = !targetCat.parent_id;
     const parentCat = isMain ? null : categories.find(c => c.id === targetCat.parent_id);
     
     if (!isMain && !parentCat) {
