@@ -991,91 +991,20 @@ const Admin = () => {
       </Dialog>
 
       {/* Category Dialog */}
-      <Dialog open={isCategoryDialogOpen} onOpenChange={(open) => {
-        setIsCategoryDialogOpen(open);
-        if (!open) resetCategoryForm();
-      }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editingCategory ? '카테고리 수정' : '새 카테고리 추가'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="cat_name">카테고리명 *</Label>
-              <Input
-                id="cat_name"
-                value={categoryFormData.name}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                placeholder="카테고리 이름"
-              />
-            </div>
-            <div>
-              <Label htmlFor="cat_slug">슬러그 (URL)</Label>
-              <Input
-                id="cat_slug"
-                value={categoryFormData.slug}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, slug: e.target.value })}
-                placeholder="category-slug (자동 생성)"
-              />
-            </div>
-            <div>
-              <Label htmlFor="cat_description">설명</Label>
-              <Textarea
-                id="cat_description"
-                value={categoryFormData.description}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                placeholder="카테고리 설명"
-                rows={2}
-              />
-            </div>
-            <div>
-              <Label>메가메뉴 썸네일 이미지</Label>
-              <CategoryImageUpload
-                imageUrl={categoryFormData.image_url}
-                onChange={(url) => setCategoryFormData({ ...categoryFormData, image_url: url })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="parent_id">상위 카테고리</Label>
-              <select
-                id="parent_id"
-                value={categoryFormData.parent_id}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, parent_id: e.target.value })}
-                className="w-full h-10 px-3 rounded-md border border-input bg-background text-base"
-              >
-                <option value="">없음 (대분류)</option>
-                {mainCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="cat_order">표시 순서</Label>
-              <Input
-                id="cat_order"
-                type="number"
-                value={categoryFormData.display_order}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, display_order: Number(e.target.value) })}
-              />
-            </div>
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={() => {
-                setIsCategoryDialogOpen(false);
-                resetCategoryForm();
-              }} className="min-h-[44px]">
-                <X className="mr-2 h-4 w-4" />
-                취소
-              </Button>
-              <Button onClick={handleSaveCategory} className="min-h-[44px]">
-                <Save className="mr-2 h-4 w-4" />
-                저장
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CategoryFormDialog
+        open={isCategoryDialogOpen}
+        onOpenChange={(open) => {
+          setIsCategoryDialogOpen(open);
+          if (!open) {
+            setEditingCategory(null);
+            setNewCategoryParentId(null);
+          }
+        }}
+        editingCategory={editingCategory}
+        categories={categories}
+        initialParentId={newCategoryParentId}
+        onSave={handleSaveCategory}
+      />
     </div>
   );
 };
