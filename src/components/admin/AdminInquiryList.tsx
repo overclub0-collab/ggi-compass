@@ -69,7 +69,7 @@ export const AdminInquiryList = ({ onInquiryUpdate }: AdminInquiryListProps) => 
     setIsLoading(true);
     const { data, error } = await supabase
       .from('inquiries')
-      .select('*')
+      .select('id, name, phone, email, title, content, status, admin_reply, replied_at, created_at')
       .order('created_at', { ascending: false });
 
     if (error) {
