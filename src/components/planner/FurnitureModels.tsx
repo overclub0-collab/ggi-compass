@@ -683,9 +683,11 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
   }, [furnitureType]);
 
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation();
     if (e.nativeEvent.button === 0) {
-      e.stopPropagation();
       onSelect(item.id);
+    } else if (e.nativeEvent.button === 2 && onContextSelect) {
+      onContextSelect(item.id);
     }
   };
 
