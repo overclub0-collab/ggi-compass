@@ -112,9 +112,9 @@ export const HeroSection = () => {
             className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 sm:mb-10 leading-relaxed"
             initial={{ opacity: 0, filter: 'blur(10px)' }}
             animate={{ opacity: 1, filter: 'blur(0px)' }}
-            transition={{ duration: 0.8, delay: 1.6 }}>미래 교육 공간의 표준, 전문 제조 여성기업 
-사무용·교육용·반려동물 가구의 전문성을 하나로
-GGI가 더 나은 내일의 공간을 만듭니다.<br className="hidden sm:block" />
+            transition={{ duration: 0.8, delay: 1.6 }}>공간의 미래를 만드는 전문 제조 여성기업, GGI
+
+교육·사무·반려동물을 위한 독보적인 가구 솔루션<br className="hidden sm:block" />
             <span className="text-accent font-semibold">GGI</span>가 만드는 미래 교육의 기반입니다.
           </motion.p>
 
