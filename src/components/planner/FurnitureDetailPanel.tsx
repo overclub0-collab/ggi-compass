@@ -1,4 +1,4 @@
-import { RotateCw, Trash2, X, Palette } from 'lucide-react';
+import { RotateCw, Trash2, X, Palette, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlacedFurniture } from '@/types/planner';
 
@@ -15,40 +15,54 @@ const COLOR_PRESETS = [
 
 interface FurnitureDetailPanelProps {
   selectedFurniture: PlacedFurniture | undefined;
+  pinnedFurniture?: PlacedFurniture | undefined;
   onRotate: (id: string) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
+  onUnpin?: () => void;
   onColorChange?: (id: string, color: string) => void;
 }
 
 export const FurnitureDetailPanel = ({
   selectedFurniture,
+  pinnedFurniture,
   onRotate,
   onDelete,
   onClose,
+  onUnpin,
   onColorChange,
 }: FurnitureDetailPanelProps) => {
-  if (!selectedFurniture) {
+  // Show pinned furniture if available, otherwise show selected
+  const displayFurniture = pinnedFurniture || selectedFurniture;
+  const isPinned = !!pinnedFurniture;
+
+  if (!displayFurniture) {
     return (
       <div className="w-64 bg-card border-l border-border p-4 flex flex-col items-center justify-center text-center">
         <div className="text-muted-foreground">
           <p className="text-sm font-medium mb-1">가구를 선택하세요</p>
-          <p className="text-xs">캔버스의 가구를 클릭하면<br />상세 정보가 표시됩니다</p>
+          <p className="text-xs">좌클릭: 선택 | 우클릭: 정보 고정</p>
         </div>
       </div>
     );
   }
 
-  const { furniture, rotation } = selectedFurniture;
+  const { furniture, rotation } = displayFurniture;
 
   return (
     <div className="w-64 bg-card border-l border-border flex flex-col">
       {/* Header */}
       <div className="p-3 border-b border-border flex items-center justify-between">
-        <h3 className="font-bold text-sm text-primary">가구 정보</h3>
+        <div className="flex items-center gap-1.5">
+          {isPinned && <Pin className="h-3.5 w-3.5 text-accent" />}
+          <h3 className="font-bold text-sm text-primary">
+            {isPinned ? '고정됨' : '가구 정보'}
+          </h3>
+        </div>
         <button
-          onClick={onClose}
+          onClick={isPinned ? onUnpin : onClose}
           className="p-1 rounded hover:bg-muted transition-colors"
+          title={isPinned ? '고정 해제' : '닫기'}
         >
           <X className="h-4 w-4 text-muted-foreground" />
         </button>
@@ -115,7 +129,7 @@ export const FurnitureDetailPanel = ({
                 <button
                   key={preset.name}
                   title={preset.name}
-                  onClick={() => onColorChange(selectedFurniture.id, preset.color)}
+                  onClick={() => onColorChange(displayFurniture.id, preset.color)}
                   className="w-full aspect-square rounded-md border-2 transition-all hover:scale-110"
                   style={{
                     backgroundColor: preset.color,
@@ -131,7 +145,7 @@ export const FurnitureDetailPanel = ({
       {/* Actions */}
       <div className="p-4 border-t border-border space-y-2">
         <Button
-          onClick={() => onRotate(selectedFurniture.id)}
+          onClick={() => onRotate(displayFurniture.id)}
           variant="outline"
           className="w-full gap-2"
         >
@@ -139,7 +153,7 @@ export const FurnitureDetailPanel = ({
           90° 회전
         </Button>
         <Button
-          onClick={() => onDelete(selectedFurniture.id)}
+          onClick={() => onDelete(displayFurniture.id)}
           variant="destructive"
           className="w-full gap-2"
         >

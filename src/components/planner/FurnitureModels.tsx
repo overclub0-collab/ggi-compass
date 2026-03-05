@@ -649,10 +649,11 @@ function detectFurnitureType(item: PlacedFurniture): string {
 }
 
 // ========== Main exported component ==========
-export function FurnitureObject({ item, isSelected, onSelect }: {
+export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }: {
   item: PlacedFurniture;
   isSelected: boolean;
-  onSelect: (id: string) => void;
+  onSelect: (id: string | null) => void;
+  onContextSelect?: (id: string) => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -682,9 +683,11 @@ export function FurnitureObject({ item, isSelected, onSelect }: {
   }, [furnitureType]);
 
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation();
     if (e.nativeEvent.button === 0) {
-      e.stopPropagation();
       onSelect(item.id);
+    } else if (e.nativeEvent.button === 2 && onContextSelect) {
+      onContextSelect(item.id);
     }
   };
 
