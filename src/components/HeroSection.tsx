@@ -99,9 +99,9 @@ export const HeroSection = () => {
 
           <div className="mb-6 sm:mb-8">
             <h1 className="heading-fluid-xl font-black text-white leading-tight tracking-tight">
-              <StaggeredText text="Global" delay={0.4} /><br />
-              <StaggeredText text="Great" delay={0.7} /><br />
-              <StaggeredText text="Intelligent Furniture" delay={1.0} />
+              <span className="text-accent font-black">G</span><StaggeredText text="lobal" delay={0.4} /><br />
+              <span className="text-accent font-black">G</span><StaggeredText text="reat" delay={0.7} /><br />
+              <span className="text-accent font-black">I</span><StaggeredText text="ntelligent Furniture" delay={1.0} />
             </h1>
             {/* Accent G letters overlay */}
             <div className="heading-fluid-xl font-black leading-tight tracking-tight absolute pointer-events-none" style={{ top: 'inherit' }}>
