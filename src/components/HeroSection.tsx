@@ -112,18 +112,18 @@ export const HeroSection = () => {
             className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 sm:mb-10 leading-relaxed"
             initial={{ opacity: 0, filter: 'blur(10px)' }}
             animate={{ opacity: 1, filter: 'blur(0px)' }}
-            transition={{ duration: 0.8, delay: 1.6 }}>공간의 미래를 만드는 전문 제조 여성기업, GGI
+            transition={{ duration: 0.8, delay: 1.6 }}>공간의 미래를 만드는 전문 제조 여성기업 GGI
+교육·사무·반려동물을 위한 독보적인 가구 솔루션
 
-교육·사무·반려동물을 위한 독보적인 가구 솔루션<br className="hidden sm:block" />
+            <br className="hidden sm:block" />
             <span className="text-accent font-semibold">GGI</span>가 만드는 미래 교육의 기반입니다.
           </motion.p>
 
           {/* Buttons */}
-          <motion.div
-            className="flex flex-col sm:flex-row gap-3 sm:gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 2.0 }}>
+          <motion.div className="flex flex-col sm:flex-row gap-3 sm:gap-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 2.0 }}>
             
             <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base shadow-lg w-full sm:w-auto justify-center" onClick={() => window.open('https://shop.g2b.go.kr/', '_blank')}>
               <ExternalLink className="w-5 h-5 mr-2 flex-shrink-0" />
