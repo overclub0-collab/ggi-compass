@@ -47,11 +47,6 @@ const Catalogs = () => {
 
   const handleDownload = async (catalog: Catalog) => {
     try {
-      await supabase.from('catalog_downloads').insert({
-        catalog_id: catalog.id,
-        user_agent: navigator.userAgent,
-      });
-
       await supabase.rpc('increment_catalog_downloads', {
         p_catalog_id: catalog.id,
       });
