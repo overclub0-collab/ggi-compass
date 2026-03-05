@@ -94,7 +94,7 @@ export const HeroSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="inline-block px-3 sm:px-4 py-1.5 bg-accent text-accent-foreground text-xs font-bold rounded-full mb-6 sm:mb-8 uppercase tracking-widest">
             
-            Professional Education Furniture
+            PROFESSIONAL FURNITURE
           </motion.div>
 
           <div className="mb-6 sm:mb-8">
