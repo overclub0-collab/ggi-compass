@@ -93,7 +93,6 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="inline-block px-3 sm:px-4 py-1.5 bg-accent text-accent-foreground text-xs font-bold rounded-full mb-6 sm:mb-8 uppercase tracking-widest">
-            
             PROFESSIONAL FURNITURE
           </motion.div>
 
@@ -103,7 +102,6 @@ export const HeroSection = () => {
               <span className="text-accent font-black">G</span><StaggeredText text="reat" delay={0.7} /><br />
               <span className="text-accent font-black">I</span><StaggeredText text="ntelligent Furniture" delay={1.0} />
             </h1>
-            {/* Accent G letters overlay */}
             <div className="heading-fluid-xl font-black leading-tight tracking-tight absolute pointer-events-none" style={{ top: 'inherit' }}>
             </div>
           </div>
@@ -112,9 +110,10 @@ export const HeroSection = () => {
             className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 sm:mb-10 leading-relaxed"
             initial={{ opacity: 0, filter: 'blur(10px)' }}
             animate={{ opacity: 1, filter: 'blur(0px)' }}
-            transition={{ duration: 0.8, delay: 1.6 }}>공간의 미래를 만드는 전문 제조 여성기업 GGI
-교육·사무·반려동물을 위한 독보적인 가구 솔루션
-
+            transition={{ duration: 0.8, delay: 1.6 }}>
+            공간의 미래를 만드는 전문 제조 여성기업 GGI
+            <br />
+            교육·사무·반려동물을 위한 독보적인 가구 솔루션
             <br className="hidden sm:block" />
             <span className="text-accent font-semibold">GGI</span>가 만드는 미래 교육의 기반입니다.
           </motion.p>
@@ -124,7 +123,6 @@ export const HeroSection = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 2.0 }}>
-            
             <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base shadow-lg w-full sm:w-auto justify-center" onClick={() => window.open('https://shop.g2b.go.kr/', '_blank')}>
               <ExternalLink className="w-5 h-5 mr-2 flex-shrink-0" />
               <span>조달청 나라장터 바로가기</span>
@@ -145,7 +143,6 @@ export const HeroSection = () => {
           className={`h-1 rounded-full transition-all duration-500 ${
           i === current ? 'w-8 bg-accent' : 'w-3 bg-white/40 hover:bg-white/60'}`
           } />
-
         )}
       </div>
 
@@ -159,7 +156,6 @@ export const HeroSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 2.2 + index * 0.1 }}>
-            
               <feature.icon className="w-7 h-7 sm:w-8 sm:h-8 text-accent mb-3 sm:mb-4 group-hover:scale-110 transition-transform" />
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-1 sm:mb-2">{feature.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
@@ -167,6 +163,6 @@ export const HeroSection = () => {
           )}
         </div>
       </div>
-    </section>);
-
+    </section>
+  );
 };
