@@ -93,14 +93,14 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
         </h2>
       </div>
 
-      {/* Category Tree — compact, always scrollable */}
-      <div className="border-b border-border/30 shrink-0 overflow-hidden max-h-[280px]">
+      {/* Category Tree — compact, scrollable */}
+      <div className="border-b border-border/30 shrink-0">
         {catLoading ? (
           <div className="flex items-center justify-center py-6">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <ScrollArea className="h-full">
+          <ScrollArea className="max-h-[280px]">
             <div className="px-2 pb-2 space-y-0.5">
               {(categories || []).map((mainCat) => {
                 const Icon = categoryIcons[mainCat.slug] || Archive;
