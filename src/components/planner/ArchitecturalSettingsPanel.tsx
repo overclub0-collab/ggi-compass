@@ -18,6 +18,7 @@ export interface WindowConfig {
 
 export interface DoorConfig {
   type: 'swing' | 'sliding' | 'double';
+  material: 'wood' | 'glass' | 'metal';
   width: number;
   height: number;
   wall: 'back' | 'left' | 'right' | 'front';
@@ -75,6 +76,12 @@ const DOOR_TYPES = [
   { value: 'swing', label: '여닫이문' },
   { value: 'sliding', label: '미닫이문' },
   { value: 'double', label: '양개문' },
+];
+
+const DOOR_MATERIALS = [
+  { value: 'wood', label: '🪵 목재문' },
+  { value: 'glass', label: '🪟 유리문' },
+  { value: 'metal', label: '🔩 샷시문' },
 ];
 
 const DOOR_SIZES = [
@@ -237,7 +244,7 @@ export const ArchitecturalSettingsPanel = ({ config, onChange }: ArchitecturalSe
       <div className="flex items-center justify-between">
         <span className="text-sm font-bold">도어 ({config.doors.length})</span>
         <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-          onClick={() => update('doors', [...config.doors, { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 }])}>
+          onClick={() => update('doors', [...config.doors, { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 }])}>
           <Plus className="h-3 w-3" /> 추가
         </Button>
       </div>
@@ -258,10 +265,19 @@ export const ArchitecturalSettingsPanel = ({ config, onChange }: ArchitecturalSe
                 <SelectContent>{DOOR_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <WallSelect value={door.wall} onChange={(v) => {
-              const updated = [...config.doors]; updated[idx] = { ...door, wall: v as DoorConfig['wall'] }; update('doors', updated);
-            }} />
+            <div>
+              <Label className="text-[10px] text-muted-foreground">재질</Label>
+              <Select value={door.material || 'wood'} onValueChange={(v) => {
+                const updated = [...config.doors]; updated[idx] = { ...door, material: v as DoorConfig['material'] }; update('doors', updated);
+              }}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>{DOOR_MATERIALS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
           </div>
+          <WallSelect value={door.wall} onChange={(v) => {
+            const updated = [...config.doors]; updated[idx] = { ...door, wall: v as DoorConfig['wall'] }; update('doors', updated);
+          }} />
           <div>
             <Label className="text-[10px] text-muted-foreground">크기</Label>
             <Select value={`${door.width}x${door.height}`} onValueChange={(v) => {
@@ -584,7 +600,7 @@ export const DEFAULT_ARCHITECTURAL_CONFIG: ArchitecturalConfig = {
     { type: 'double', width: 1.2, height: 1.4, wall: 'back', positionRatio: 0.7 },
   ],
   doors: [
-    { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 },
+    { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 },
   ],
   columns: [],
   partitions: [],

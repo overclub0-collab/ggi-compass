@@ -875,10 +875,61 @@ function GenericModel({ w, d, h, color, isSelected }: {
   );
 }
 
+// ========== Round Table — circular top with center pedestal ==========
+function RoundTableModel({ w, d, h, color, isSelected }: {
+  w: number; d: number; h: number; color: string; isSelected: boolean;
+}) {
+  const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
+  const topH = 0.03;
+  const radius = Math.min(w, d) / 2;
+  const legH = h - topH;
+
+  return (
+    <group>
+      {/* Round tabletop */}
+      <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[radius, radius, topH, 32]} />
+        {woodMat(color, isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
+      </mesh>
+      {/* Edge banding */}
+      <mesh position={[0, h - topH, 0]}>
+        <cylinderGeometry args={[radius + 0.003, radius + 0.003, 0.004, 32]} />
+        {woodMat(darken(color, 0.08), isSelected)}
+      </mesh>
+      {/* Center pedestal */}
+      <mesh position={[0, legH * 0.5, 0]} castShadow>
+        <cylinderGeometry args={[0.04, 0.06, legH, 12]} />
+        {metalMat(darken(color, 0.45), isSelected)}
+      </mesh>
+      {/* Base plate */}
+      <mesh position={[0, 0.01, 0]}>
+        <cylinderGeometry args={[radius * 0.5, radius * 0.55, 0.02, 16]} />
+        {metalMat(darken(color, 0.5), isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
+      </mesh>
+      {/* 4 radial feet */}
+      {[0, 1, 2, 3].map(i => {
+        const angle = (i * Math.PI * 2) / 4 + Math.PI / 4;
+        const footR = radius * 0.45;
+        return (
+          <mesh key={i} position={[Math.cos(angle) * footR, 0.008, Math.sin(angle) * footR]}>
+            <cylinderGeometry args={[0.015, 0.02, 0.016, 8]} />
+            <meshStandardMaterial color="#333" roughness={0.6} metalness={0.5} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
 // ========== Category detection — expanded for all product types ==========
 function detectFurnitureType(item: PlacedFurniture): string {
   const name = (item.furniture.name || '').toLowerCase();
   const cat = (item.furniture.category || '').toLowerCase();
+
+  // Round table detection
+  if (name.includes('원형') || name.includes('라운드') || name.includes('둥근') || name.includes('원탁') || name.includes('round')) return 'roundtable';
 
   // Blackboard / whiteboard cabinet
   if (name.includes('칠판') || name.includes('보조장') || name.includes('blackboard') || name.includes('화이트보드')) return 'blackboard';
@@ -946,6 +997,7 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
       case 'dining': return DiningTableModel;
       case 'pet': return PetFurnitureModel;
       case 'bunkbed': return BunkBedModel;
+      case 'roundtable': return RoundTableModel;
       default: return GenericModel;
     }
   }, [furnitureType]);

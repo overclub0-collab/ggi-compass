@@ -27,7 +27,7 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'double', width: 1.8, height: 1.5, wall: 'back', positionRatio: 0.7 },
       ],
       doors: [
-        { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.85 },
+        { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.85 },
       ],
       columns: [],
       partitions: [
@@ -57,8 +57,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'sliding', width: 2.4, height: 1.4, wall: 'left', positionRatio: 0.8 },
       ],
       doors: [
-        { type: 'sliding', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
-        { type: 'sliding', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.85 },
+        { type: 'sliding', material: 'glass', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
+        { type: 'sliding', material: 'glass', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.85 },
       ],
       columns: [
         { wall: 'right', positionRatio: 0.33, radius: 0.15 },
@@ -93,8 +93,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'fixed', width: 2.4, height: 1.4, wall: 'back', positionRatio: 0.75 },
       ],
       doors: [
-        { type: 'double', width: 1.8, height: 2.1, wall: 'front', positionRatio: 0.5 },
-        { type: 'swing', width: 0.9, height: 2.1, wall: 'right', positionRatio: 0.85 },
+        { type: 'double', material: 'glass', width: 1.8, height: 2.1, wall: 'front', positionRatio: 0.5 },
+        { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'right', positionRatio: 0.85 },
       ],
       columns: [
         { wall: 'back', positionRatio: 0.5, radius: 0.2 },
@@ -127,7 +127,7 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'fixed', width: 1.2, height: 1.0, wall: 'back', positionRatio: 0.8 },
       ],
       doors: [
-        { type: 'sliding', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
+        { type: 'sliding', material: 'metal', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
       ],
       columns: [],
       partitions: [
@@ -161,7 +161,7 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'single', width: 0.8, height: 1.0, wall: 'right', positionRatio: 0.3 },
       ],
       doors: [
-        { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 },
+        { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 },
       ],
       columns: [],
       partitions: [],
