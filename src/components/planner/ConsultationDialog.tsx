@@ -51,7 +51,7 @@ export const ConsultationDialog = ({
 
     // Build inquiry content
     const content = `
-[공간 스타일링 시뮬레이터 상담 요청]
+[GGI 3D 인테리어 상담 요청]
 
 배치된 가구 목록:
 ${generateFurnitureList()}
