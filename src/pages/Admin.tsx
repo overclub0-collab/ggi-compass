@@ -928,25 +928,8 @@ const Admin = () => {
                 )}
               </div>
 
-              {/* Pagination & Page Size */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">목록보기:</span>
-                  <Select value={String(itemsPerPage)} onValueChange={handlePageSizeChange}>
-                    <SelectTrigger className="h-9 w-[130px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PAGE_SIZE_OPTIONS.map(size => (
-                        <SelectItem key={size} value={String(size)}>
-                          {size}개씩 보기
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {totalPages > 1 && (
+              {/* Pagination */}
+              <div className="flex items-center justify-center gap-2 pt-4 border-t">
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
