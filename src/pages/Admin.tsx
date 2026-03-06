@@ -115,7 +115,8 @@ const initialFormData = {
   price: '',
 };
 
-const ITEMS_PER_PAGE = 20;
+const PAGE_SIZE_OPTIONS = [12, 24, 36, 48, 60, 100] as const;
+const DEFAULT_PAGE_SIZE = 20;
 
 const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
