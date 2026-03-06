@@ -1030,6 +1030,8 @@ const Admin = () => {
             </div>
           ) : activeTab === 'mega-menu' ? (
             <AdminMegaMenuThumbnails />
+          ) : activeTab === 'homepage' ? (
+            <AdminHomepageManager />
           ) : activeTab === 'company' ? (
             <AdminCompanyInfo />
           ) : null}
