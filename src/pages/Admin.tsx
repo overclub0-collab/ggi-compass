@@ -745,6 +745,14 @@ const Admin = () => {
             메가메뉴
           </Button>
           <Button
+            variant={activeTab === 'homepage' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('homepage')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <ImageIcon className="h-4 w-4 mr-2" />
+            홈 제품소개
+          </Button>
+          <Button
             variant={activeTab === 'company' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('company')}
             className="min-h-[40px] flex-shrink-0"
