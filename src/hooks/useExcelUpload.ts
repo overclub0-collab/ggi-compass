@@ -198,7 +198,7 @@ export const useExcelUpload = (options?: UseExcelUploadOptions) => {
           status: 'uploading-images',
         });
 
-        const { product, errors } = await processExcelRow(row, existingSlugs, batchSlugs);
+        const { product, errors } = await processExcelRow(row, existingSlugs, batchSlugs, categoryMappings);
         
         if (errors.length > 0) {
           allErrors.push(...errors);
