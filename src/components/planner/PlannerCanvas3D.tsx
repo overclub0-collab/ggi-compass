@@ -400,7 +400,7 @@ function Room({ dimensions, archConfig }: { dimensions: RoomDimensions; archConf
         const { position, rotation } = getWallPosition(door.wall, door.positionRatio, 0);
         return (
           <DoorElement key={`door-${idx}`} position={position} rotation={rotation}
-            width={door.width} height={door.height} type={door.type} />
+            width={door.width} height={door.height} type={door.type} material={door.material || 'wood'} />
         );
       })}
 
