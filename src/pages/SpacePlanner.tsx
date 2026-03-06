@@ -113,6 +113,12 @@ const SpacePlanner = () => {
             <ArchitecturalSettingsPanel config={archConfig} onChange={setArchConfig} />
           </div>
 
+          <RoomSettingsDialog roomDimensions={roomDimensions} onSave={setRoomDimensions} />
+          
+          <div className="relative">
+            <ArchitecturalSettingsPanel config={archConfig} onChange={setArchConfig} />
+          </div>
+
           {viewMode === '2d' && (
             <div className="flex items-center gap-1 bg-white/10 rounded-lg p-1">
               <Button variant="ghost" size="icon" onClick={handleZoomOut} className="h-8 w-8 text-white hover:bg-white/20">
