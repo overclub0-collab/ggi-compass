@@ -34,8 +34,9 @@ const SpacePlanner = () => {
 
   const pinnedFurniture = pinnedId ? placedFurniture.find(f => f.id === pinnedId) : undefined;
 
-  const handleStart = useCallback((mode: 'template' | 'free', dimensions?: RoomDimensions) => {
+  const handleStart = useCallback((mode: 'template' | 'free', dimensions?: RoomDimensions, templateArchConfig?: ArchitecturalConfig) => {
     if (dimensions) setRoomDimensions(dimensions);
+    if (templateArchConfig) setArchConfig(templateArchConfig);
     setStarted(true);
   }, [setRoomDimensions]);
 
