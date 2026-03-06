@@ -244,7 +244,7 @@ export const ArchitecturalSettingsPanel = ({ config, onChange }: ArchitecturalSe
       <div className="flex items-center justify-between">
         <span className="text-sm font-bold">도어 ({config.doors.length})</span>
         <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-          onClick={() => update('doors', [...config.doors, { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 }])}>
+          onClick={() => update('doors', [...config.doors, { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 }])}>
           <Plus className="h-3 w-3" /> 추가
         </Button>
       </div>
