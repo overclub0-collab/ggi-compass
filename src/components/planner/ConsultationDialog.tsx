@@ -69,7 +69,7 @@ ${formData.message || '없음'}
           name: formData.name,
           phone: formData.phone,
           email: formData.email,
-          title: `[시뮬레이터] 공간 스타일링 상담 요청`,
+          title: `[3D 인테리어] 공간 스타일링 상담 요청`,
           content,
         }
       }

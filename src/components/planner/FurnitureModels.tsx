@@ -1,5 +1,5 @@
 import { useRef, useMemo } from 'react';
-import { Edges, Text, useTexture } from '@react-three/drei';
+import { Edges, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { PlacedFurniture } from '@/types/planner';
 import { ThreeEvent } from '@react-three/fiber';
@@ -72,35 +72,6 @@ function lighten(color: string, amount = 0.1): string {
   return `#${c.getHexString()}`;
 }
 
-// Textured front face component
-function TexturedFrontFace({ w, h, d, thumbnail, isSelected }: {
-  w: number; h: number; d: number; thumbnail: string; isSelected: boolean;
-}) {
-  const texture = useTexture(thumbnail);
-
-  useMemo(() => {
-    if (texture) {
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-    }
-  }, [texture]);
-
-  return (
-    <mesh position={[0, h / 2, d / 2 + 0.003]} castShadow>
-      <planeGeometry args={[w * 0.95, h * 0.95]} />
-      <meshStandardMaterial
-        map={texture}
-        transparent
-        roughness={0.6}
-        metalness={0.05}
-        emissive={isSelected ? '#001133' : '#000000'}
-        emissiveIntensity={isSelected ? 0.1 : 0}
-      />
-    </mesh>
-  );
-}
-
 // ========== Desk / Table — Detailed with drawer panel, crossbars ==========
 function DeskModel({ w, d, h, color, isSelected }: {
   w: number; d: number; h: number; color: string; isSelected: boolean;
@@ -116,19 +87,19 @@ function DeskModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Tabletop with rounded edge effect (stacked) */}
+      {/* Tabletop */}
       <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[w, topH, d]} />
         {woodMat(color, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
       </mesh>
-      {/* Edge banding strip */}
+      {/* Edge banding */}
       <mesh position={[0, h - topH, 0]} castShadow>
         <boxGeometry args={[w + 0.002, 0.003, d + 0.002]} />
         {woodMat(darken(color, 0.08), isSelected)}
       </mesh>
 
-      {/* 4 Legs — rectangular cross-section */}
+      {/* 4 Legs */}
       {[
         [-(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
         [(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
@@ -142,7 +113,7 @@ function DeskModel({ w, d, h, color, isSelected }: {
         </mesh>
       ))}
 
-      {/* Front apron (under top) */}
+      {/* Front apron */}
       <mesh position={[0, h - topH - apronH / 2 - 0.002, d / 2 - apronThick / 2 - 0.01]} castShadow>
         <boxGeometry args={[w - legW * 2 - 0.04, apronH, apronThick]} />
         {woodMat(darken(color, 0.05), isSelected)}
@@ -153,7 +124,7 @@ function DeskModel({ w, d, h, color, isSelected }: {
         {woodMat(darken(color, 0.05), isSelected)}
       </mesh>
 
-      {/* Horizontal crossbar (stretcher) */}
+      {/* Crossbar stretcher */}
       <mesh position={[0, legH * 0.12, 0]} castShadow>
         <boxGeometry args={[w * 0.6, 0.018, 0.018]} />
         {metalMat(darken(color, 0.5), isSelected)}
@@ -175,7 +146,7 @@ function DeskModel({ w, d, h, color, isSelected }: {
   );
 }
 
-// ========== Chair — Detailed with armrests, gas lift, star base ==========
+// ========== Chair — star base, gas lift, armrests ==========
 function ChairModel({ w, d, h, color, isSelected }: {
   w: number; d: number; h: number; color: string; isSelected: boolean;
 }) {
@@ -189,7 +160,7 @@ function ChairModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Seat — slightly curved (thicker edges) */}
+      {/* Seat */}
       <mesh position={[0, seatY, d * 0.04]} castShadow receiveShadow>
         <boxGeometry args={[w * 0.92, seatH, d * 0.85]} />
         {fabricMat(color, isSelected)}
@@ -201,7 +172,7 @@ function ChairModel({ w, d, h, color, isSelected }: {
         {fabricMat(lighten(color, 0.08), isSelected)}
       </mesh>
 
-      {/* Backrest — curved panel */}
+      {/* Backrest */}
       <mesh position={[0, seatY + backH * 0.5, -(d / 2 - backThick / 2)]} castShadow>
         <boxGeometry args={[w * 0.85, backH * 0.8, backThick]} />
         {fabricMat(lighten(color, 0.04), isSelected)}
@@ -212,19 +183,17 @@ function ChairModel({ w, d, h, color, isSelected }: {
         <boxGeometry args={[w * 0.9, 0.028, backThick + 0.008]} />
         {plasticMat(darken(color, 0.2), isSelected)}
       </mesh>
-
-      {/* Lumbar support detail */}
+      {/* Lumbar support */}
       <mesh position={[0, seatY + backH * 0.25, -(d / 2 - backThick - 0.005)]}>
         <boxGeometry args={[w * 0.5, 0.06, 0.015]} />
         {plasticMat(darken(color, 0.15), isSelected)}
       </mesh>
 
-      {/* Gas lift cylinder */}
+      {/* Gas lift */}
       <mesh position={[0, seatY / 2, 0]} castShadow>
         <cylinderGeometry args={[0.025, 0.025, legH * 0.6, 12]} />
         {metalMat('#444', isSelected)}
       </mesh>
-      {/* Gas lift cover */}
       <mesh position={[0, seatY - seatH / 2 - 0.01, 0]}>
         <cylinderGeometry args={[0.04, 0.025, 0.06, 12]} />
         {plasticMat('#333', isSelected)}
@@ -242,7 +211,6 @@ function ChairModel({ w, d, h, color, isSelected }: {
               <boxGeometry args={[0.025, 0.02, length]} />
               {metalMat('#555', isSelected)}
             </mesh>
-            {/* Caster wheel */}
             <mesh position={[Math.sin(angle) * length, 0.012, Math.cos(angle) * length]}>
               <sphereGeometry args={[0.012, 8, 8]} />
               <meshStandardMaterial color="#222" roughness={0.3} metalness={0.8} />
@@ -254,7 +222,7 @@ function ChairModel({ w, d, h, color, isSelected }: {
   );
 }
 
-// ========== Storage / Locker — Detailed with handles, hinges, internal shelves ==========
+// ========== Storage / Locker ==========
 function StorageModel({ w, d, h, color, isSelected }: {
   w: number; d: number; h: number; color: string; isSelected: boolean;
 }) {
@@ -272,8 +240,7 @@ function StorageModel({ w, d, h, color, isSelected }: {
         {metalMat(color, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
       </mesh>
-
-      {/* Top cap (slightly overhanging) */}
+      {/* Top cap */}
       <mesh position={[0, h + 0.003, 0]}>
         <boxGeometry args={[w + 0.004, 0.006, d + 0.004]} />
         {metalMat(darken(color, 0.1), isSelected)}
@@ -301,7 +268,7 @@ function StorageModel({ w, d, h, color, isSelected }: {
         );
       })}
 
-      {/* Front face door lines */}
+      {/* Front face lines */}
       {Array.from({ length: rows - 1 }, (_, i) => {
         const y = (h / rows) * (i + 1);
         return (
@@ -330,17 +297,14 @@ function StorageModel({ w, d, h, color, isSelected }: {
           const cy = cellH * r + cellH / 2;
           return (
             <group key={`handle-${r}-${c}`}>
-              {/* Handle bar */}
               <mesh position={[cx + cellW * 0.32, cy, d / 2 + 0.012]}>
                 <boxGeometry args={[0.012, 0.045, 0.01]} />
                 <meshStandardMaterial color="#666" roughness={0.2} metalness={0.95} envMapIntensity={1.5} />
               </mesh>
-              {/* Handle mount top */}
               <mesh position={[cx + cellW * 0.32, cy + 0.025, d / 2 + 0.007]}>
                 <boxGeometry args={[0.016, 0.005, 0.006]} />
                 <meshStandardMaterial color="#555" roughness={0.3} metalness={0.9} />
               </mesh>
-              {/* Handle mount bottom */}
               <mesh position={[cx + cellW * 0.32, cy - 0.025, d / 2 + 0.007]}>
                 <boxGeometry args={[0.016, 0.005, 0.006]} />
                 <meshStandardMaterial color="#555" roughness={0.3} metalness={0.9} />
@@ -350,7 +314,7 @@ function StorageModel({ w, d, h, color, isSelected }: {
         })
       )}
 
-      {/* Ventilation slots at top */}
+      {/* Vent slots */}
       {Array.from({ length: 3 }, (_, i) => (
         <mesh key={`vent-${i}`} position={[-(w * 0.2) + i * w * 0.2, h - 0.02, d / 2 + 0.002]}>
           <boxGeometry args={[w * 0.08, 0.004, 0.001]} />
@@ -374,7 +338,7 @@ function StorageModel({ w, d, h, color, isSelected }: {
   );
 }
 
-// ========== Blackboard Cabinet — Frame detail, chalk tray, hinges ==========
+// ========== Blackboard Cabinet ==========
 function BlackboardCabinetModel({ w, d, h, color, isSelected }: {
   w: number; d: number; h: number; color: string; isSelected: boolean;
 }) {
@@ -393,13 +357,11 @@ function BlackboardCabinetModel({ w, d, h, color, isSelected }: {
         {woodMat(color, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
       </mesh>
-
       {/* Cabinet door line */}
       <mesh position={[0, cabinetH / 2, d / 2 + 0.001]}>
         <boxGeometry args={[0.004, cabinetH * 0.88, 0.001]} />
         <meshStandardMaterial color={darken(color, 0.3)} roughness={0.4} metalness={0.3} />
       </mesh>
-
       {/* Cabinet handles */}
       {[-0.04, 0.04].map((xOff, i) => (
         <group key={i}>
@@ -407,7 +369,6 @@ function BlackboardCabinetModel({ w, d, h, color, isSelected }: {
             <cylinderGeometry args={[0.005, 0.005, 0.05, 8]} />
             <meshStandardMaterial color="#888" roughness={0.2} metalness={0.95} envMapIntensity={1.5} />
           </mesh>
-          {/* Mount points */}
           <mesh position={[xOff, cabinetH / 2 + 0.025, d / 2 + 0.008]}>
             <sphereGeometry args={[0.006, 8, 8]} />
             <meshStandardMaterial color="#777" roughness={0.3} metalness={0.9} />
@@ -425,7 +386,6 @@ function BlackboardCabinetModel({ w, d, h, color, isSelected }: {
         <meshStandardMaterial color="#f5f3ee" roughness={0.15} metalness={0.08} envMapIntensity={0.8} />
         <Edges threshold={15} color={edgeColor} lineWidth={1} />
       </mesh>
-
       {/* Frame — top */}
       <mesh position={[0, cabinetH + boardH, -(d / 2 - boardThick / 2)]}>
         <boxGeometry args={[w + 0.02, frameThick, boardThick + 0.012]} />
@@ -449,14 +409,12 @@ function BlackboardCabinetModel({ w, d, h, color, isSelected }: {
         <boxGeometry args={[w + 0.02, frameThick, boardThick + 0.012]} />
         {woodMat(darken(color, 0.15), isSelected)}
       </mesh>
-
       {/* Chalk/marker tray */}
       <mesh position={[0, cabinetH + 0.015, -(d / 2 - 0.04)]}>
         <boxGeometry args={[w * 0.88, 0.018, 0.065]} />
         {woodMat(darken(color, 0.1), isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
       </mesh>
-      {/* Tray lip */}
       <mesh position={[0, cabinetH + 0.03, -(d / 2 - 0.072)]}>
         <boxGeometry args={[w * 0.88, 0.012, 0.005]} />
         {woodMat(darken(color, 0.12), isSelected)}
@@ -465,7 +423,7 @@ function BlackboardCabinetModel({ w, d, h, color, isSelected }: {
   );
 }
 
-// ========== Sofa — Cushion detail, piping, legs ==========
+// ========== Sofa ==========
 function SofaModel({ w, d, h, color, isSelected }: {
   w: number; d: number; h: number; color: string; isSelected: boolean;
 }) {
@@ -485,7 +443,6 @@ function SofaModel({ w, d, h, color, isSelected }: {
         {fabricMat(darken(color, 0.06), isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
       </mesh>
-
       {/* Seat cushions */}
       {Array.from({ length: cushionCount }, (_, i) => {
         const cx = -(w / 2 - armW - 0.02) + cushionW * i + cushionW / 2;
@@ -497,7 +454,6 @@ function SofaModel({ w, d, h, color, isSelected }: {
           </mesh>
         );
       })}
-
       {/* Back cushions */}
       {Array.from({ length: cushionCount }, (_, i) => {
         const cx = -(w / 2 - armW - 0.02) + cushionW * i + cushionW / 2;
@@ -509,31 +465,20 @@ function SofaModel({ w, d, h, color, isSelected }: {
           </mesh>
         );
       })}
-
-      {/* Left arm */}
-      <mesh position={[-(w / 2 - armW / 2), seatH + backH * 0.28, 0]} castShadow>
-        <boxGeometry args={[armW, backH * 0.55, d * 0.88]} />
-        {fabricMat(darken(color, 0.04), isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
-      </mesh>
-      {/* Left arm top pad */}
-      <mesh position={[-(w / 2 - armW / 2), seatH + backH * 0.58, 0]}>
-        <boxGeometry args={[armW + 0.01, 0.02, d * 0.86]} />
-        {fabricMat(lighten(color, 0.03), isSelected)}
-      </mesh>
-
-      {/* Right arm */}
-      <mesh position={[(w / 2 - armW / 2), seatH + backH * 0.28, 0]} castShadow>
-        <boxGeometry args={[armW, backH * 0.55, d * 0.88]} />
-        {fabricMat(darken(color, 0.04), isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
-      </mesh>
-      {/* Right arm top pad */}
-      <mesh position={[(w / 2 - armW / 2), seatH + backH * 0.58, 0]}>
-        <boxGeometry args={[armW + 0.01, 0.02, d * 0.86]} />
-        {fabricMat(lighten(color, 0.03), isSelected)}
-      </mesh>
-
+      {/* Arms */}
+      {[-(w / 2 - armW / 2), (w / 2 - armW / 2)].map((x, i) => (
+        <group key={`arm-${i}`}>
+          <mesh position={[x, seatH + backH * 0.28, 0]} castShadow>
+            <boxGeometry args={[armW, backH * 0.55, d * 0.88]} />
+            {fabricMat(darken(color, 0.04), isSelected)}
+            <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
+          </mesh>
+          <mesh position={[x, seatH + backH * 0.58, 0]}>
+            <boxGeometry args={[armW + 0.01, 0.02, d * 0.86]} />
+            {fabricMat(lighten(color, 0.03), isSelected)}
+          </mesh>
+        </group>
+      ))}
       {/* Feet */}
       {[
         [-(w / 2 - 0.06), 0, -(d / 2 - 0.06)],
@@ -562,25 +507,19 @@ function ShelfModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Left side panel */}
-      <mesh position={[-(w / 2 - sideThick / 2), h / 2, 0]} castShadow>
-        <boxGeometry args={[sideThick, h, d]} />
-        {woodMat(darken(color, 0.1), isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
-      </mesh>
-      {/* Right side panel */}
-      <mesh position={[(w / 2 - sideThick / 2), h / 2, 0]} castShadow>
-        <boxGeometry args={[sideThick, h, d]} />
-        {woodMat(darken(color, 0.1), isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
-      </mesh>
-
+      {/* Side panels */}
+      {[-(w / 2 - sideThick / 2), (w / 2 - sideThick / 2)].map((x, i) => (
+        <mesh key={`side-${i}`} position={[x, h / 2, 0]} castShadow>
+          <boxGeometry args={[sideThick, h, d]} />
+          {woodMat(darken(color, 0.1), isSelected)}
+          <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
+        </mesh>
+      ))}
       {/* Back panel */}
       <mesh position={[0, h / 2, -(d / 2 - 0.005)]} castShadow>
         <boxGeometry args={[w - sideThick * 2, h, 0.008]} />
         {woodMat(lighten(color, 0.05), isSelected)}
       </mesh>
-
       {/* Shelves */}
       {Array.from({ length: shelfCount + 1 }, (_, i) => {
         const y = (h / shelfCount) * i;
@@ -592,8 +531,7 @@ function ShelfModel({ w, d, h, color, isSelected }: {
           </mesh>
         );
       })}
-
-      {/* Shelf pin details on sides */}
+      {/* Shelf pins */}
       {Array.from({ length: shelfCount + 1 }, (_, i) => {
         const y = (h / shelfCount) * i;
         return [
@@ -611,6 +549,312 @@ function ShelfModel({ w, d, h, color, isSelected }: {
   );
 }
 
+// ========== Lab Bench — chemical-resistant top, plumbing detail ==========
+function LabBenchModel({ w, d, h, color, isSelected }: {
+  w: number; d: number; h: number; color: string; isSelected: boolean;
+}) {
+  const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
+  const edgeW = isSelected ? 2.5 : 1;
+  const topH = 0.04;
+  const legW = 0.05;
+  const legD = 0.05;
+  const legH = h - topH;
+
+  return (
+    <group>
+      {/* Chemical-resistant tabletop (dark, thick) */}
+      <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[w, topH, d]} />
+        <meshStandardMaterial color="#2a2a2a" roughness={0.3} metalness={0.15}
+          emissive={isSelected ? '#001133' : '#000000'} emissiveIntensity={isSelected ? 0.15 : 0} />
+        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
+      </mesh>
+      {/* Front edge highlight */}
+      <mesh position={[0, h - topH, d / 2 - 0.003]}>
+        <boxGeometry args={[w, 0.005, 0.006]} />
+        <meshStandardMaterial color="#444" roughness={0.2} metalness={0.6} />
+      </mesh>
+
+      {/* Steel frame legs (C-frame) */}
+      {[-1, 1].map((side) => {
+        const xOff = side * (w / 2 - legW / 2 - 0.02);
+        return (
+          <group key={`frame-${side}`}>
+            {/* Vertical legs */}
+            <mesh position={[xOff, legH / 2, -(d / 2 - legD / 2 - 0.01)]} castShadow>
+              <boxGeometry args={[legW, legH, legD]} />
+              {metalMat('#666', isSelected)}
+              <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
+            </mesh>
+            <mesh position={[xOff, legH / 2, (d / 2 - legD / 2 - 0.01)]} castShadow>
+              <boxGeometry args={[legW, legH, legD]} />
+              {metalMat('#666', isSelected)}
+              <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
+            </mesh>
+            {/* Horizontal brace */}
+            <mesh position={[xOff, legH * 0.15, 0]}>
+              <boxGeometry args={[legW * 0.8, 0.02, d - legD * 2 - 0.04]} />
+              {metalMat('#555', isSelected)}
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* Sink basin cutout (decorative) */}
+      <mesh position={[w * 0.3, h - topH + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.06, 0.1, 16]} />
+        <meshStandardMaterial color="#555" roughness={0.2} metalness={0.8} />
+      </mesh>
+      {/* Faucet */}
+      <mesh position={[w * 0.3, h + 0.06, -d * 0.25]}>
+        <cylinderGeometry args={[0.008, 0.008, 0.12, 8]} />
+        {metalMat('#aaa', isSelected)}
+      </mesh>
+      <mesh position={[w * 0.3, h + 0.12, -d * 0.18]} rotation={[Math.PI / 4, 0, 0]}>
+        <cylinderGeometry args={[0.006, 0.008, 0.12, 8]} />
+        {metalMat('#aaa', isSelected)}
+      </mesh>
+
+      {/* Gas valve */}
+      <mesh position={[-w * 0.35, h + 0.02, -d * 0.3]}>
+        <cylinderGeometry args={[0.015, 0.015, 0.04, 8]} />
+        <meshStandardMaterial color="#ccaa00" roughness={0.4} metalness={0.6} />
+      </mesh>
+
+      {/* Adjustable feet */}
+      {[
+        [-(w / 2 - 0.04), 0, -(d / 2 - 0.04)],
+        [(w / 2 - 0.04), 0, -(d / 2 - 0.04)],
+        [-(w / 2 - 0.04), 0, (d / 2 - 0.04)],
+        [(w / 2 - 0.04), 0, (d / 2 - 0.04)],
+      ].map(([fx, , fz], i) => (
+        <mesh key={`foot-${i}`} position={[fx, 0.008, fz]}>
+          <cylinderGeometry args={[0.018, 0.022, 0.016, 8]} />
+          <meshStandardMaterial color="#444" roughness={0.5} metalness={0.6} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// ========== Dining Table — large communal table with bench-style base ==========
+function DiningTableModel({ w, d, h, color, isSelected }: {
+  w: number; d: number; h: number; color: string; isSelected: boolean;
+}) {
+  const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
+  const edgeW = isSelected ? 2.5 : 1;
+  const topH = 0.035;
+  const legH = h - topH;
+
+  return (
+    <group>
+      {/* Thick tabletop with rounded look */}
+      <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[w, topH, d]} />
+        {woodMat(color, isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
+      </mesh>
+      {/* Edge rounding strip */}
+      <mesh position={[0, h - topH - 0.002, 0]}>
+        <boxGeometry args={[w - 0.01, 0.004, d - 0.01]} />
+        {woodMat(darken(color, 0.06), isSelected)}
+      </mesh>
+
+      {/* Trestle-style legs (2 A-frames) */}
+      {[-1, 1].map((side) => {
+        const xOff = side * (w / 2 - w * 0.15);
+        return (
+          <group key={`trestle-${side}`}>
+            {/* Central post */}
+            <mesh position={[xOff, legH / 2, 0]} castShadow>
+              <boxGeometry args={[0.06, legH, 0.06]} />
+              {metalMat('#555', isSelected)}
+              <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
+            </mesh>
+            {/* Base bar */}
+            <mesh position={[xOff, 0.015, 0]}>
+              <boxGeometry args={[0.04, 0.03, d * 0.7]} />
+              {metalMat('#444', isSelected)}
+            </mesh>
+            {/* Foot pads */}
+            {[-1, 1].map((z) => (
+              <mesh key={`pad-${z}`} position={[xOff, 0.004, z * d * 0.35]}>
+                <cylinderGeometry args={[0.025, 0.03, 0.008, 8]} />
+                <meshStandardMaterial color="#333" roughness={0.6} metalness={0.5} />
+              </mesh>
+            ))}
+          </group>
+        );
+      })}
+
+      {/* Center stretcher */}
+      <mesh position={[0, legH * 0.1, 0]}>
+        <boxGeometry args={[w - w * 0.3, 0.025, 0.025]} />
+        {metalMat('#555', isSelected)}
+      </mesh>
+    </group>
+  );
+}
+
+// ========== Pet Furniture — kennel/house style ==========
+function PetFurnitureModel({ w, d, h, color, isSelected }: {
+  w: number; d: number; h: number; color: string; isSelected: boolean;
+}) {
+  const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
+  const edgeW = isSelected ? 2.5 : 1;
+  const wallThick = 0.02;
+  const roofH = h * 0.25;
+  const bodyH = h - roofH;
+  const doorW = w * 0.4;
+  const doorH = bodyH * 0.7;
+
+  return (
+    <group>
+      {/* Body walls */}
+      {/* Back */}
+      <mesh position={[0, bodyH / 2, -(d / 2 - wallThick / 2)]} castShadow>
+        <boxGeometry args={[w, bodyH, wallThick]} />
+        {woodMat(color, isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
+      </mesh>
+      {/* Left */}
+      <mesh position={[-(w / 2 - wallThick / 2), bodyH / 2, 0]} castShadow>
+        <boxGeometry args={[wallThick, bodyH, d]} />
+        {woodMat(color, isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
+      </mesh>
+      {/* Right */}
+      <mesh position={[(w / 2 - wallThick / 2), bodyH / 2, 0]} castShadow>
+        <boxGeometry args={[wallThick, bodyH, d]} />
+        {woodMat(color, isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
+      </mesh>
+      {/* Front - left of door */}
+      <mesh position={[-(w / 2 - wallThick / 2) + (w - doorW) / 4, bodyH / 2, d / 2 - wallThick / 2]} castShadow>
+        <boxGeometry args={[(w - doorW) / 2 - wallThick, bodyH, wallThick]} />
+        {woodMat(color, isSelected)}
+      </mesh>
+      {/* Front - right of door */}
+      <mesh position={[(w / 2 - wallThick / 2) - (w - doorW) / 4, bodyH / 2, d / 2 - wallThick / 2]} castShadow>
+        <boxGeometry args={[(w - doorW) / 2 - wallThick, bodyH, wallThick]} />
+        {woodMat(color, isSelected)}
+      </mesh>
+      {/* Front - above door */}
+      <mesh position={[0, bodyH - (bodyH - doorH) / 4, d / 2 - wallThick / 2]} castShadow>
+        <boxGeometry args={[doorW, (bodyH - doorH) / 2, wallThick]} />
+        {woodMat(color, isSelected)}
+      </mesh>
+      {/* Door arch (semi-circle approximation) */}
+      <mesh position={[0, doorH * 0.95, d / 2 - wallThick / 2 + 0.002]}>
+        <ringGeometry args={[0, doorW / 2 - 0.005, 16, 1, 0, Math.PI]} />
+        <meshStandardMaterial color={darken(color, 0.2)} roughness={0.7} metalness={0.05} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Floor */}
+      <mesh position={[0, wallThick / 2, 0]} receiveShadow>
+        <boxGeometry args={[w, wallThick, d]} />
+        {woodMat(darken(color, 0.1), isSelected)}
+      </mesh>
+
+      {/* Roof - angled (two panels) */}
+      <mesh position={[-(w / 4), bodyH + roofH * 0.4, 0]} rotation={[0, 0, Math.PI * 0.12]} castShadow>
+        <boxGeometry args={[w * 0.55, 0.015, d + 0.04]} />
+        {woodMat(darken(color, 0.2), isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
+      </mesh>
+      <mesh position={[(w / 4), bodyH + roofH * 0.4, 0]} rotation={[0, 0, -Math.PI * 0.12]} castShadow>
+        <boxGeometry args={[w * 0.55, 0.015, d + 0.04]} />
+        {woodMat(darken(color, 0.2), isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
+      </mesh>
+      {/* Ridge beam */}
+      <mesh position={[0, bodyH + roofH * 0.55, 0]}>
+        <boxGeometry args={[0.03, 0.02, d + 0.06]} />
+        {woodMat(darken(color, 0.3), isSelected)}
+      </mesh>
+
+      {/* Interior cushion */}
+      <mesh position={[0, wallThick + 0.015, 0]}>
+        <boxGeometry args={[w * 0.85, 0.03, d * 0.85]} />
+        {fabricMat('#e8d5c4', isSelected)}
+      </mesh>
+    </group>
+  );
+}
+
+// ========== Military Bunk Bed ==========
+function BunkBedModel({ w, d, h, color, isSelected }: {
+  w: number; d: number; h: number; color: string; isSelected: boolean;
+}) {
+  const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
+  const edgeW = isSelected ? 2.5 : 1;
+  const frameW = 0.04;
+  const mattressH = 0.08;
+  const lowerY = h * 0.22;
+  const upperY = h * 0.62;
+
+  return (
+    <group>
+      {/* 4 corner posts */}
+      {[
+        [-(w / 2 - frameW / 2), 0, -(d / 2 - frameW / 2)],
+        [(w / 2 - frameW / 2), 0, -(d / 2 - frameW / 2)],
+        [-(w / 2 - frameW / 2), 0, (d / 2 - frameW / 2)],
+        [(w / 2 - frameW / 2), 0, (d / 2 - frameW / 2)],
+      ].map(([px, , pz], i) => (
+        <mesh key={`post-${i}`} position={[px, h / 2, pz]} castShadow>
+          <boxGeometry args={[frameW, h, frameW]} />
+          {metalMat(darken(color, 0.4), isSelected)}
+          <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
+        </mesh>
+      ))}
+
+      {/* Lower bed frame */}
+      <mesh position={[0, lowerY, 0]}>
+        <boxGeometry args={[w - frameW * 2, 0.02, d - frameW * 2]} />
+        {metalMat('#666', isSelected)}
+      </mesh>
+      {/* Lower mattress */}
+      <mesh position={[0, lowerY + mattressH / 2 + 0.01, 0]} castShadow>
+        <boxGeometry args={[w - frameW * 2 - 0.02, mattressH, d - frameW * 2 - 0.02]} />
+        {fabricMat('#e8e0d0', isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={0.5} />
+      </mesh>
+
+      {/* Upper bed frame */}
+      <mesh position={[0, upperY, 0]}>
+        <boxGeometry args={[w - frameW * 2, 0.02, d - frameW * 2]} />
+        {metalMat('#666', isSelected)}
+      </mesh>
+      {/* Upper mattress */}
+      <mesh position={[0, upperY + mattressH / 2 + 0.01, 0]} castShadow>
+        <boxGeometry args={[w - frameW * 2 - 0.02, mattressH, d - frameW * 2 - 0.02]} />
+        {fabricMat('#e8e0d0', isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={0.5} />
+      </mesh>
+
+      {/* Guard rail upper */}
+      <mesh position={[0, upperY + mattressH + 0.08, d / 2 - frameW / 2]}>
+        <boxGeometry args={[w - frameW * 2, 0.025, 0.015]} />
+        {metalMat('#777', isSelected)}
+      </mesh>
+
+      {/* Ladder */}
+      <mesh position={[w / 2 - frameW - 0.02, (lowerY + upperY) / 2, d / 2 - frameW / 2 + 0.02]}>
+        <boxGeometry args={[0.015, upperY - lowerY + 0.1, 0.015]} />
+        {metalMat('#888', isSelected)}
+      </mesh>
+      {/* Ladder rungs */}
+      {[0.25, 0.5, 0.75].map((ratio, i) => (
+        <mesh key={`rung-${i}`} position={[w / 2 - frameW - 0.02, lowerY + (upperY - lowerY) * ratio, d / 2 - frameW / 2 + 0.04]}>
+          <boxGeometry args={[0.12, 0.012, 0.015]} />
+          {metalMat('#888', isSelected)}
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 // ========== Generic fallback ==========
 function GenericModel({ w, d, h, color, isSelected }: {
   w: number; d: number; h: number; color: string; isSelected: boolean;
@@ -623,7 +867,6 @@ function GenericModel({ w, d, h, color, isSelected }: {
         {woodMat(color, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
       </mesh>
-      {/* Base detail */}
       <mesh position={[0, 0.005, 0]}>
         <boxGeometry args={[w + 0.01, 0.01, d + 0.01]} />
         {metalMat(darken(color, 0.3), isSelected)}
@@ -632,18 +875,40 @@ function GenericModel({ w, d, h, color, isSelected }: {
   );
 }
 
-// ========== Category detection ==========
+// ========== Category detection — expanded for all product types ==========
 function detectFurnitureType(item: PlacedFurniture): string {
   const name = (item.furniture.name || '').toLowerCase();
   const cat = (item.furniture.category || '').toLowerCase();
 
-  if (name.includes('칠판') || name.includes('보조장') || name.includes('blackboard')) return 'blackboard';
-  if (name.includes('의자') || name.includes('chair') || cat.includes('chair')) return 'chair';
-  if (name.includes('소파') || name.includes('sofa') || cat.includes('sofa')) return 'sofa';
-  if (name.includes('사물함') || name.includes('수납') || name.includes('서랍') || name.includes('캐비닛') || name.includes('locker') || name.includes('신발장') || cat.includes('storage')) return 'storage';
-  if (name.includes('선반') || name.includes('책장') || name.includes('shelf') || cat.includes('shelf')) return 'shelf';
-  if (name.includes('책상') || name.includes('탁자') || name.includes('테이블') || name.includes('강연대') || name.includes('desk') || name.includes('table') || cat.includes('desk') || cat.includes('table')) return 'desk';
-  if (name.includes('실험대') || name.includes('lab')) return 'desk';
+  // Blackboard / whiteboard cabinet
+  if (name.includes('칠판') || name.includes('보조장') || name.includes('blackboard') || name.includes('화이트보드')) return 'blackboard';
+  
+  // Bunk bed / military bed
+  if (name.includes('침대') || name.includes('이층') || name.includes('bunk') || name.includes('bed') || name.includes('군용침대')) return 'bunkbed';
+  
+  // Pet furniture
+  if (name.includes('반려') || name.includes('펫') || name.includes('pet') || name.includes('강아지') || name.includes('고양이') || name.includes('하우스') || cat.includes('반려') || cat.includes('pet')) return 'pet';
+  
+  // Lab bench
+  if (name.includes('실험') || name.includes('lab') || name.includes('과학') || name.includes('약품') || cat.includes('lab')) return 'lab';
+  
+  // Dining table
+  if (name.includes('식탁') || name.includes('급식') || name.includes('dining') || name.includes('구내식당') || cat.includes('dining') || cat.includes('식당')) return 'dining';
+  
+  // Chair
+  if (name.includes('의자') || name.includes('chair') || name.includes('스툴') || name.includes('좌석') || cat.includes('chair')) return 'chair';
+  
+  // Sofa
+  if (name.includes('소파') || name.includes('sofa') || name.includes('카우치') || cat.includes('sofa')) return 'sofa';
+  
+  // Storage / locker
+  if (name.includes('사물함') || name.includes('수납') || name.includes('서랍') || name.includes('캐비닛') || name.includes('locker') || name.includes('신발장') || name.includes('옷장') || name.includes('보관') || cat.includes('storage')) return 'storage';
+  
+  // Shelf / bookcase
+  if (name.includes('선반') || name.includes('책장') || name.includes('shelf') || name.includes('진열') || cat.includes('shelf')) return 'shelf';
+  
+  // Desk / table (broad category — last)
+  if (name.includes('책상') || name.includes('탁자') || name.includes('테이블') || name.includes('강연대') || name.includes('교탁') || name.includes('desk') || name.includes('table') || name.includes('작업대') || name.includes('워크') || cat.includes('desk') || cat.includes('table')) return 'desk';
 
   return 'generic';
 }
@@ -668,7 +933,6 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
 
   const baseColor = item.furniture.color || '#c8b89a';
   const furnitureType = useMemo(() => detectFurnitureType(item), [item]);
-  const hasThumbnail = !!item.furniture.thumbnail;
 
   const ModelComponent = useMemo(() => {
     switch (furnitureType) {
@@ -678,6 +942,10 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
       case 'blackboard': return BlackboardCabinetModel;
       case 'sofa': return SofaModel;
       case 'shelf': return ShelfModel;
+      case 'lab': return LabBenchModel;
+      case 'dining': return DiningTableModel;
+      case 'pet': return PetFurnitureModel;
+      case 'bunkbed': return BunkBedModel;
       default: return GenericModel;
     }
   }, [furnitureType]);
@@ -699,16 +967,6 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
       onPointerDown={handlePointerDown}
     >
       <ModelComponent w={w} d={d} h={h} color={baseColor} isSelected={isSelected} />
-
-      {hasThumbnail && (
-        <TexturedFrontFace
-          w={w}
-          h={h}
-          d={d}
-          thumbnail={item.furniture.thumbnail}
-          isSelected={isSelected}
-        />
-      )}
 
       {/* Name label */}
       <Text

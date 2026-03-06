@@ -23,7 +23,7 @@ export const QuoteSummary = ({
     ).join('\n');
     
     const fullText = `
-GGI 공간 스타일링 견적서
+GGI 3D 인테리어 견적서
 ========================
 배치된 가구 목록:
 ${summary}
