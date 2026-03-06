@@ -4,6 +4,7 @@ import {
   fetchAllExistingProductSlugs,
   generateUniqueSlug,
 } from './productSlugUtils';
+import { fetchCategoryMappings, resolveProductCategories, clearCategoryCache } from './categorySlugResolver';
 
 export interface ProductExportData {
   슬러그: string;
@@ -65,6 +66,10 @@ export const parseProductCSV = async (
   const existingSlugs = opts?.existingSlugs ?? (await fetchAllExistingProductSlugs());
   const batchSlugs = new Set<string>(); // Track slugs within this batch
 
+  // Fetch category mappings for name-to-slug resolution
+  clearCategoryCache();
+  const categoryMappings = await fetchCategoryMappings();
+
   const products: ProductImportData[] = [];
   const errors: string[] = [];
 
@@ -118,8 +123,11 @@ export const parseProductCSV = async (
         if (size) return String(size).substring(0, 200);
         return null;
       })(),
-      main_category: (row['대분류'] || row['main_category'] || null)?.substring(0, 100) || null,
-      subcategory: (row['소분류'] || row['subcategory'] || null)?.substring(0, 100) || null,
+      ...resolveProductCategories(
+        (row['대분류'] || row['main_category'] || null)?.substring(0, 100) || null,
+        (row['소분류'] || row['subcategory'] || null)?.substring(0, 100) || null,
+        categoryMappings
+      ),
       display_order: Math.min(Math.max(Number(row['순서'] || row['display_order']) || index, 0), 10000),
       procurement_id: (row['조달식별번호'] || row['조달번호'] || row['procurement_id'] || null)?.substring(0, 50) || null,
       price: (row['가격'] || row['price'] || null)?.substring(0, 50) || null,
