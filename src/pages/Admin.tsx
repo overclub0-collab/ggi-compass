@@ -786,7 +786,7 @@ const Admin = () => {
 
               {/* Category Info + Bulk Toolbar */}
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       checked={allPageSelected}
@@ -805,11 +805,25 @@ const Admin = () => {
                       <span className="text-sm font-semibold text-primary">{selectedIds.size}개 선택됨</span>
                     )}
                   </div>
-                  {selectedCategory && (
-                    <Button variant="ghost" size="sm" onClick={() => handleCategorySelect(null)} className="text-muted-foreground">
-                      <X className="h-4 w-4 mr-1" />필터 해제
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Select value={String(itemsPerPage)} onValueChange={handlePageSizeChange}>
+                      <SelectTrigger className="h-9 w-[130px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAGE_SIZE_OPTIONS.map(size => (
+                          <SelectItem key={size} value={String(size)}>
+                            {size}개씩 보기
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedCategory && (
+                      <Button variant="ghost" size="sm" onClick={() => handleCategorySelect(null)} className="text-muted-foreground">
+                        <X className="h-4 w-4 mr-1" />필터 해제
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Bulk Action Bar */}
