@@ -57,8 +57,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'sliding', width: 2.4, height: 1.4, wall: 'left', positionRatio: 0.8 },
       ],
       doors: [
-        { type: 'sliding', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
-        { type: 'sliding', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.85 },
+        { type: 'sliding', material: 'glass', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
+        { type: 'sliding', material: 'glass', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.85 },
       ],
       columns: [
         { wall: 'right', positionRatio: 0.33, radius: 0.15 },
