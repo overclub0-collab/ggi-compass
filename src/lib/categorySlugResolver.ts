@@ -49,32 +49,44 @@ export const resolveCategorySlug = (
 
   const trimmed = value.trim();
 
-  // Filter by parent/child
+  // Filter by parent/child level
   const filtered = parentOnly
     ? categories.filter(c => !c.parent_id)
     : categories.filter(c => !!c.parent_id);
 
-  // Check if it's already a valid slug
+  // 1. Exact slug match within correct level
   const bySlug = filtered.find(c => c.slug === trimmed);
   if (bySlug) return bySlug.slug;
 
-  // Also check all categories (not filtered) for slug match
-  const anySlugMatch = categories.find(c => c.slug === trimmed);
-  if (anySlugMatch) return anySlugMatch.slug;
-
-  // Try matching by Korean name (case-insensitive, trimmed)
+  // 2. Exact name match within correct level (case-insensitive)
   const byName = filtered.find(
     c => c.name.trim().toLowerCase() === trimmed.toLowerCase()
   );
   if (byName) return byName.slug;
 
-  // Try matching by name across all categories
+  // 3. Partial name match (contains) within correct level
+  const byPartialName = filtered.find(
+    c => c.name.trim().replace(/\s+/g, '').toLowerCase() === trimmed.replace(/\s+/g, '').toLowerCase()
+  );
+  if (byPartialName) return byPartialName.slug;
+
+  // 4. Cross-level slug match (warn but allow as last resort)
+  const anySlugMatch = categories.find(c => c.slug === trimmed);
+  if (anySlugMatch) {
+    console.warn(`Category "${trimmed}" matched cross-level (expected ${parentOnly ? 'parent' : 'child'}, found ${anySlugMatch.parent_id ? 'child' : 'parent'})`);
+    return anySlugMatch.slug;
+  }
+
+  // 5. Cross-level name match
   const anyNameMatch = categories.find(
     c => c.name.trim().toLowerCase() === trimmed.toLowerCase()
   );
-  if (anyNameMatch) return anyNameMatch.slug;
+  if (anyNameMatch) {
+    console.warn(`Category name "${trimmed}" matched cross-level`);
+    return anyNameMatch.slug;
+  }
 
-  // Return original value as fallback
+  console.warn(`Category "${trimmed}" not found in any category. Using as-is.`);
   return trimmed;
 };
 
