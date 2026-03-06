@@ -126,8 +126,11 @@ export const useExcelUpload = (options?: UseExcelUploadOptions) => {
         if (size) return String(size).substring(0, 200);
         return null;
       })(),
-      main_category: (data['대분류'] || data['main_category'] || null)?.substring(0, 100) || null,
-      subcategory: (data['소분류'] || data['subcategory'] || null)?.substring(0, 100) || null,
+      ...resolveProductCategories(
+        (data['대분류'] || data['main_category'] || null)?.substring(0, 100) || null,
+        (data['소분류'] || data['subcategory'] || null)?.substring(0, 100) || null,
+        categoryMappings
+      ),
       display_order: Math.min(Math.max(Number(data['순서'] || data['display_order']) || row.rowIndex, 0), 10000),
       procurement_id: (data['조달식별번호'] || data['조달번호'] || data['procurement_id'] || null)?.substring(0, 50) || null,
       price: (data['가격'] || data['price'] || null)?.substring(0, 50) || null,
