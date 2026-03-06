@@ -336,18 +336,37 @@ const Admin = () => {
       return;
     }
     
-    const updateData = isMain
-      ? { main_category: targetCat.slug, subcategory: null }
-      : { main_category: parentCat!.slug, subcategory: targetCat.slug };
+    const updateData: Record<string, string | null> = isMain
+      ? { main_category: targetCat.slug, subcategory: null, category: targetCat.name }
+      : { main_category: parentCat!.slug, subcategory: targetCat.slug, category: parentCat!.name };
     const ids = Array.from(selectedIds);
-    const { error } = await supabase.from('products').update(updateData).in('id', ids);
-    if (error) {
-      toast.error('카테고리 변경 실패: ' + error.message);
-    } else {
-      toast.success(`${ids.length}개 제품의 카테고리가 변경되었습니다.`);
+    
+    // Process in chunks to avoid query size limits
+    const chunkSize = 200;
+    let successCount = 0;
+    let hasError = false;
+    
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      const { error, count } = await supabase
+        .from('products')
+        .update(updateData)
+        .in('id', chunk);
+      
+      if (error) {
+        console.error('Category change error:', error);
+        toast.error('카테고리 변경 실패: ' + error.message);
+        hasError = true;
+        break;
+      }
+      successCount += chunk.length;
+    }
+    
+    if (!hasError) {
+      toast.success(`${successCount}개 제품의 카테고리가 "${targetCat.name}"(으)로 변경되었습니다.`);
       setSelectedIds(new Set());
       setBulkCategoryTarget('');
-      fetchProducts();
+      await fetchProducts();
     }
   };
 
@@ -556,12 +575,13 @@ const Admin = () => {
     const isMainCategory = !targetCategory.parent_id;
     
     try {
-      let updateData: { main_category: string | null; subcategory: string | null };
+      let updateData: Record<string, string | null>;
       
       if (isMainCategory) {
         updateData = {
           main_category: targetCategory.slug,
           subcategory: null,
+          category: targetCategory.name,
         };
       } else {
         const parentCategory = categories.find(c => c.id === targetCategory.parent_id);
@@ -572,6 +592,7 @@ const Admin = () => {
         updateData = {
           main_category: parentCategory.slug,
           subcategory: targetCategory.slug,
+          category: parentCategory.name,
         };
       }
 
@@ -583,7 +604,7 @@ const Admin = () => {
       if (error) throw error;
       
       toast.success(`제품이 "${targetCategory.name}" 카테고리로 이동되었습니다.`);
-      fetchProducts();
+      await fetchProducts();
     } catch (error: any) {
       logError('Move product', error);
       toast.error(getErrorMessage(error));

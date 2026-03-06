@@ -123,11 +123,15 @@ export const parseProductCSV = async (
         if (size) return String(size).substring(0, 200);
         return null;
       })(),
-      ...resolveProductCategories(
-        (row['대분류'] || row['main_category'] || null)?.substring(0, 100) || null,
-        (row['소분류'] || row['subcategory'] || null)?.substring(0, 100) || null,
-        categoryMappings
-      ),
+      ...(() => {
+        const resolved = resolveProductCategories(
+          (row['대분류'] || row['main_category'] || null)?.substring(0, 100) || null,
+          (row['소분류'] || row['subcategory'] || null)?.substring(0, 100) || null,
+          categoryMappings
+        );
+        const mainCatName = categoryMappings.find(c => c.slug === resolved.main_category && !c.parent_id)?.name || null;
+        return { ...resolved, category: mainCatName };
+      })(),
       display_order: Math.min(Math.max(Number(row['순서'] || row['display_order']) || index, 0), 10000),
       procurement_id: (row['조달식별번호'] || row['조달번호'] || row['procurement_id'] || null)?.substring(0, 50) || null,
       price: (row['가격'] || row['price'] || null)?.substring(0, 50) || null,
