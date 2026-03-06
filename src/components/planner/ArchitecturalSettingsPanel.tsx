@@ -601,7 +601,7 @@ export const DEFAULT_ARCHITECTURAL_CONFIG: ArchitecturalConfig = {
     { type: 'double', width: 1.2, height: 1.4, wall: 'back', positionRatio: 0.7 },
   ],
   doors: [
-    { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 },
+    { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 },
   ],
   columns: [],
   partitions: [],
