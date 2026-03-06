@@ -16,6 +16,7 @@ import {
   createSlugFromTitle,
 } from '@/lib/productSlugUtils';
 import { logError, getErrorMessage } from '@/lib/errorUtils';
+import { fetchCategoryMappings, resolveProductCategories, clearCategoryCache } from '@/lib/categorySlugResolver';
 
 interface UploadProgress {
   current: number;
