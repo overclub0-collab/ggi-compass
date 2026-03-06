@@ -112,13 +112,24 @@ interface ArchitecturalSettingsPanelProps {
 }
 
 function WallSelect({ value, onChange, label = '벽면' }: { value: string; onChange: (v: string) => void; label?: string }) {
+  const wallLabel = WALL_OPTIONS.find(w => w.value === value)?.label || '벽면 선택';
+  const wallColor = value === 'back' ? 'bg-blue-50 border-blue-300' : value === 'left' ? 'bg-green-50 border-green-300' : value === 'right' ? 'bg-orange-50 border-orange-300' : 'bg-purple-50 border-purple-300';
   return (
     <div>
-      <Label className="text-[10px] text-muted-foreground">{label}</Label>
+      <Label className="text-[10px] font-bold text-foreground">{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+        <SelectTrigger className={cn("h-9 text-xs font-semibold border-2", wallColor)}>
+          <SelectValue placeholder="▼ 벽면을 선택하세요">{wallLabel}</SelectValue>
+        </SelectTrigger>
         <SelectContent>
-          {WALL_OPTIONS.map(w => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}
+          {WALL_OPTIONS.map(w => (
+            <SelectItem key={w.value} value={w.value}>
+              <span className="flex items-center gap-2">
+                <span className={cn("w-2 h-2 rounded-full", w.value === 'back' ? 'bg-blue-500' : w.value === 'left' ? 'bg-green-500' : w.value === 'right' ? 'bg-orange-500' : 'bg-purple-500')} />
+                {w.label}
+              </span>
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>

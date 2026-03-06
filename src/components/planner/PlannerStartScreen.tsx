@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Building2, PenTool, School, Briefcase, Home, UtensilsCrossed, FlaskConical, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RoomDimensions } from '@/types/planner';
+import { ArchitecturalConfig } from '@/components/planner/ArchitecturalSettingsPanel';
 import ggiLogo from '@/assets/ggi-logo-new.png';
 import { Link } from 'react-router-dom';
 
@@ -13,18 +14,262 @@ interface SpaceTemplate {
   icon: React.ElementType;
   dimensions: RoomDimensions;
   color: string;
+  archConfig: ArchitecturalConfig;
 }
 
 const TEMPLATES: SpaceTemplate[] = [
-  { id: 'office', name: '사무실', description: '일반 사무 공간 (6m × 5m)', icon: Briefcase, dimensions: { width: 6000, height: 5000 }, color: 'hsl(210, 40%, 55%)' },
-  { id: 'classroom', name: '교실', description: '표준 교실 (9m × 7m)', icon: School, dimensions: { width: 9000, height: 7000 }, color: 'hsl(45, 60%, 55%)' },
-  { id: 'home', name: '거실', description: '가정 거실 (5m × 4m)', icon: Home, dimensions: { width: 5000, height: 4000 }, color: 'hsl(160, 35%, 50%)' },
-  { id: 'dining', name: '식당', description: '단체 식당 (8m × 6m)', icon: UtensilsCrossed, dimensions: { width: 8000, height: 6000 }, color: 'hsl(25, 50%, 55%)' },
-  { id: 'lab', name: '실험실', description: '과학 실험실 (8m × 6m)', icon: FlaskConical, dimensions: { width: 8000, height: 6000 }, color: 'hsl(180, 30%, 50%)' },
+  {
+    id: 'office', name: '사무실', description: '일반 사무 공간 (6m × 5m)', icon: Briefcase,
+    dimensions: { width: 6000, height: 5000 }, color: 'hsl(210, 40%, 55%)',
+    archConfig: {
+      windows: [
+        { type: 'double', width: 1.8, height: 1.5, wall: 'back', positionRatio: 0.3 },
+        { type: 'double', width: 1.8, height: 1.5, wall: 'back', positionRatio: 0.7 },
+      ],
+      doors: [
+        { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.85 },
+      ],
+      columns: [],
+      partitions: [
+        { wall: 'right', positionRatio: 0.5, width: 2.0, height: 1.5 },
+      ],
+      outlets: [
+        { wall: 'back', positionRatio: 0.15 },
+        { wall: 'back', positionRatio: 0.85 },
+        { wall: 'right', positionRatio: 0.2 },
+        { wall: 'left', positionRatio: 0.4 },
+      ],
+      ceilingLights: [
+        { type: 'panel', xRatio: 0.3, zRatio: 0.35 },
+        { type: 'panel', xRatio: 0.7, zRatio: 0.35 },
+        { type: 'panel', xRatio: 0.3, zRatio: 0.7 },
+        { type: 'panel', xRatio: 0.7, zRatio: 0.7 },
+      ],
+    },
+  },
+  {
+    id: 'classroom', name: '교실', description: '표준 교실 (9m × 7m)', icon: School,
+    dimensions: { width: 9000, height: 7000 }, color: 'hsl(45, 60%, 55%)',
+    archConfig: {
+      windows: [
+        { type: 'sliding', width: 2.4, height: 1.4, wall: 'left', positionRatio: 0.2 },
+        { type: 'sliding', width: 2.4, height: 1.4, wall: 'left', positionRatio: 0.5 },
+        { type: 'sliding', width: 2.4, height: 1.4, wall: 'left', positionRatio: 0.8 },
+      ],
+      doors: [
+        { type: 'sliding', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
+        { type: 'sliding', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.85 },
+      ],
+      columns: [
+        { wall: 'right', positionRatio: 0.33, radius: 0.15 },
+        { wall: 'right', positionRatio: 0.66, radius: 0.15 },
+      ],
+      partitions: [],
+      outlets: [
+        { wall: 'back', positionRatio: 0.1 },
+        { wall: 'back', positionRatio: 0.5 },
+        { wall: 'back', positionRatio: 0.9 },
+        { wall: 'right', positionRatio: 0.5 },
+      ],
+      ceilingLights: [
+        { type: 'panel', xRatio: 0.25, zRatio: 0.25 },
+        { type: 'panel', xRatio: 0.5, zRatio: 0.25 },
+        { type: 'panel', xRatio: 0.75, zRatio: 0.25 },
+        { type: 'panel', xRatio: 0.25, zRatio: 0.5 },
+        { type: 'panel', xRatio: 0.5, zRatio: 0.5 },
+        { type: 'panel', xRatio: 0.75, zRatio: 0.5 },
+        { type: 'panel', xRatio: 0.25, zRatio: 0.75 },
+        { type: 'panel', xRatio: 0.5, zRatio: 0.75 },
+        { type: 'panel', xRatio: 0.75, zRatio: 0.75 },
+      ],
+    },
+  },
+  {
+    id: 'dining', name: '식당', description: '단체 식당 (8m × 6m)', icon: UtensilsCrossed,
+    dimensions: { width: 8000, height: 6000 }, color: 'hsl(25, 50%, 55%)',
+    archConfig: {
+      windows: [
+        { type: 'fixed', width: 2.4, height: 1.4, wall: 'back', positionRatio: 0.25 },
+        { type: 'fixed', width: 2.4, height: 1.4, wall: 'back', positionRatio: 0.75 },
+      ],
+      doors: [
+        { type: 'double', width: 1.8, height: 2.1, wall: 'front', positionRatio: 0.5 },
+        { type: 'swing', width: 0.9, height: 2.1, wall: 'right', positionRatio: 0.85 },
+      ],
+      columns: [
+        { wall: 'back', positionRatio: 0.5, radius: 0.2 },
+      ],
+      partitions: [
+        { wall: 'right', positionRatio: 0.35, width: 1.5, height: 1.2 },
+      ],
+      outlets: [
+        { wall: 'left', positionRatio: 0.3 },
+        { wall: 'left', positionRatio: 0.7 },
+        { wall: 'right', positionRatio: 0.15 },
+      ],
+      ceilingLights: [
+        { type: 'pendant', xRatio: 0.25, zRatio: 0.3 },
+        { type: 'pendant', xRatio: 0.5, zRatio: 0.3 },
+        { type: 'pendant', xRatio: 0.75, zRatio: 0.3 },
+        { type: 'pendant', xRatio: 0.25, zRatio: 0.7 },
+        { type: 'pendant', xRatio: 0.5, zRatio: 0.7 },
+        { type: 'pendant', xRatio: 0.75, zRatio: 0.7 },
+      ],
+    },
+  },
+  {
+    id: 'lab', name: '실험실', description: '과학 실험실 (8m × 6m)', icon: FlaskConical,
+    dimensions: { width: 8000, height: 6000 }, color: 'hsl(180, 30%, 50%)',
+    archConfig: {
+      windows: [
+        { type: 'fixed', width: 1.2, height: 1.0, wall: 'back', positionRatio: 0.2 },
+        { type: 'fixed', width: 1.2, height: 1.0, wall: 'back', positionRatio: 0.5 },
+        { type: 'fixed', width: 1.2, height: 1.0, wall: 'back', positionRatio: 0.8 },
+      ],
+      doors: [
+        { type: 'sliding', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
+      ],
+      columns: [],
+      partitions: [
+        { wall: 'left', positionRatio: 0.6, width: 2.0, height: 1.8 },
+      ],
+      outlets: [
+        { wall: 'back', positionRatio: 0.1 },
+        { wall: 'back', positionRatio: 0.35 },
+        { wall: 'back', positionRatio: 0.65 },
+        { wall: 'back', positionRatio: 0.9 },
+        { wall: 'left', positionRatio: 0.2 },
+        { wall: 'right', positionRatio: 0.3 },
+        { wall: 'right', positionRatio: 0.7 },
+      ],
+      ceilingLights: [
+        { type: 'panel', xRatio: 0.25, zRatio: 0.3 },
+        { type: 'panel', xRatio: 0.75, zRatio: 0.3 },
+        { type: 'panel', xRatio: 0.25, zRatio: 0.7 },
+        { type: 'panel', xRatio: 0.75, zRatio: 0.7 },
+        { type: 'spot', xRatio: 0.5, zRatio: 0.15 },
+        { type: 'spot', xRatio: 0.5, zRatio: 0.85 },
+      ],
+    },
+  },
+  {
+    id: 'house', name: '하우스', description: '주거 공간 (5m × 4m)', icon: Home,
+    dimensions: { width: 5000, height: 4000 }, color: 'hsl(160, 35%, 50%)',
+    archConfig: {
+      windows: [
+        { type: 'sliding', width: 1.8, height: 1.5, wall: 'back', positionRatio: 0.5 },
+        { type: 'single', width: 0.8, height: 1.0, wall: 'right', positionRatio: 0.3 },
+      ],
+      doors: [
+        { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 },
+      ],
+      columns: [],
+      partitions: [],
+      outlets: [
+        { wall: 'back', positionRatio: 0.15 },
+        { wall: 'back', positionRatio: 0.85 },
+        { wall: 'right', positionRatio: 0.7 },
+        { wall: 'left', positionRatio: 0.3 },
+      ],
+      ceilingLights: [
+        { type: 'pendant', xRatio: 0.5, zRatio: 0.4 },
+        { type: 'spot', xRatio: 0.15, zRatio: 0.15 },
+        { type: 'spot', xRatio: 0.85, zRatio: 0.85 },
+      ],
+    },
+  },
 ];
 
+// Mini 2D preview of a template's architectural config
+function TemplatePreview({ template }: { template: SpaceTemplate }) {
+  const w = 120;
+  const h = (template.dimensions.height / template.dimensions.width) * w;
+  const sx = w / template.dimensions.width;
+  const sy = h / template.dimensions.height;
+
+  return (
+    <div className="relative mx-auto mt-2 mb-1 border-2 border-white/20 rounded bg-white/5" style={{ width: w, height: h }}>
+      {/* Windows */}
+      {template.archConfig.windows.map((win, i) => {
+        const wpx = win.width * 1000 * sx;
+        const isH = win.wall === 'back' || win.wall === 'front';
+        const pos = win.positionRatio * (isH ? w : h) - wpx / 2;
+        return (
+          <div key={`w${i}`} className="absolute bg-sky-400/80" style={{
+            ...(win.wall === 'back' ? { left: pos, top: 0, width: wpx, height: 3 } : {}),
+            ...(win.wall === 'front' ? { left: pos, bottom: 0, width: wpx, height: 3 } : {}),
+            ...(win.wall === 'left' ? { left: 0, top: pos, width: 3, height: wpx } : {}),
+            ...(win.wall === 'right' ? { right: 0, top: pos, width: 3, height: wpx } : {}),
+          }} />
+        );
+      })}
+      {/* Doors */}
+      {template.archConfig.doors.map((door, i) => {
+        const dpx = door.width * 1000 * sx;
+        const isH = door.wall === 'back' || door.wall === 'front';
+        const pos = door.positionRatio * (isH ? w : h) - dpx / 2;
+        return (
+          <div key={`d${i}`} className="absolute bg-amber-400/80" style={{
+            ...(door.wall === 'back' ? { left: pos, top: 0, width: dpx, height: 4 } : {}),
+            ...(door.wall === 'front' ? { left: pos, bottom: 0, width: dpx, height: 4 } : {}),
+            ...(door.wall === 'left' ? { left: 0, top: pos, width: 4, height: dpx } : {}),
+            ...(door.wall === 'right' ? { right: 0, top: pos, width: 4, height: dpx } : {}),
+          }} />
+        );
+      })}
+      {/* Columns */}
+      {template.archConfig.columns.map((col, i) => {
+        const isH = col.wall === 'back' || col.wall === 'front';
+        const pos = col.positionRatio * (isH ? w : h);
+        return (
+          <div key={`c${i}`} className="absolute w-3 h-3 rounded-full bg-stone-400/80" style={{
+            ...(col.wall === 'back' ? { left: pos - 1.5, top: -1 } : {}),
+            ...(col.wall === 'front' ? { left: pos - 1.5, bottom: -1 } : {}),
+            ...(col.wall === 'left' ? { left: -1, top: pos - 1.5 } : {}),
+            ...(col.wall === 'right' ? { right: -1, top: pos - 1.5 } : {}),
+          }} />
+        );
+      })}
+      {/* Partitions */}
+      {template.archConfig.partitions.map((part, i) => {
+        const ppx = part.width * 1000 * sx;
+        const isH = part.wall === 'back' || part.wall === 'front';
+        const pos = part.positionRatio * (isH ? w : h) - ppx / 2;
+        return (
+          <div key={`p${i}`} className="absolute bg-stone-500/60" style={{
+            ...(part.wall === 'back' ? { left: pos, top: 0, width: ppx, height: 3 } : {}),
+            ...(part.wall === 'front' ? { left: pos, bottom: 0, width: ppx, height: 3 } : {}),
+            ...(part.wall === 'left' ? { left: 0, top: pos, width: 3, height: ppx } : {}),
+            ...(part.wall === 'right' ? { right: 0, top: pos, width: 3, height: ppx } : {}),
+          }} />
+        );
+      })}
+      {/* Lights */}
+      {template.archConfig.ceilingLights.map((light, i) => (
+        <div key={`l${i}`} className="absolute w-2 h-2 rounded-full bg-yellow-300/80" style={{
+          left: light.xRatio * w - 1,
+          top: light.zRatio * h - 1,
+        }} />
+      ))}
+      {/* Outlets */}
+      {template.archConfig.outlets.map((out, i) => {
+        const isH = out.wall === 'back' || out.wall === 'front';
+        const pos = out.positionRatio * (isH ? w : h);
+        return (
+          <div key={`o${i}`} className="absolute w-1.5 h-1.5 bg-yellow-500/80" style={{
+            ...(out.wall === 'back' ? { left: pos - 0.75, top: 0 } : {}),
+            ...(out.wall === 'front' ? { left: pos - 0.75, bottom: 0 } : {}),
+            ...(out.wall === 'left' ? { left: 0, top: pos - 0.75 } : {}),
+            ...(out.wall === 'right' ? { right: 0, top: pos - 0.75 } : {}),
+          }} />
+        );
+      })}
+    </div>
+  );
+}
+
 interface PlannerStartScreenProps {
-  onStart: (mode: 'template' | 'free', dimensions?: RoomDimensions) => void;
+  onStart: (mode: 'template' | 'free', dimensions?: RoomDimensions, archConfig?: ArchitecturalConfig) => void;
 }
 
 export const PlannerStartScreen = ({ onStart }: PlannerStartScreenProps) => {
@@ -35,7 +280,7 @@ export const PlannerStartScreen = ({ onStart }: PlannerStartScreenProps) => {
 
   const handleTemplateStart = () => {
     const tmpl = TEMPLATES.find(t => t.id === selectedTemplate);
-    if (tmpl) onStart('template', tmpl.dimensions);
+    if (tmpl) onStart('template', tmpl.dimensions, tmpl.archConfig);
   };
 
   const handleFreeStart = () => {
@@ -109,26 +354,39 @@ export const PlannerStartScreen = ({ onStart }: PlannerStartScreenProps) => {
                 {TEMPLATES.map((tmpl) => {
                   const Icon = tmpl.icon;
                   const isActive = selectedTemplate === tmpl.id;
+                  const summary = [
+                    `창문 ${tmpl.archConfig.windows.length}`,
+                    `문 ${tmpl.archConfig.doors.length}`,
+                    tmpl.archConfig.columns.length > 0 ? `기둥 ${tmpl.archConfig.columns.length}` : '',
+                    tmpl.archConfig.partitions.length > 0 ? `파티션 ${tmpl.archConfig.partitions.length}` : '',
+                    `조명 ${tmpl.archConfig.ceilingLights.length}`,
+                  ].filter(Boolean).join(' · ');
+
                   return (
                     <button
                       key={tmpl.id}
                       onClick={() => setSelectedTemplate(tmpl.id)}
-                      className={`group relative p-4 rounded-2xl border-2 transition-all duration-200 text-center ${
+                      className={`group relative p-3 rounded-2xl border-2 transition-all duration-200 text-center ${
                         isActive
                           ? 'border-white bg-white/15 scale-[1.03]'
                           : 'border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10'
                       }`}
                     >
                       <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-colors ${
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-1 transition-colors ${
                           isActive ? 'bg-white/20' : 'bg-white/10'
                         }`}
                         style={{ backgroundColor: isActive ? tmpl.color + '40' : undefined }}
                       >
-                        <Icon className="h-6 w-6 text-white" />
+                        <Icon className="h-5 w-5 text-white" />
                       </div>
                       <p className="text-white font-bold text-sm">{tmpl.name}</p>
-                      <p className="text-white/40 text-[10px] mt-1">{tmpl.description}</p>
+                      <p className="text-white/40 text-[10px] mt-0.5">{tmpl.description}</p>
+                      
+                      {/* Mini floor plan preview */}
+                      <TemplatePreview template={tmpl} />
+                      
+                      <p className="text-white/30 text-[8px] mt-1 leading-tight">{summary}</p>
                     </button>
                   );
                 })}
