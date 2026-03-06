@@ -161,7 +161,7 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'single', width: 0.8, height: 1.0, wall: 'right', positionRatio: 0.3 },
       ],
       doors: [
-        { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 },
+        { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 },
       ],
       columns: [],
       partitions: [],
