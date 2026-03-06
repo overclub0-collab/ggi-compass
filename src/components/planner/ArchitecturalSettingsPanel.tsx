@@ -278,7 +278,6 @@ export const ArchitecturalSettingsPanel = ({ config, onChange }: ArchitecturalSe
           <WallSelect value={door.wall} onChange={(v) => {
             const updated = [...config.doors]; updated[idx] = { ...door, wall: v as DoorConfig['wall'] }; update('doors', updated);
           }} />
-          </div>
           <div>
             <Label className="text-[10px] text-muted-foreground">크기</Label>
             <Select value={`${door.width}x${door.height}`} onValueChange={(v) => {
