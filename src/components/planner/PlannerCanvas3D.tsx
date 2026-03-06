@@ -212,8 +212,8 @@ function OutletElement({ position, rotation }: {
       </mesh>
       {/* Socket holes */}
       {[-0.025, 0.025].map((y, i) => (
-        <mesh key={i} position={[0, y, 0.006]}>
-          <cylinderGeometry args={[0.012, 0.012, 0.003, 12]} rotation={[Math.PI / 2, 0, 0]} />
+        <mesh key={i} position={[0, y, 0.006]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.012, 0.012, 0.003, 12]} />
           <meshStandardMaterial color="#333" roughness={0.5} metalness={0.3} />
         </mesh>
       ))}
