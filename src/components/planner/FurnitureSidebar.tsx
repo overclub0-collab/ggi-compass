@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Monitor, Armchair, Archive, Square, BookOpen, Sofa, Loader2, FlaskConical, UtensilsCrossed, Shield, ChevronLeft, ChevronRight, ChevronDown, GripVertical } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Monitor, Armchair, Archive, Square, BookOpen, Sofa, Loader2, FlaskConical, UtensilsCrossed, Shield, ChevronLeft, ChevronRight, ChevronDown, GripVertical, Dog } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FurnitureItem } from '@/types/planner';
@@ -16,8 +16,10 @@ const categoryIcons: Record<string, React.ElementType> = {
   office: Monitor,
   chairs: Armchair,
   'dining-table': UtensilsCrossed,
+  '식당가구': UtensilsCrossed,
   'lab-bench': FlaskConical,
   military: Shield,
+  '반려동물-가구': Dog,
   desk: Monitor,
   chair: Armchair,
   storage: Archive,
@@ -33,15 +35,17 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
   const { data: products, isLoading: prodLoading } = usePlannerProducts(selectedCategoryId);
   const [currentPage, setCurrentPage] = useState(0);
 
-  // Auto-expand first main category
-  if (categories && categories.length > 0 && !expandedMainId) {
-    setExpandedMainId(categories[0].id);
-    if (categories[0].children.length > 0) {
-      setSelectedCategoryId(categories[0].children[0].id);
-    } else {
-      setSelectedCategoryId(categories[0].id);
+  // Auto-expand first main category (useEffect to avoid setState during render)
+  useEffect(() => {
+    if (categories && categories.length > 0 && !expandedMainId && !selectedCategoryId) {
+      setExpandedMainId(categories[0].id);
+      if (categories[0].children.length > 0) {
+        setSelectedCategoryId(categories[0].children[0].id);
+      } else {
+        setSelectedCategoryId(categories[0].id);
+      }
     }
-  }
+  }, [categories]);
 
   const totalPages = useMemo(() => {
     if (!products) return 0;
