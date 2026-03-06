@@ -18,6 +18,7 @@ export interface WindowConfig {
 
 export interface DoorConfig {
   type: 'swing' | 'sliding' | 'double';
+  material: 'wood' | 'glass' | 'metal';
   width: number;
   height: number;
   wall: 'back' | 'left' | 'right' | 'front';
