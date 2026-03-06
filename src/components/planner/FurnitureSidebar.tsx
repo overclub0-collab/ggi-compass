@@ -170,7 +170,7 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
         )}
       </div>
 
