@@ -210,7 +210,7 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
                     <img
                       src={furniture.thumbnail}
                       alt={furniture.name}
-                      className="w-full aspect-[4/3] rounded-lg mb-2 object-cover bg-muted"
+                      className="w-full aspect-[4/3] rounded-lg mb-2 object-contain bg-muted/50 p-1"
                       loading="lazy"
                     />
                   ) : (

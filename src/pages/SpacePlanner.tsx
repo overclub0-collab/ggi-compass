@@ -108,11 +108,9 @@ const SpacePlanner = () => {
 
           <RoomSettingsDialog roomDimensions={roomDimensions} onSave={setRoomDimensions} />
           
-          {viewMode === '3d' && (
-            <div className="relative">
-              <ArchitecturalSettingsPanel config={archConfig} onChange={setArchConfig} />
-            </div>
-          )}
+          <div className="relative">
+            <ArchitecturalSettingsPanel config={archConfig} onChange={setArchConfig} />
+          </div>
 
           {viewMode === '2d' && (
             <div className="flex items-center gap-1 bg-white/10 rounded-lg p-1">
