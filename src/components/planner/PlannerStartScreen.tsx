@@ -27,7 +27,7 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'double', width: 1.8, height: 1.5, wall: 'back', positionRatio: 0.7 },
       ],
       doors: [
-        { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.85 },
+        { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.85 },
       ],
       columns: [],
       partitions: [
