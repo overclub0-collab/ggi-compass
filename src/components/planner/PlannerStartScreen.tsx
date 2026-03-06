@@ -127,7 +127,7 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'fixed', width: 1.2, height: 1.0, wall: 'back', positionRatio: 0.8 },
       ],
       doors: [
-        { type: 'sliding', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
+        { type: 'sliding', material: 'metal', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
       ],
       columns: [],
       partitions: [
