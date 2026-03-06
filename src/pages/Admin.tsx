@@ -929,57 +929,56 @@ const Admin = () => {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-center gap-2 pt-4 border-t">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="h-9 px-3"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      이전
-                    </Button>
-                    <div className="flex gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
-                        .reduce<(number | '...')[]>((acc, p, idx, arr) => {
-                          if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
-                          acc.push(p);
-                          return acc;
-                        }, [])
-                        .map((p, i) =>
-                          p === '...' ? (
-                            <span key={`el-${i}`} className="flex items-center px-2 text-muted-foreground text-sm">…</span>
-                          ) : (
-                            <button
-                              key={p}
-                              onClick={() => setCurrentPage(p as number)}
-                              className={`w-9 h-9 rounded-md text-sm font-medium transition-colors ${
-                                currentPage === p
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'hover:bg-muted text-foreground'
-                              }`}
-                            >
-                              {p}
-                            </button>
-                          )
-                        )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="h-9 px-3"
-                    >
-                      다음
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="h-9 px-3"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    이전
+                  </Button>
+                  <div className="flex gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                      .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                        if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
+                        acc.push(p);
+                        return acc;
+                      }, [])
+                      .map((p, i) =>
+                        p === '...' ? (
+                          <span key={`el-${i}`} className="flex items-center px-2 text-muted-foreground text-sm">…</span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p as number)}
+                            className={`w-9 h-9 rounded-md text-sm font-medium transition-colors ${
+                              currentPage === p
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-muted text-foreground'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        )
+                      )}
                   </div>
-                )}
-              </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="h-9 px-3"
+                  >
+                    다음
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
           ) : activeTab === 'catalogs' ? (
