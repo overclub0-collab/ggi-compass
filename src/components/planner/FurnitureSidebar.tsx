@@ -89,7 +89,7 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <ScrollArea className="max-h-[260px]">
+          <ScrollArea className="max-h-[45vh]">
             <div className="px-2 pb-2 space-y-0.5">
               {(categories || []).map((mainCat) => {
                 const Icon = categoryIcons[mainCat.slug] || Archive;
