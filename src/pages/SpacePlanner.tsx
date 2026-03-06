@@ -41,6 +41,7 @@ const SpacePlanner = () => {
     setDraggingFurniture(null);
   }, [addFurniture]);
 
+  // Right-click pins/unpins
   const handleRightClickSelect = useCallback((id: string) => {
     setPinnedId(prev => prev === id ? null : id);
   }, []);
@@ -54,10 +55,11 @@ const SpacePlanner = () => {
     if (pinnedId === id) setPinnedId(null);
   }, [removeFurniture, pinnedId]);
 
-  // Fix: don't clear selectedId on canvas click when pinned
+  // Left-click select — DON'T clear if something is pinned
   const handleSelect = useCallback((id: string | null) => {
+    if (id === null && pinnedId) return; // Keep panel open when pinned
     setSelectedId(id);
-  }, [setSelectedId]);
+  }, [setSelectedId, pinnedId]);
 
   const handleZoomIn = () => setScale(prev => Math.min(prev * 1.2, 0.3));
   const handleZoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.05));
@@ -146,7 +148,7 @@ const SpacePlanner = () => {
           pinnedFurniture={pinnedFurniture}
           onRotate={rotateFurniture}
           onDelete={handleDelete}
-          onClose={() => setSelectedId(null)}
+          onClose={() => { setSelectedId(null); setPinnedId(null); }}
           onUnpin={handleUnpin}
           onColorChange={changeFurnitureColor}
         />
