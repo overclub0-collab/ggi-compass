@@ -93,8 +93,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'fixed', width: 2.4, height: 1.4, wall: 'back', positionRatio: 0.75 },
       ],
       doors: [
-        { type: 'double', width: 1.8, height: 2.1, wall: 'front', positionRatio: 0.5 },
-        { type: 'swing', width: 0.9, height: 2.1, wall: 'right', positionRatio: 0.85 },
+        { type: 'double', material: 'glass', width: 1.8, height: 2.1, wall: 'front', positionRatio: 0.5 },
+        { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'right', positionRatio: 0.85 },
       ],
       columns: [
         { wall: 'back', positionRatio: 0.5, radius: 0.2 },
