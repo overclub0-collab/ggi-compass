@@ -262,11 +262,17 @@ const Admin = () => {
   });
 
   // Pagination
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const pagedProducts = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredProducts, currentPage]);
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredProducts.slice(start, start + itemsPerPage);
+  }, [filteredProducts, currentPage, itemsPerPage]);
+
+  const handlePageSizeChange = (size: string) => {
+    setItemsPerPage(Number(size));
+    setCurrentPage(1);
+    setSelectedIds(new Set());
+  };
 
   const handleSearchChange = (q: string) => {
     setSearchQuery(q);
