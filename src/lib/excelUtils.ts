@@ -66,6 +66,10 @@ export const parseProductCSV = async (
   const existingSlugs = opts?.existingSlugs ?? (await fetchAllExistingProductSlugs());
   const batchSlugs = new Set<string>(); // Track slugs within this batch
 
+  // Fetch category mappings for name-to-slug resolution
+  clearCategoryCache();
+  const categoryMappings = await fetchCategoryMappings();
+
   const products: ProductImportData[] = [];
   const errors: string[] = [];
 
