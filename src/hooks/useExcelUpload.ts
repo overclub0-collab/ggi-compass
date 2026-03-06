@@ -150,6 +150,8 @@ export const useExcelUpload = (options?: UseExcelUploadOptions) => {
     try {
       const existingSlugs = await fetchAllExistingProductSlugs();
       const batchSlugs = new Set<string>();
+      clearCategoryCache();
+      const categoryMappings = await fetchCategoryMappings();
 
       // Parse Excel file
       let { rows, errors: parseErrors, warnings } = await parseExcelWithImages(file);
