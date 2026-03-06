@@ -54,7 +54,8 @@ export const useExcelUpload = (options?: UseExcelUploadOptions) => {
   const processExcelRow = async (
     row: ExcelRowData,
     existingSlugs: Set<string>,
-    batchSlugs: Set<string>
+    batchSlugs: Set<string>,
+    categoryMappings: { name: string; slug: string; parent_id: string | null }[] = []
   ): Promise<{
     product: any;
     errors: string[];
