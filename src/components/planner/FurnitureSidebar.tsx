@@ -85,7 +85,7 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
   };
 
   return (
-    <div className="w-[280px] flex flex-col h-full bg-background/60 backdrop-blur-xl border-r border-border/40 shadow-lg">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 shrink-0">
         <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground/70">
