@@ -9,8 +9,9 @@ import { FurnitureDetailPanel } from '@/components/planner/FurnitureDetailPanel'
 import { RoomSettingsDialog } from '@/components/planner/RoomSettingsDialog';
 import { QuoteSummary } from '@/components/planner/QuoteSummary';
 import { ConsultationDialog } from '@/components/planner/ConsultationDialog';
+import { ArchitecturalSettingsPanel, DEFAULT_ARCHITECTURAL_CONFIG, ArchitecturalConfig } from '@/components/planner/ArchitecturalSettingsPanel';
 import { usePlannerState } from '@/hooks/usePlannerState';
-import { FurnitureItem, PlacedFurniture } from '@/types/planner';
+import { FurnitureItem } from '@/types/planner';
 import ggiLogo from '@/assets/ggi-logo-new.png';
 
 const SpacePlanner = () => {
@@ -27,6 +28,7 @@ const SpacePlanner = () => {
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [, setDraggingFurniture] = useState<FurnitureItem | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const [archConfig, setArchConfig] = useState<ArchitecturalConfig>(DEFAULT_ARCHITECTURAL_CONFIG);
 
   const pinnedFurniture = pinnedId ? placedFurniture.find(f => f.id === pinnedId) : undefined;
 
@@ -52,48 +54,60 @@ const SpacePlanner = () => {
     if (pinnedId === id) setPinnedId(null);
   }, [removeFurniture, pinnedId]);
 
+  // Fix: don't clear selectedId on canvas click when pinned
+  const handleSelect = useCallback((id: string | null) => {
+    setSelectedId(id);
+  }, [setSelectedId]);
+
   const handleZoomIn = () => setScale(prev => Math.min(prev * 1.2, 0.3));
   const handleZoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.05));
 
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="h-14 bg-primary text-primary-foreground px-4 flex items-center justify-between shrink-0">
+      <header className="h-14 bg-[#0A1931] text-white px-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <ArrowLeft className="h-5 w-5" />
             <img src={ggiLogo} alt="GGI" className="h-8" />
           </Link>
-          <div className="h-6 w-px bg-primary-foreground/30" />
+          <div className="h-6 w-px bg-white/20" />
           <h1 className="font-bold text-lg">공간 스타일링 시뮬레이터</h1>
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-primary-foreground/10 rounded-lg p-1">
+          <div className="flex items-center bg-white/10 rounded-lg p-1">
             <Button
               variant="ghost" size="sm"
               onClick={() => setViewMode('2d')}
-              className={`h-8 px-3 text-xs font-bold gap-1 ${viewMode === '2d' ? 'bg-primary-foreground/25 text-primary-foreground' : 'text-primary-foreground/60 hover:bg-primary-foreground/10'}`}
+              className={`h-8 px-3 text-xs font-bold gap-1 ${viewMode === '2d' ? 'bg-white/25 text-white' : 'text-white/60 hover:bg-white/10'}`}
             >
               <Layers className="h-3.5 w-3.5" />2D
             </Button>
             <Button
               variant="ghost" size="sm"
               onClick={() => setViewMode('3d')}
-              className={`h-8 px-3 text-xs font-bold gap-1 ${viewMode === '3d' ? 'bg-primary-foreground/25 text-primary-foreground' : 'text-primary-foreground/60 hover:bg-primary-foreground/10'}`}
+              className={`h-8 px-3 text-xs font-bold gap-1 ${viewMode === '3d' ? 'bg-white/25 text-white' : 'text-white/60 hover:bg-white/10'}`}
             >
               <Box className="h-3.5 w-3.5" />3D
             </Button>
           </div>
 
           <RoomSettingsDialog roomDimensions={roomDimensions} onSave={setRoomDimensions} />
+          
+          {viewMode === '3d' && (
+            <div className="relative">
+              <ArchitecturalSettingsPanel config={archConfig} onChange={setArchConfig} />
+            </div>
+          )}
+
           {viewMode === '2d' && (
-            <div className="flex items-center gap-1 bg-primary-foreground/10 rounded-lg p-1">
-              <Button variant="ghost" size="icon" onClick={handleZoomOut} className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20">
+            <div className="flex items-center gap-1 bg-white/10 rounded-lg p-1">
+              <Button variant="ghost" size="icon" onClick={handleZoomOut} className="h-8 w-8 text-white hover:bg-white/20">
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <span className="text-xs px-2 min-w-[50px] text-center">{Math.round(scale * 1000)}%</span>
-              <Button variant="ghost" size="icon" onClick={handleZoomIn} className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20">
+              <Button variant="ghost" size="icon" onClick={handleZoomIn} className="h-8 w-8 text-white hover:bg-white/20">
                 <ZoomIn className="h-4 w-4" />
               </Button>
             </div>
@@ -112,7 +126,7 @@ const SpacePlanner = () => {
             selectedId={selectedId}
             scale={scale}
             onDrop={handleDrop}
-            onSelect={setSelectedId}
+            onSelect={handleSelect}
             onMove={updateFurniturePosition}
           />
         ) : (
@@ -121,8 +135,9 @@ const SpacePlanner = () => {
             placedFurniture={placedFurniture}
             selectedId={selectedId}
             scale={scale}
-            onSelect={setSelectedId}
+            onSelect={handleSelect}
             onRightClickSelect={handleRightClickSelect}
+            architecturalConfig={archConfig}
           />
         )}
 
@@ -138,7 +153,7 @@ const SpacePlanner = () => {
       </div>
 
       {/* Brand Trust Badges */}
-      <div className="h-8 bg-primary/5 border-t border-border flex items-center justify-center gap-6 text-xs text-muted-foreground">
+      <div className="h-8 bg-[#0A1931]/5 border-t border-border flex items-center justify-center gap-6 text-xs text-muted-foreground">
         <span className="font-medium">✅ 여성기업 인증</span>
         <span className="font-medium">🏛️ 나라장터 조달 등록</span>
         <span className="font-medium">📋 GGI 공간 스타일링 시뮬레이터</span>

@@ -1,13 +1,13 @@
 import { useRef, useCallback, useState } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, Grid, Text, SoftShadows, ContactShadows } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Grid, Text, SoftShadows, ContactShadows, Edges } from '@react-three/drei';
 import { PlacedFurniture, RoomDimensions } from '@/types/planner';
 import { FurnitureObject } from './FurnitureModels';
-import { Edges } from '@react-three/drei';
-import { Camera, DoorOpen, PanelTop } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import * as THREE from 'three';
+import { ArchitecturalConfig, DEFAULT_ARCHITECTURAL_CONFIG } from './ArchitecturalSettingsPanel';
 
 interface PlannerCanvas3DProps {
   roomDimensions: RoomDimensions;
@@ -16,6 +16,7 @@ interface PlannerCanvas3DProps {
   scale: number;
   onSelect: (id: string | null) => void;
   onRightClickSelect?: (id: string) => void;
+  architecturalConfig?: ArchitecturalConfig;
 }
 
 const WALL_COLOR = '#f5f2ec';
@@ -24,12 +25,14 @@ const EDGE_COLOR = '#2a2a2a';
 
 // ===== Architectural Elements =====
 
-function WindowElement({ position, rotation, width = 1.2, height = 1.4 }: {
+function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = 'double' }: {
   position: [number, number, number]; rotation: [number, number, number];
-  width?: number; height?: number;
+  width?: number; height?: number; type?: string;
 }) {
   const frameColor = '#e8e4db';
   const frameThick = 0.04;
+  const hasDivider = type === 'double' || type === 'single';
+  const hasHorizontalDivider = type === 'double';
 
   return (
     <group position={position} rotation={rotation}>
@@ -67,15 +70,32 @@ function WindowElement({ position, rotation, width = 1.2, height = 1.4 }: {
         <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.05} />
       </mesh>
       {/* Center divider vertical */}
-      <mesh position={[0, 0, 0.01]}>
-        <boxGeometry args={[0.02, height, 0.025]} />
-        <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.05} />
-      </mesh>
+      {hasDivider && (
+        <mesh position={[0, 0, 0.01]}>
+          <boxGeometry args={[0.02, height, 0.025]} />
+          <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.05} />
+        </mesh>
+      )}
       {/* Center divider horizontal */}
-      <mesh position={[0, 0.05, 0.01]}>
-        <boxGeometry args={[width, 0.02, 0.025]} />
-        <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.05} />
-      </mesh>
+      {hasHorizontalDivider && (
+        <mesh position={[0, 0.05, 0.01]}>
+          <boxGeometry args={[width, 0.02, 0.025]} />
+          <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.05} />
+        </mesh>
+      )}
+      {/* Sliding rail for sliding type */}
+      {type === 'sliding' && (
+        <>
+          <mesh position={[0, height / 2 + 0.03, 0.01]}>
+            <boxGeometry args={[width + 0.1, 0.02, 0.04]} />
+            <meshStandardMaterial color="#999" roughness={0.3} metalness={0.7} />
+          </mesh>
+          <mesh position={[0, -height / 2 - 0.02, 0.01]}>
+            <boxGeometry args={[width + 0.1, 0.015, 0.04]} />
+            <meshStandardMaterial color="#999" roughness={0.3} metalness={0.7} />
+          </mesh>
+        </>
+      )}
       {/* Sill */}
       <mesh position={[0, -height / 2 - 0.02, 0.04]}>
         <boxGeometry args={[width + 0.08, 0.03, 0.08]} />
@@ -87,53 +107,61 @@ function WindowElement({ position, rotation, width = 1.2, height = 1.4 }: {
   );
 }
 
-function DoorElement({ position, rotation }: {
+function DoorElement({ position, rotation, width = 0.9, height = 2.1, type = 'swing' }: {
   position: [number, number, number]; rotation: [number, number, number];
+  width?: number; height?: number; type?: string;
 }) {
-  const doorW = 0.9;
-  const doorH = 2.1;
   const frameColor = '#d5d0c5';
+  const isDouble = type === 'double';
+  const panelW = isDouble ? width / 2 : width;
 
   return (
     <group position={position} rotation={rotation}>
-      {/* Door panel */}
-      <mesh position={[0, doorH / 2, 0]}>
-        <boxGeometry args={[doorW, doorH, 0.04]} />
-        <meshStandardMaterial color="#b8a990" roughness={0.7} metalness={0.02} />
-        <Edges threshold={15} color={EDGE_COLOR} lineWidth={1} />
-      </mesh>
-      {/* Panel inset top */}
-      <mesh position={[0, doorH * 0.65, 0.022]}>
-        <boxGeometry args={[doorW * 0.7, doorH * 0.35, 0.005]} />
-        <meshStandardMaterial color="#c4b5a0" roughness={0.75} metalness={0.02} />
-      </mesh>
-      {/* Panel inset bottom */}
-      <mesh position={[0, doorH * 0.25, 0.022]}>
-        <boxGeometry args={[doorW * 0.7, doorH * 0.3, 0.005]} />
-        <meshStandardMaterial color="#c4b5a0" roughness={0.75} metalness={0.02} />
-      </mesh>
+      {/* Door panel(s) */}
+      {(isDouble ? [-(panelW / 2 + 0.002), (panelW / 2 + 0.002)] : [0]).map((xOff, i) => (
+        <group key={i}>
+          <mesh position={[xOff, height / 2, 0]}>
+            <boxGeometry args={[panelW - (isDouble ? 0.004 : 0), height, 0.04]} />
+            <meshStandardMaterial color="#b8a990" roughness={0.7} metalness={0.02} />
+            <Edges threshold={15} color={EDGE_COLOR} lineWidth={1} />
+          </mesh>
+          {/* Panel inset top */}
+          <mesh position={[xOff, height * 0.65, 0.022]}>
+            <boxGeometry args={[panelW * 0.65, height * 0.3, 0.005]} />
+            <meshStandardMaterial color="#c4b5a0" roughness={0.75} metalness={0.02} />
+          </mesh>
+          {/* Panel inset bottom */}
+          <mesh position={[xOff, height * 0.25, 0.022]}>
+            <boxGeometry args={[panelW * 0.65, height * 0.25, 0.005]} />
+            <meshStandardMaterial color="#c4b5a0" roughness={0.75} metalness={0.02} />
+          </mesh>
+          {/* Handle */}
+          <mesh position={[xOff + (isDouble ? (i === 0 ? panelW * 0.35 : -panelW * 0.35) : panelW * 0.38), height * 0.47, 0.035]}>
+            <cylinderGeometry args={[0.012, 0.012, 0.12, 8]} />
+            <meshStandardMaterial color="#888" roughness={0.2} metalness={0.9} />
+          </mesh>
+        </group>
+      ))}
       {/* Frame */}
-      <mesh position={[-doorW / 2 - 0.03, doorH / 2, 0]}>
-        <boxGeometry args={[0.06, doorH + 0.06, 0.08]} />
+      <mesh position={[-width / 2 - 0.03, height / 2, 0]}>
+        <boxGeometry args={[0.06, height + 0.06, 0.08]} />
         <meshStandardMaterial color={frameColor} roughness={0.6} metalness={0.05} />
       </mesh>
-      <mesh position={[doorW / 2 + 0.03, doorH / 2, 0]}>
-        <boxGeometry args={[0.06, doorH + 0.06, 0.08]} />
+      <mesh position={[width / 2 + 0.03, height / 2, 0]}>
+        <boxGeometry args={[0.06, height + 0.06, 0.08]} />
         <meshStandardMaterial color={frameColor} roughness={0.6} metalness={0.05} />
       </mesh>
-      <mesh position={[0, doorH + 0.03, 0]}>
-        <boxGeometry args={[doorW + 0.12, 0.06, 0.08]} />
+      <mesh position={[0, height + 0.03, 0]}>
+        <boxGeometry args={[width + 0.12, 0.06, 0.08]} />
         <meshStandardMaterial color={frameColor} roughness={0.6} metalness={0.05} />
       </mesh>
-      {/* Handle */}
-      <mesh position={[doorW * 0.38, doorH * 0.47, 0.035]}>
-        <cylinderGeometry args={[0.012, 0.012, 0.12, 8]} />
-        <meshStandardMaterial color="#888" roughness={0.2} metalness={0.9} />
-      </mesh>
-      <mesh position={[doorW * 0.38, doorH * 0.47, 0.035]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.012, 0.012, 0.05, 8]} />
-        <meshStandardMaterial color="#888" roughness={0.2} metalness={0.9} />
-      </mesh>
+      {/* Sliding rail */}
+      {type === 'sliding' && (
+        <mesh position={[0, height + 0.06, 0]}>
+          <boxGeometry args={[width + 0.2, 0.03, 0.06]} />
+          <meshStandardMaterial color="#999" roughness={0.3} metalness={0.7} />
+        </mesh>
+      )}
     </group>
   );
 }
@@ -144,12 +172,10 @@ function CrownMolding({ w, d, wallH }: { w: number; d: number; wallH: number }) 
   const moldD = 0.04;
   return (
     <group>
-      {/* Back wall molding */}
       <mesh position={[w / 2, wallH - moldH / 2, moldD / 2]}>
         <boxGeometry args={[w, moldH, moldD]} />
         <meshStandardMaterial color="#e2ded5" roughness={0.5} metalness={0.05} />
       </mesh>
-      {/* Left wall molding */}
       <mesh position={[moldD / 2, wallH - moldH / 2, d / 2]}>
         <boxGeometry args={[moldD, moldH, d]} />
         <meshStandardMaterial color="#e2ded5" roughness={0.5} metalness={0.05} />
@@ -158,20 +184,33 @@ function CrownMolding({ w, d, wallH }: { w: number; d: number; wallH: number }) 
   );
 }
 
-interface RoomConfig {
-  showWindows: boolean;
-  showDoor: boolean;
-}
-
-function Room({ dimensions, config }: { dimensions: RoomDimensions; config: RoomConfig }) {
+function Room({ dimensions, archConfig }: { dimensions: RoomDimensions; archConfig: ArchitecturalConfig }) {
   const w = dimensions.width / 1000;
   const d = dimensions.height / 1000;
   const wallH = 2.8;
   const wallThickness = 0.06;
 
+  const getWallPosition = (wall: string, posRatio: number, yCenter: number): {
+    position: [number, number, number];
+    rotation: [number, number, number];
+  } => {
+    switch (wall) {
+      case 'back':
+        return { position: [w * posRatio, yCenter, wallThickness / 2 + 0.002], rotation: [0, 0, 0] };
+      case 'left':
+        return { position: [wallThickness / 2 + 0.002, yCenter, d * posRatio], rotation: [0, Math.PI / 2, 0] };
+      case 'right':
+        return { position: [w - wallThickness / 2 - 0.002, yCenter, d * posRatio], rotation: [0, -Math.PI / 2, 0] };
+      case 'front':
+        return { position: [w * posRatio, yCenter, d - wallThickness / 2 - 0.002], rotation: [0, Math.PI, 0] };
+      default:
+        return { position: [w * posRatio, yCenter, wallThickness / 2 + 0.002], rotation: [0, 0, 0] };
+    }
+  };
+
   return (
     <group>
-      {/* Floor – wood plank pattern via repeating strips */}
+      {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[w / 2, 0, d / 2]} receiveShadow>
         <planeGeometry args={[w, d]} />
         <meshStandardMaterial color={FLOOR_COLOR} roughness={0.75} metalness={0.02} />
@@ -212,43 +251,47 @@ function Room({ dimensions, config }: { dimensions: RoomDimensions; config: Room
         <Edges threshold={15} color={EDGE_COLOR} lineWidth={0.6} />
       </mesh>
 
-      {/* Baseboard - back wall */}
+      {/* Baseboards */}
       <mesh position={[w / 2, 0.04, wallThickness / 2 + 0.005]}>
         <boxGeometry args={[w, 0.08, 0.015]} />
         <meshStandardMaterial color="#d5d0c5" roughness={0.6} metalness={0.05} />
       </mesh>
-      {/* Baseboard - left wall */}
       <mesh position={[wallThickness / 2 + 0.005, 0.04, d / 2]}>
         <boxGeometry args={[0.015, 0.08, d]} />
         <meshStandardMaterial color="#d5d0c5" roughness={0.6} metalness={0.05} />
       </mesh>
 
-      {/* Crown Molding */}
       <CrownMolding w={w} d={d} wallH={wallH} />
 
-      {/* Windows on back wall */}
-      {config.showWindows && (
-        <>
+      {/* Dynamic Windows */}
+      {archConfig.windows.map((win, idx) => {
+        const { position, rotation } = getWallPosition(win.wall, win.positionRatio, wallH * 0.55);
+        return (
           <WindowElement
-            position={[w * 0.3, wallH * 0.55, wallThickness / 2 + 0.002]}
-            rotation={[0, 0, 0]}
+            key={`win-${idx}`}
+            position={position}
+            rotation={rotation}
+            width={win.width}
+            height={win.height}
+            type={win.type}
           />
-          {w > 4 && (
-            <WindowElement
-              position={[w * 0.7, wallH * 0.55, wallThickness / 2 + 0.002]}
-              rotation={[0, 0, 0]}
-            />
-          )}
-        </>
-      )}
+        );
+      })}
 
-      {/* Door on left wall */}
-      {config.showDoor && (
-        <DoorElement
-          position={[wallThickness / 2 + 0.002, 0, d * 0.8]}
-          rotation={[0, Math.PI / 2, 0]}
-        />
-      )}
+      {/* Dynamic Doors */}
+      {archConfig.doors.map((door, idx) => {
+        const { position, rotation } = getWallPosition(door.wall, door.positionRatio, 0);
+        return (
+          <DoorElement
+            key={`door-${idx}`}
+            position={position}
+            rotation={rotation}
+            width={door.width}
+            height={door.height}
+            type={door.type}
+          />
+        );
+      })}
 
       {/* Grid */}
       <Grid
@@ -275,8 +318,8 @@ function Room({ dimensions, config }: { dimensions: RoomDimensions; config: Room
   );
 }
 
-function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, roomConfig }: 
-  Omit<PlannerCanvas3DProps, 'scale'> & { roomConfig: RoomConfig }) {
+function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig }:
+  Omit<PlannerCanvas3DProps, 'scale' | 'architecturalConfig'> & { archConfig: ArchitecturalConfig }) {
   const w = roomDimensions.width / 1000;
   const d = roomDimensions.height / 1000;
 
@@ -293,8 +336,6 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
   return (
     <>
       <SoftShadows size={25} samples={16} focus={0.5} />
-
-      {/* Studio lighting */}
       <ambientLight intensity={0.35} />
       <directionalLight
         position={[w + 4, 12, d + 4]}
@@ -323,7 +364,7 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
         far={4}
       />
 
-      <Room dimensions={roomDimensions} config={roomConfig} />
+      <Room dimensions={roomDimensions} archConfig={archConfig} />
 
       {placedFurniture.map(item => (
         <FurnitureObject
@@ -353,9 +394,10 @@ export const PlannerCanvas3D = ({
   selectedId,
   onSelect,
   onRightClickSelect,
+  architecturalConfig,
 }: PlannerCanvas3DProps) => {
   const glRef = useRef<any>(null);
-  const [roomConfig, setRoomConfig] = useState<RoomConfig>({ showWindows: true, showDoor: true });
+  const archConfig = architecturalConfig || DEFAULT_ARCHITECTURAL_CONFIG;
 
   const handleSnapshot = useCallback(() => {
     if (!glRef.current) {
@@ -382,28 +424,6 @@ export const PlannerCanvas3D = ({
       {/* Tooltip hint */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
         좌클릭: 선택 | 우클릭: 정보 고정 | 드래그: 회전/확대
-      </div>
-
-      {/* Architectural toggles */}
-      <div className="absolute top-2 right-4 z-10 flex gap-1">
-        <Button
-          variant={roomConfig.showWindows ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setRoomConfig(prev => ({ ...prev, showWindows: !prev.showWindows }))}
-          className="gap-1 text-xs h-7"
-        >
-          <PanelTop className="h-3.5 w-3.5" />
-          창문
-        </Button>
-        <Button
-          variant={roomConfig.showDoor ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setRoomConfig(prev => ({ ...prev, showDoor: !prev.showDoor }))}
-          className="gap-1 text-xs h-7"
-        >
-          <DoorOpen className="h-3.5 w-3.5" />
-          도어
-        </Button>
       </div>
 
       {/* Snapshot button */}
@@ -436,7 +456,7 @@ export const PlannerCanvas3D = ({
           selectedId={selectedId}
           onSelect={onSelect}
           onRightClickSelect={onRightClickSelect}
-          roomConfig={roomConfig}
+          archConfig={archConfig}
         />
       </Canvas>
     </div>
