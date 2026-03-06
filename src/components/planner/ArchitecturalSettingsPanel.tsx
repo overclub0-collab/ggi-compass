@@ -265,9 +265,19 @@ export const ArchitecturalSettingsPanel = ({ config, onChange }: ArchitecturalSe
                 <SelectContent>{DOOR_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <WallSelect value={door.wall} onChange={(v) => {
-              const updated = [...config.doors]; updated[idx] = { ...door, wall: v as DoorConfig['wall'] }; update('doors', updated);
-            }} />
+            <div>
+              <Label className="text-[10px] text-muted-foreground">재질</Label>
+              <Select value={door.material || 'wood'} onValueChange={(v) => {
+                const updated = [...config.doors]; updated[idx] = { ...door, material: v as DoorConfig['material'] }; update('doors', updated);
+              }}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>{DOOR_MATERIALS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <WallSelect value={door.wall} onChange={(v) => {
+            const updated = [...config.doors]; updated[idx] = { ...door, wall: v as DoorConfig['wall'] }; update('doors', updated);
+          }} />
           </div>
           <div>
             <Label className="text-[10px] text-muted-foreground">크기</Label>
