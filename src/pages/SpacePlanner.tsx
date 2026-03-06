@@ -2,14 +2,13 @@ import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { FurnitureSidebar } from '@/components/planner/FurnitureSidebar';
+import { PlannerLeftPanel } from '@/components/planner/PlannerLeftPanel';
 import { PlannerCanvas } from '@/components/planner/PlannerCanvas';
 import { PlannerCanvas3D } from '@/components/planner/PlannerCanvas3D';
 import { FurnitureDetailPanel } from '@/components/planner/FurnitureDetailPanel';
-import { RoomSettingsDialog } from '@/components/planner/RoomSettingsDialog';
 import { QuoteSummary } from '@/components/planner/QuoteSummary';
 import { ConsultationDialog } from '@/components/planner/ConsultationDialog';
-import { ArchitecturalSettingsPanel, DEFAULT_ARCHITECTURAL_CONFIG, ArchitecturalConfig } from '@/components/planner/ArchitecturalSettingsPanel';
+import { DEFAULT_ARCHITECTURAL_CONFIG, ArchitecturalConfig } from '@/components/planner/ArchitecturalSettingsPanel';
 import { PlannerStartScreen } from '@/components/planner/PlannerStartScreen';
 import { usePlannerState } from '@/hooks/usePlannerState';
 import { FurnitureItem, RoomDimensions } from '@/types/planner';
@@ -62,7 +61,6 @@ const SpacePlanner = () => {
     if (pinnedId === id) setPinnedId(null);
   }, [removeFurniture, pinnedId]);
 
-  // Left-click select — DON'T clear if something is pinned
   const handleSelect = useCallback((id: string | null) => {
     if (id === null && pinnedId) return;
     setSelectedId(id);
@@ -71,62 +69,51 @@ const SpacePlanner = () => {
   const handleZoomIn = () => setScale(prev => Math.min(prev * 1.2, 0.3));
   const handleZoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.05));
 
-  // Show start screen if not started
   if (!started) {
     return <PlannerStartScreen onStart={handleStart} />;
   }
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="h-14 bg-[#0A1931] text-white px-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <ArrowLeft className="h-5 w-5" />
-            <img src={ggiLogo} alt="GGI" className="h-8" />
+      {/* Header — simplified, no settings buttons */}
+      <header className="h-12 bg-[#0A1931] text-white px-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            <img src={ggiLogo} alt="GGI" className="h-7" />
           </Link>
-          <div className="h-6 w-px bg-white/20" />
-          <h1 className="font-bold text-lg">3D 인테리어</h1>
+          <div className="h-5 w-px bg-white/20" />
+          <h1 className="font-bold text-sm">3D 인테리어</h1>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-white/10 rounded-lg p-1">
+          {/* View mode toggle */}
+          <div className="flex items-center bg-white/10 rounded-lg p-0.5">
             <Button
               variant="ghost" size="sm"
               onClick={() => setViewMode('2d')}
-              className={`h-8 px-3 text-xs font-bold gap-1 ${viewMode === '2d' ? 'bg-white/25 text-white' : 'text-white/60 hover:bg-white/10'}`}
+              className={`h-7 px-2.5 text-xs font-bold gap-1 ${viewMode === '2d' ? 'bg-white/25 text-white' : 'text-white/60'}`}
             >
-              <Layers className="h-3.5 w-3.5" />2D
+              <Layers className="h-3 w-3" />2D
             </Button>
             <Button
               variant="ghost" size="sm"
               onClick={() => setViewMode('3d')}
-              className={`h-8 px-3 text-xs font-bold gap-1 ${viewMode === '3d' ? 'bg-white/25 text-white' : 'text-white/60 hover:bg-white/10'}`}
+              className={`h-7 px-2.5 text-xs font-bold gap-1 ${viewMode === '3d' ? 'bg-white/25 text-white' : 'text-white/60'}`}
             >
-              <Box className="h-3.5 w-3.5" />3D
+              <Box className="h-3 w-3" />3D
             </Button>
           </div>
 
-          <RoomSettingsDialog roomDimensions={roomDimensions} onSave={setRoomDimensions} />
-          
-          <div className="relative">
-            <ArchitecturalSettingsPanel config={archConfig} onChange={setArchConfig} />
-          </div>
-
-          <RoomSettingsDialog roomDimensions={roomDimensions} onSave={setRoomDimensions} />
-          
-          <div className="relative">
-            <ArchitecturalSettingsPanel config={archConfig} onChange={setArchConfig} />
-          </div>
-
+          {/* Zoom controls — 2D only */}
           {viewMode === '2d' && (
-            <div className="flex items-center gap-1 bg-white/10 rounded-lg p-1">
-              <Button variant="ghost" size="icon" onClick={handleZoomOut} className="h-8 w-8 text-white hover:bg-white/20">
-                <ZoomOut className="h-4 w-4" />
+            <div className="flex items-center gap-1 bg-white/10 rounded-lg p-0.5">
+              <Button variant="ghost" size="icon" onClick={handleZoomOut} className="h-7 w-7 text-white">
+                <ZoomOut className="h-3.5 w-3.5" />
               </Button>
-              <span className="text-xs px-2 min-w-[50px] text-center">{Math.round(scale * 1000)}%</span>
-              <Button variant="ghost" size="icon" onClick={handleZoomIn} className="h-8 w-8 text-white hover:bg-white/20">
-                <ZoomIn className="h-4 w-4" />
+              <span className="text-[10px] px-1.5 min-w-[40px] text-center">{Math.round(scale * 1000)}%</span>
+              <Button variant="ghost" size="icon" onClick={handleZoomIn} className="h-7 w-7 text-white">
+                <ZoomIn className="h-3.5 w-3.5" />
               </Button>
             </div>
           )}
@@ -135,7 +122,14 @@ const SpacePlanner = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        <FurnitureSidebar onDragStart={handleDragStart} />
+        {/* Unified Left Panel: Products + Room Size + Architectural Elements */}
+        <PlannerLeftPanel
+          roomDimensions={roomDimensions}
+          onRoomDimensionsChange={setRoomDimensions}
+          archConfig={archConfig}
+          onArchConfigChange={setArchConfig}
+          onDragStart={handleDragStart}
+        />
 
         {viewMode === '2d' ? (
           <PlannerCanvas
@@ -172,11 +166,11 @@ const SpacePlanner = () => {
         />
       </div>
 
-      {/* Brand Trust Badges */}
-      <div className="h-8 bg-[#0A1931]/5 border-t border-border flex items-center justify-center gap-6 text-xs text-muted-foreground">
-        <span className="font-medium">✅ 여성기업 인증</span>
-        <span className="font-medium">🏛️ 나라장터 조달 등록</span>
-        <span className="font-medium">📋 GGI 3D 인테리어</span>
+      {/* Footer */}
+      <div className="h-7 bg-[#0A1931]/5 border-t border-border flex items-center justify-center gap-6 text-[10px] text-muted-foreground">
+        <span>✅ 여성기업 인증</span>
+        <span>🏛️ 나라장터 조달 등록</span>
+        <span>📋 GGI 3D 인테리어</span>
       </div>
 
       <QuoteSummary
