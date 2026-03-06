@@ -10,8 +10,9 @@ import { RoomSettingsDialog } from '@/components/planner/RoomSettingsDialog';
 import { QuoteSummary } from '@/components/planner/QuoteSummary';
 import { ConsultationDialog } from '@/components/planner/ConsultationDialog';
 import { ArchitecturalSettingsPanel, DEFAULT_ARCHITECTURAL_CONFIG, ArchitecturalConfig } from '@/components/planner/ArchitecturalSettingsPanel';
+import { PlannerStartScreen } from '@/components/planner/PlannerStartScreen';
 import { usePlannerState } from '@/hooks/usePlannerState';
-import { FurnitureItem } from '@/types/planner';
+import { FurnitureItem, RoomDimensions } from '@/types/planner';
 import ggiLogo from '@/assets/ggi-logo-new.png';
 
 const SpacePlanner = () => {
@@ -24,6 +25,7 @@ const SpacePlanner = () => {
     clearAll, getTotalPrice,
   } = usePlannerState();
 
+  const [started, setStarted] = useState(false);
   const [consultationOpen, setConsultationOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [, setDraggingFurniture] = useState<FurnitureItem | null>(null);
@@ -31,6 +33,11 @@ const SpacePlanner = () => {
   const [archConfig, setArchConfig] = useState<ArchitecturalConfig>(DEFAULT_ARCHITECTURAL_CONFIG);
 
   const pinnedFurniture = pinnedId ? placedFurniture.find(f => f.id === pinnedId) : undefined;
+
+  const handleStart = useCallback((mode: 'template' | 'free', dimensions?: RoomDimensions) => {
+    if (dimensions) setRoomDimensions(dimensions);
+    setStarted(true);
+  }, [setRoomDimensions]);
 
   const handleDragStart = useCallback((furniture: FurnitureItem) => {
     setDraggingFurniture(furniture);
@@ -41,7 +48,6 @@ const SpacePlanner = () => {
     setDraggingFurniture(null);
   }, [addFurniture]);
 
-  // Right-click pins/unpins
   const handleRightClickSelect = useCallback((id: string) => {
     setPinnedId(prev => prev === id ? null : id);
   }, []);
@@ -57,12 +63,17 @@ const SpacePlanner = () => {
 
   // Left-click select — DON'T clear if something is pinned
   const handleSelect = useCallback((id: string | null) => {
-    if (id === null && pinnedId) return; // Keep panel open when pinned
+    if (id === null && pinnedId) return;
     setSelectedId(id);
   }, [setSelectedId, pinnedId]);
 
   const handleZoomIn = () => setScale(prev => Math.min(prev * 1.2, 0.3));
   const handleZoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.05));
+
+  // Show start screen if not started
+  if (!started) {
+    return <PlannerStartScreen onStart={handleStart} />;
+  }
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -74,7 +85,7 @@ const SpacePlanner = () => {
             <img src={ggiLogo} alt="GGI" className="h-8" />
           </Link>
           <div className="h-6 w-px bg-white/20" />
-          <h1 className="font-bold text-lg">공간 스타일링 시뮬레이터</h1>
+          <h1 className="font-bold text-lg">3D 인테리어</h1>
         </div>
         
         <div className="flex items-center gap-2">
@@ -158,7 +169,7 @@ const SpacePlanner = () => {
       <div className="h-8 bg-[#0A1931]/5 border-t border-border flex items-center justify-center gap-6 text-xs text-muted-foreground">
         <span className="font-medium">✅ 여성기업 인증</span>
         <span className="font-medium">🏛️ 나라장터 조달 등록</span>
-        <span className="font-medium">📋 GGI 공간 스타일링 시뮬레이터</span>
+        <span className="font-medium">📋 GGI 3D 인테리어</span>
       </div>
 
       <QuoteSummary
