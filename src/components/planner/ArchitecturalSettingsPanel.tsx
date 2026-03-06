@@ -1,30 +1,59 @@
 import { useState } from 'react';
-import { PanelTop, DoorOpen, Plus, Minus, Settings2, X } from 'lucide-react';
+import { PanelTop, DoorOpen, Plus, Minus, Settings2, X, Columns, SquareSplitHorizontal, Plug, Lamp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface WindowConfig {
   type: 'single' | 'double' | 'sliding' | 'fixed';
-  width: number; // meters
-  height: number; // meters
-  wall: 'back' | 'left';
-  positionRatio: number; // 0~1
+  width: number;
+  height: number;
+  wall: 'back' | 'left' | 'right' | 'front';
+  positionRatio: number;
 }
 
 export interface DoorConfig {
   type: 'swing' | 'sliding' | 'double';
-  width: number; // meters
-  height: number; // meters
+  width: number;
+  height: number;
   wall: 'back' | 'left' | 'right' | 'front';
-  positionRatio: number; // 0~1
+  positionRatio: number;
+}
+
+export interface ColumnConfig {
+  wall: 'back' | 'left' | 'right' | 'front';
+  positionRatio: number;
+  radius: number;
+}
+
+export interface PartitionConfig {
+  wall: 'back' | 'left' | 'right' | 'front';
+  positionRatio: number;
+  width: number;
+  height: number;
+}
+
+export interface OutletConfig {
+  wall: 'back' | 'left' | 'right' | 'front';
+  positionRatio: number;
+}
+
+export interface CeilingLightConfig {
+  type: 'panel' | 'pendant' | 'spot';
+  xRatio: number;
+  zRatio: number;
 }
 
 export interface ArchitecturalConfig {
   windows: WindowConfig[];
   doors: DoorConfig[];
+  columns: ColumnConfig[];
+  partitions: PartitionConfig[];
+  outlets: OutletConfig[];
+  ceilingLights: CeilingLightConfig[];
 }
 
 const WINDOW_TYPES = [
@@ -53,6 +82,12 @@ const DOOR_SIZES = [
   { label: '양개 (1.8×2.1m)', width: 1.8, height: 2.1 },
 ];
 
+const LIGHT_TYPES = [
+  { value: 'panel', label: '패널등' },
+  { value: 'pendant', label: '펜던트등' },
+  { value: 'spot', label: '스팟등' },
+];
+
 const WALL_OPTIONS = [
   { value: 'back', label: '뒷벽' },
   { value: 'left', label: '좌벽' },
@@ -65,47 +100,79 @@ interface ArchitecturalSettingsPanelProps {
   onChange: (config: ArchitecturalConfig) => void;
 }
 
+// Generic section for each element type
+function ElementSection<T>({ title, icon: Icon, items, onAdd, onRemove, onUpdate, renderItem }: {
+  title: string;
+  icon: React.ElementType;
+  items: T[];
+  onAdd: () => void;
+  onRemove: (idx: number) => void;
+  onUpdate: (idx: number, patch: Partial<T>) => void;
+  renderItem: (item: T, idx: number, update: (patch: Partial<T>) => void) => React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-semibold">{title} ({items.length})</span>
+        </div>
+        <Button variant="outline" size="sm" onClick={onAdd} className="h-7 text-xs gap-1">
+          <Plus className="h-3 w-3" /> 추가
+        </Button>
+      </div>
+      {items.map((item, idx) => (
+        <div key={idx} className="mb-2 p-3 bg-muted/30 rounded-lg border border-border/30 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{title} {idx + 1}</span>
+            <button onClick={() => onRemove(idx)} className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors">
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {renderItem(item, idx, (patch) => onUpdate(idx, patch))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WallSelect({ value, onChange, label = '벽면' }: { value: string; onChange: (v: string) => void; label?: string }) {
+  return (
+    <div>
+      <Label className="text-[10px] text-muted-foreground">{label}</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {WALL_OPTIONS.map(w => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function PositionSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div>
+      <Label className="text-[10px] text-muted-foreground">위치 (0~100%)</Label>
+      <input type="range" min={0.05} max={0.95} step={0.05} value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="w-full h-1.5 accent-primary" />
+      <span className="text-[10px] text-muted-foreground">{Math.round(value * 100)}%</span>
+    </div>
+  );
+}
+
 export const ArchitecturalSettingsPanel = ({ config, onChange }: ArchitecturalSettingsPanelProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const addWindow = () => {
-    onChange({
-      ...config,
-      windows: [...config.windows, { type: 'double', width: 1.2, height: 1.4, wall: 'back', positionRatio: 0.3 + config.windows.length * 0.3 }],
-    });
-  };
-
-  const removeWindow = (idx: number) => {
-    onChange({ ...config, windows: config.windows.filter((_, i) => i !== idx) });
-  };
-
-  const updateWindow = (idx: number, patch: Partial<WindowConfig>) => {
-    const updated = config.windows.map((w, i) => i === idx ? { ...w, ...patch } : w);
-    onChange({ ...config, windows: updated });
-  };
-
-  const addDoor = () => {
-    onChange({
-      ...config,
-      doors: [...config.doors, { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 }],
-    });
-  };
-
-  const removeDoor = (idx: number) => {
-    onChange({ ...config, doors: config.doors.filter((_, i) => i !== idx) });
-  };
-
-  const updateDoor = (idx: number, patch: Partial<DoorConfig>) => {
-    const updated = config.doors.map((d, i) => i === idx ? { ...d, ...patch } : d);
-    onChange({ ...config, doors: updated });
-  };
+  const update = <K extends keyof ArchitecturalConfig>(key: K, val: ArchitecturalConfig[K]) =>
+    onChange({ ...config, [key]: val });
 
   return (
     <>
       <Button
         variant={isOpen ? 'default' : 'outline'}
-        size="sm"
-        onClick={() => setIsOpen(!isOpen)}
+        size="sm" onClick={() => setIsOpen(!isOpen)}
         className="gap-1 text-xs h-7"
       >
         <Settings2 className="h-3.5 w-3.5" />
@@ -121,7 +188,6 @@ export const ArchitecturalSettingsPanel = ({ config, onChange }: ArchitecturalSe
             transition={{ duration: 0.2 }}
             className="absolute top-12 right-4 z-20 w-80 bg-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden"
           >
-            {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
               <h3 className="text-sm font-bold text-foreground">건축 요소 설정</h3>
               <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-muted transition-colors">
@@ -129,179 +195,206 @@ export const ArchitecturalSettingsPanel = ({ config, onChange }: ArchitecturalSe
               </button>
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto p-4 space-y-5">
-              {/* ===== WINDOWS ===== */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <PanelTop className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold">창문 ({config.windows.length})</span>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={addWindow} className="h-7 text-xs gap-1">
-                    <Plus className="h-3 w-3" /> 추가
-                  </Button>
-                </div>
-
-                {config.windows.map((win, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mb-3 p-3 bg-muted/30 rounded-lg border border-border/30 space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">창문 {idx + 1}</span>
-                      <button onClick={() => removeWindow(idx)} className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors">
-                        <Minus className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">종류</Label>
-                        <Select value={win.type} onValueChange={(v) => updateWindow(idx, { type: v as WindowConfig['type'] })}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {WINDOW_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
+            <ScrollArea className="max-h-[65vh]">
+              <div className="p-4 space-y-4">
+                {/* Windows */}
+                <ElementSection
+                  title="창문" icon={PanelTop}
+                  items={config.windows}
+                  onAdd={() => update('windows', [...config.windows, { type: 'double', width: 1.2, height: 1.4, wall: 'back', positionRatio: 0.5 }])}
+                  onRemove={(i) => update('windows', config.windows.filter((_, j) => j !== i))}
+                  onUpdate={(i, p) => update('windows', config.windows.map((w, j) => j === i ? { ...w, ...p } : w))}
+                  renderItem={(win, _idx, upd) => (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">종류</Label>
+                          <Select value={win.type} onValueChange={(v) => upd({ type: v as WindowConfig['type'] })}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>{WINDOW_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <WallSelect value={win.wall} onChange={(v) => upd({ wall: v as WindowConfig['wall'] })} />
                       </div>
                       <div>
-                        <Label className="text-[10px] text-muted-foreground">벽면</Label>
-                        <Select value={win.wall} onValueChange={(v) => updateWindow(idx, { wall: v as WindowConfig['wall'] })}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {WALL_OPTIONS.filter(w => w.value === 'back' || w.value === 'left').map(w => (
-                              <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground">크기</Label>
-                      <Select
-                        value={`${win.width}x${win.height}`}
-                        onValueChange={(v) => {
+                        <Label className="text-[10px] text-muted-foreground">크기</Label>
+                        <Select value={`${win.width}x${win.height}`} onValueChange={(v) => {
                           const s = WINDOW_SIZES.find(s => `${s.width}x${s.height}` === v);
-                          if (s) updateWindow(idx, { width: s.width, height: s.height });
-                        }}
-                      >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {WINDOW_SIZES.map(s => (
-                            <SelectItem key={`${s.width}x${s.height}`} value={`${s.width}x${s.height}`}>{s.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                          if (s) upd({ width: s.width, height: s.height });
+                        }}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>{WINDOW_SIZES.map(s => <SelectItem key={`${s.width}x${s.height}`} value={`${s.width}x${s.height}`}>{s.label}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <PositionSlider value={win.positionRatio} onChange={(v) => upd({ positionRatio: v })} />
+                    </>
+                  )}
+                />
 
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground">위치 (0~100%)</Label>
-                      <input
-                        type="range"
-                        min={0.1}
-                        max={0.9}
-                        step={0.05}
-                        value={win.positionRatio}
-                        onChange={(e) => updateWindow(idx, { positionRatio: parseFloat(e.target.value) })}
-                        className="w-full h-1.5 accent-[#0A1931]"
-                      />
-                      <span className="text-[10px] text-muted-foreground">{Math.round(win.positionRatio * 100)}%</span>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                <Separator className="bg-border/30" />
 
-              <Separator className="bg-border/30" />
+                {/* Doors */}
+                <ElementSection
+                  title="도어" icon={DoorOpen}
+                  items={config.doors}
+                  onAdd={() => update('doors', [...config.doors, { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 }])}
+                  onRemove={(i) => update('doors', config.doors.filter((_, j) => j !== i))}
+                  onUpdate={(i, p) => update('doors', config.doors.map((d, j) => j === i ? { ...d, ...p } : d))}
+                  renderItem={(door, _idx, upd) => (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">종류</Label>
+                          <Select value={door.type} onValueChange={(v) => upd({ type: v as DoorConfig['type'] })}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>{DOOR_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <WallSelect value={door.wall} onChange={(v) => upd({ wall: v as DoorConfig['wall'] })} />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">크기</Label>
+                        <Select value={`${door.width}x${door.height}`} onValueChange={(v) => {
+                          const s = DOOR_SIZES.find(s => `${s.width}x${s.height}` === v);
+                          if (s) upd({ width: s.width, height: s.height });
+                        }}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>{DOOR_SIZES.map(s => <SelectItem key={`${s.width}x${s.height}`} value={`${s.width}x${s.height}`}>{s.label}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <PositionSlider value={door.positionRatio} onChange={(v) => upd({ positionRatio: v })} />
+                    </>
+                  )}
+                />
 
-              {/* ===== DOORS ===== */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <DoorOpen className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold">도어 ({config.doors.length})</span>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={addDoor} className="h-7 text-xs gap-1">
-                    <Plus className="h-3 w-3" /> 추가
-                  </Button>
-                </div>
+                <Separator className="bg-border/30" />
 
-                {config.doors.map((door, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mb-3 p-3 bg-muted/30 rounded-lg border border-border/30 space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">도어 {idx + 1}</span>
-                      <button onClick={() => removeDoor(idx)} className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors">
-                        <Minus className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                {/* Columns */}
+                <ElementSection
+                  title="기둥" icon={Columns}
+                  items={config.columns}
+                  onAdd={() => update('columns', [...config.columns, { wall: 'back', positionRatio: 0.5, radius: 0.15 }])}
+                  onRemove={(i) => update('columns', config.columns.filter((_, j) => j !== i))}
+                  onUpdate={(i, p) => update('columns', config.columns.map((c, j) => j === i ? { ...c, ...p } : c))}
+                  renderItem={(col, _idx, upd) => (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <WallSelect value={col.wall} onChange={(v) => upd({ wall: v as ColumnConfig['wall'] })} />
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">반경</Label>
+                          <Select value={String(col.radius)} onValueChange={(v) => upd({ radius: parseFloat(v) })}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0.1">소 (0.1m)</SelectItem>
+                              <SelectItem value="0.15">중 (0.15m)</SelectItem>
+                              <SelectItem value="0.2">대 (0.2m)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <PositionSlider value={col.positionRatio} onChange={(v) => upd({ positionRatio: v })} />
+                    </>
+                  )}
+                />
 
-                    <div className="grid grid-cols-2 gap-2">
+                <Separator className="bg-border/30" />
+
+                {/* Partitions */}
+                <ElementSection
+                  title="파티션" icon={SquareSplitHorizontal}
+                  items={config.partitions}
+                  onAdd={() => update('partitions', [...config.partitions, { wall: 'back', positionRatio: 0.5, width: 1.5, height: 1.8 }])}
+                  onRemove={(i) => update('partitions', config.partitions.filter((_, j) => j !== i))}
+                  onUpdate={(i, p) => update('partitions', config.partitions.map((pt, j) => j === i ? { ...pt, ...p } : pt))}
+                  renderItem={(part, _idx, upd) => (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <WallSelect value={part.wall} onChange={(v) => upd({ wall: v as PartitionConfig['wall'] })} />
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">폭</Label>
+                          <Select value={String(part.width)} onValueChange={(v) => upd({ width: parseFloat(v) })}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1.0">1.0m</SelectItem>
+                              <SelectItem value="1.5">1.5m</SelectItem>
+                              <SelectItem value="2.0">2.0m</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">높이</Label>
+                        <Select value={String(part.height)} onValueChange={(v) => upd({ height: parseFloat(v) })}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1.2">1.2m</SelectItem>
+                            <SelectItem value="1.5">1.5m</SelectItem>
+                            <SelectItem value="1.8">1.8m</SelectItem>
+                            <SelectItem value="2.1">2.1m</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <PositionSlider value={part.positionRatio} onChange={(v) => upd({ positionRatio: v })} />
+                    </>
+                  )}
+                />
+
+                <Separator className="bg-border/30" />
+
+                {/* Outlets */}
+                <ElementSection
+                  title="콘센트" icon={Plug}
+                  items={config.outlets}
+                  onAdd={() => update('outlets', [...config.outlets, { wall: 'back', positionRatio: 0.5 }])}
+                  onRemove={(i) => update('outlets', config.outlets.filter((_, j) => j !== i))}
+                  onUpdate={(i, p) => update('outlets', config.outlets.map((o, j) => j === i ? { ...o, ...p } : o))}
+                  renderItem={(outlet, _idx, upd) => (
+                    <>
+                      <WallSelect value={outlet.wall} onChange={(v) => upd({ wall: v as OutletConfig['wall'] })} />
+                      <PositionSlider value={outlet.positionRatio} onChange={(v) => upd({ positionRatio: v })} />
+                    </>
+                  )}
+                />
+
+                <Separator className="bg-border/30" />
+
+                {/* Ceiling Lights */}
+                <ElementSection
+                  title="천장 조명" icon={Lamp}
+                  items={config.ceilingLights}
+                  onAdd={() => update('ceilingLights', [...config.ceilingLights, { type: 'panel', xRatio: 0.5, zRatio: 0.5 }])}
+                  onRemove={(i) => update('ceilingLights', config.ceilingLights.filter((_, j) => j !== i))}
+                  onUpdate={(i, p) => update('ceilingLights', config.ceilingLights.map((l, j) => j === i ? { ...l, ...p } : l))}
+                  renderItem={(light, _idx, upd) => (
+                    <>
                       <div>
                         <Label className="text-[10px] text-muted-foreground">종류</Label>
-                        <Select value={door.type} onValueChange={(v) => updateDoor(idx, { type: v as DoorConfig['type'] })}>
+                        <Select value={light.type} onValueChange={(v) => upd({ type: v as CeilingLightConfig['type'] })}>
                           <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {DOOR_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                          </SelectContent>
+                          <SelectContent>{LIGHT_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">벽면</Label>
-                        <Select value={door.wall} onValueChange={(v) => updateDoor(idx, { wall: v as DoorConfig['wall'] })}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {WALL_OPTIONS.map(w => (
-                              <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">X 위치</Label>
+                          <input type="range" min={0.1} max={0.9} step={0.05} value={light.xRatio}
+                            onChange={(e) => upd({ xRatio: parseFloat(e.target.value) })}
+                            className="w-full h-1.5 accent-primary" />
+                          <span className="text-[10px] text-muted-foreground">{Math.round(light.xRatio * 100)}%</span>
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">Z 위치</Label>
+                          <input type="range" min={0.1} max={0.9} step={0.05} value={light.zRatio}
+                            onChange={(e) => upd({ zRatio: parseFloat(e.target.value) })}
+                            className="w-full h-1.5 accent-primary" />
+                          <span className="text-[10px] text-muted-foreground">{Math.round(light.zRatio * 100)}%</span>
+                        </div>
                       </div>
-                    </div>
-
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground">크기</Label>
-                      <Select
-                        value={`${door.width}x${door.height}`}
-                        onValueChange={(v) => {
-                          const s = DOOR_SIZES.find(s => `${s.width}x${s.height}` === v);
-                          if (s) updateDoor(idx, { width: s.width, height: s.height });
-                        }}
-                      >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {DOOR_SIZES.map(s => (
-                            <SelectItem key={`${s.width}x${s.height}`} value={`${s.width}x${s.height}`}>{s.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground">위치 (0~100%)</Label>
-                      <input
-                        type="range"
-                        min={0.1}
-                        max={0.9}
-                        step={0.05}
-                        value={door.positionRatio}
-                        onChange={(e) => updateDoor(idx, { positionRatio: parseFloat(e.target.value) })}
-                        className="w-full h-1.5 accent-[#0A1931]"
-                      />
-                      <span className="text-[10px] text-muted-foreground">{Math.round(door.positionRatio * 100)}%</span>
-                    </div>
-                  </motion.div>
-                ))}
+                    </>
+                  )}
+                />
               </div>
-            </div>
+            </ScrollArea>
           </motion.div>
         )}
       </AnimatePresence>
@@ -316,5 +409,15 @@ export const DEFAULT_ARCHITECTURAL_CONFIG: ArchitecturalConfig = {
   ],
   doors: [
     { type: 'swing', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.8 },
+  ],
+  columns: [],
+  partitions: [],
+  outlets: [
+    { wall: 'back', positionRatio: 0.15 },
+    { wall: 'back', positionRatio: 0.85 },
+    { wall: 'left', positionRatio: 0.3 },
+  ],
+  ceilingLights: [
+    { type: 'panel', xRatio: 0.5, zRatio: 0.5 },
   ],
 };

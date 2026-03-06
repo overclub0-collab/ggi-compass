@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FurnitureItem } from '@/types/planner';
 import { usePlannerCategories, usePlannerProducts } from '@/hooks/usePlannerProducts';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface FurnitureSidebarProps {
   onDragStart: (furniture: FurnitureItem) => void;
@@ -61,11 +60,7 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
   };
 
   const handleToggleMain = (mainId: string) => {
-    if (expandedMainId === mainId) {
-      setExpandedMainId(null);
-    } else {
-      setExpandedMainId(mainId);
-    }
+    setExpandedMainId(prev => prev === mainId ? null : mainId);
   };
 
   const handleDragStart = (e: React.DragEvent, furniture: FurnitureItem) => {
@@ -76,14 +71,14 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
 
   return (
     <div className="w-[280px] flex flex-col h-full bg-background/60 backdrop-blur-xl border-r border-border/40 shadow-lg">
-      {/* Header */}
+      {/* Header — static, no animation */}
       <div className="px-4 pt-4 pb-3">
         <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground/70">
           제품 카테고리
         </h2>
       </div>
 
-      {/* Category Tree — Glassmorphism Accordion */}
+      {/* Category Tree */}
       <div className="border-b border-border/30">
         {catLoading ? (
           <div className="flex items-center justify-center py-6">
@@ -100,89 +95,66 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
 
                 return (
                   <div key={mainCat.id}>
-                    {/* Main Category Button */}
-                    <motion.button
+                    {/* Main Category — static button, no whileHover animation */}
+                    <button
                       onClick={() => {
                         handleToggleMain(mainCat.id);
-                        if (!hasChildren) {
-                          handleCategoryChange(mainCat.id);
-                        }
+                        if (!hasChildren) handleCategoryChange(mainCat.id);
                       }}
                       className={cn(
                         "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group relative",
                         isMainSelected && !hasChildren
-                          ? "bg-[#0A1931] text-white font-bold shadow-md"
-                          : "text-foreground hover:bg-accent/10"
+                          ? "bg-primary text-primary-foreground font-bold shadow-md"
+                          : "text-foreground hover:bg-accent/10 hover:translate-x-1"
                       )}
-                      whileHover={{ x: 4 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                     >
                       <div className={cn(
                         "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
                         isMainSelected && !hasChildren
-                          ? "bg-white/20"
+                          ? "bg-primary-foreground/20"
                           : "bg-muted/60 group-hover:bg-accent/20"
                       )}>
                         <Icon className="h-4 w-4" />
                       </div>
                       <span className="flex-1 text-left truncate font-medium">{mainCat.name}</span>
                       {hasChildren && (
-                        <motion.div
-                          animate={{ rotate: isExpanded ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                        </motion.div>
+                        <ChevronDown className={cn(
+                          "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200",
+                          isExpanded && "rotate-180"
+                        )} />
                       )}
-                    </motion.button>
+                    </button>
 
-                    {/* Subcategories — Animated Accordion */}
-                    <AnimatePresence initial={false}>
-                      {isExpanded && hasChildren && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                          className="overflow-hidden"
+                    {/* Subcategories — CSS transition instead of framer-motion */}
+                    {isExpanded && hasChildren && (
+                      <div className="ml-5 pl-3 border-l-2 border-primary/15 space-y-0.5 mt-1 mb-1.5 animate-in slide-in-from-top-2 duration-200">
+                        <button
+                          onClick={() => handleCategoryChange(mainCat.id)}
+                          className={cn(
+                            "w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all duration-150 hover:translate-x-1",
+                            selectedCategoryId === mainCat.id
+                              ? "bg-primary text-primary-foreground font-bold"
+                              : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
+                          )}
                         >
-                          <div className="ml-5 pl-3 border-l-2 border-[#0A1931]/15 space-y-0.5 mt-1 mb-1.5">
-                            {/* All in this category */}
-                            <motion.button
-                              onClick={() => handleCategoryChange(mainCat.id)}
-                              className={cn(
-                                "w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all duration-150",
-                                selectedCategoryId === mainCat.id
-                                  ? "bg-[#0A1931] text-white font-bold"
-                                  : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
-                              )}
-                              whileHover={{ x: 3 }}
-                              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                            >
-                              전체보기
-                            </motion.button>
-                            {mainCat.children.map((sub, idx) => (
-                              <motion.button
-                                key={sub.id}
-                                onClick={() => handleCategoryChange(sub.id)}
-                                initial={{ opacity: 0, x: -8 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: idx * 0.03, duration: 0.2 }}
-                                className={cn(
-                                  "w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all duration-150",
-                                  selectedCategoryId === sub.id
-                                    ? "bg-[#0A1931] text-white font-bold"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
-                                )}
-                                whileHover={{ x: 3 }}
-                              >
-                                {sub.name}
-                              </motion.button>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                          전체보기
+                        </button>
+                        {mainCat.children.map((sub) => (
+                          <button
+                            key={sub.id}
+                            onClick={() => handleCategoryChange(sub.id)}
+                            className={cn(
+                              "w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all duration-150 hover:translate-x-1",
+                              selectedCategoryId === sub.id
+                                ? "bg-primary text-primary-foreground font-bold"
+                                : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
+                            )}
+                          >
+                            {sub.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -191,7 +163,7 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
         )}
       </div>
 
-      {/* Furniture List */}
+      {/* Furniture List — static cards, no motion animations */}
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-2">
           {prodLoading ? (
@@ -208,22 +180,18 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
                 총 {products!.length}개 · {currentPage + 1}/{totalPages} 페이지
               </p>
 
-              {pagedProducts.map((furniture, idx) => (
-                <motion.div
+              {pagedProducts.map((furniture) => (
+                <div
                   key={furniture.id}
                   draggable
-                  onDragStart={(e) => handleDragStart(e as any, furniture)}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.03, duration: 0.2 }}
+                  onDragStart={(e) => handleDragStart(e, furniture)}
                   className={cn(
                     "group cursor-grab active:cursor-grabbing relative",
                     "bg-background/80 backdrop-blur-sm border border-border/40 rounded-xl p-3",
-                    "hover:border-[#0A1931]/40 hover:shadow-lg transition-all duration-200"
+                    "hover:border-primary/40 hover:shadow-lg hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-200"
                   )}
-                  whileHover={{ scale: 1.02, y: -2 }}
                 >
-                  {/* Drag handle hint */}
+                  {/* Drag handle hint — static */}
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-40 transition-opacity">
                     <GripVertical className="h-3.5 w-3.5" />
                   </div>
@@ -262,14 +230,14 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
                       ₩{furniture.price.toLocaleString()}
                     </p>
                   )}
-                </motion.div>
+                </div>
               ))}
             </>
           )}
         </div>
       </ScrollArea>
 
-      {/* Pagination */}
+      {/* Pagination — static */}
       {totalPages > 1 && (
         <div className="p-2 border-t border-border/30 flex items-center justify-between bg-background/50 backdrop-blur-sm">
           <button
@@ -287,7 +255,7 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
                 className={cn(
                   "w-6 h-6 rounded-lg text-xs font-medium transition-all",
                   i === currentPage
-                    ? "bg-[#0A1931] text-white shadow-sm"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "hover:bg-muted text-muted-foreground"
                 )}
               >

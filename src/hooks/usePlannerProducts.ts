@@ -44,18 +44,11 @@ export const usePlannerCategories = () => {
   });
 };
 
-/**
- * Parse dimension string like "650×600×1980mm", "1400*800*730", "1400x800x730mm" etc.
- * Returns [width, depth, height] in mm or null if parsing fails.
- */
 function parseDimensions(specs: string): [number, number, number] | null {
   if (!specs || typeof specs !== 'string') return null;
 
-  // Remove all whitespace first
   const cleaned = specs.replace(/\s+/g, '');
 
-  // Try multiple separator patterns explicitly
-  // Pattern 1: digits separated by ×, x, X, *, by 
   const patterns = [
     /(\d{2,5})[×xX*✕](\d{2,5})[×xX*✕](\d{2,5})/,
     /(\d{2,5})\D+(\d{2,5})\D+(\d{2,5})/,
@@ -67,37 +60,28 @@ function parseDimensions(specs: string): [number, number, number] | null {
       const w = parseInt(match[1], 10);
       const d = parseInt(match[2], 10);
       const h = parseInt(match[3], 10);
-      if (w > 0 && d > 0 && h > 0) {
-        return [w, d, h];
-      }
+      if (w > 0 && d > 0 && h > 0) return [w, d, h];
     }
   }
 
-  // Try on original (non-cleaned) string too
   for (const pattern of patterns) {
     const match = specs.match(pattern);
     if (match) {
       const w = parseInt(match[1], 10);
       const d = parseInt(match[2], 10);
       const h = parseInt(match[3], 10);
-      if (w > 0 && d > 0 && h > 0) {
-        return [w, d, h];
-      }
+      if (w > 0 && d > 0 && h > 0) return [w, d, h];
     }
   }
 
-  // Fallback: extract all number sequences of 2-5 digits
   const allNums = specs.match(/\d{2,5}/g);
   if (allNums && allNums.length >= 3) {
     const w = parseInt(allNums[0], 10);
     const d = parseInt(allNums[1], 10);
     const h = parseInt(allNums[2], 10);
-    if (w > 0 && d > 0 && h > 0) {
-      return [w, d, h];
-    }
+    if (w > 0 && d > 0 && h > 0) return [w, d, h];
   }
 
-  // Try JSON format as last resort
   try {
     const obj = JSON.parse(specs);
     const w = parseInt(obj.width || obj['가로'] || '0', 10);
@@ -117,43 +101,49 @@ export const usePlannerProducts = (categoryId: string | null) => {
     queryFn: async (): Promise<FurnitureItem[]> => {
       if (!categoryId) return [];
 
+      // Fetch the selected category and all its children (recursive one level)
       const { data: categories } = await supabase
         .from('categories')
-        .select('id, slug, name')
+        .select('id, slug, name, parent_id')
         .or(`id.eq.${categoryId},parent_id.eq.${categoryId}`);
 
       if (!categories || categories.length === 0) return [];
 
       const catSlugs = categories.map(c => c.slug);
       const catNames = categories.map(c => c.name);
-      const catIds = categories.map(c => c.id);
 
-      const filters = [
-        ...catIds.map(id => `category.eq.${id}`),
+      // Build comprehensive filter: match by slug in main_category OR subcategory, OR by name in category
+      const slugFilters = [
         ...catSlugs.map(s => `main_category.eq.${s}`),
         ...catSlugs.map(s => `subcategory.eq.${s}`),
       ];
 
-      const { data: products, error } = await supabase
+      // Query 1: Match by slug
+      const { data: bySlug } = await supabase
         .from('products')
         .select('id, title, slug, price, thumbnail_url, category, main_category, subcategory, specs')
         .eq('is_active', true)
-        .or(filters.join(','))
-        .order('display_order');
+        .or(slugFilters.join(','))
+        .order('display_order')
+        .limit(500);
 
-      if (error) throw error;
-
-      const { data: textMatched } = await supabase
+      // Query 2: Match by display name in legacy 'category' field
+      const { data: byName } = await supabase
         .from('products')
         .select('id, title, slug, price, thumbnail_url, category, main_category, subcategory, specs')
         .eq('is_active', true)
         .in('category', catNames)
-        .order('display_order');
+        .order('display_order')
+        .limit(500);
 
-      const allProducts = [...(products || [])];
+      // Merge deduplicated
+      const allProducts = [...(bySlug || [])];
       const existingIds = new Set(allProducts.map(p => p.id));
-      (textMatched || []).forEach(p => {
-        if (!existingIds.has(p.id)) allProducts.push(p);
+      (byName || []).forEach(p => {
+        if (!existingIds.has(p.id)) {
+          allProducts.push(p);
+          existingIds.add(p.id);
+        }
       });
 
       return allProducts.map(p => {
@@ -164,11 +154,8 @@ export const usePlannerProducts = (categoryId: string | null) => {
         const dims = parseDimensions(p.specs || '');
         if (dims) {
           width = dims[0];
-          height = dims[1]; // depth in top-view (2D)
-          depth = dims[2];  // vertical height (3D)
-          console.log(`[Planner] ${p.title}: ${width}×${height}×${depth}mm from specs "${p.specs}"`);
-        } else if (p.specs) {
-          console.warn(`[Planner] Could not parse specs for "${p.title}": "${p.specs}"`);
+          height = dims[1];
+          depth = dims[2];
         }
 
         const priceNum = p.price ? parseInt(p.price.replace(/[^0-9]/g, '')) || 0 : 0;
