@@ -997,6 +997,7 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
       case 'dining': return DiningTableModel;
       case 'pet': return PetFurnitureModel;
       case 'bunkbed': return BunkBedModel;
+      case 'roundtable': return RoundTableModel;
       default: return GenericModel;
     }
   }, [furnitureType]);
