@@ -94,7 +94,7 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
       </div>
 
       {/* Category Tree — compact, always scrollable */}
-      <div className="border-b border-border/30 shrink-0 overflow-hidden" style={{ maxHeight: '40%' }}>
+      <div className="border-b border-border/30 shrink-0 overflow-hidden max-h-[280px]">
         {catLoading ? (
           <div className="flex items-center justify-center py-6">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
