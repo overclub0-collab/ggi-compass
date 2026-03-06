@@ -78,6 +78,12 @@ const DOOR_TYPES = [
   { value: 'double', label: '양개문' },
 ];
 
+const DOOR_MATERIALS = [
+  { value: 'wood', label: '🪵 목재문' },
+  { value: 'glass', label: '🪟 유리문' },
+  { value: 'metal', label: '🔩 샷시문' },
+];
+
 const DOOR_SIZES = [
   { label: '일반 (0.9×2.1m)', width: 0.9, height: 2.1 },
   { label: '넓은 (1.2×2.1m)', width: 1.2, height: 2.1 },
