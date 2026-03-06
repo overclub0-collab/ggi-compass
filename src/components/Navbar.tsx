@@ -21,7 +21,7 @@ const navItems = [
   { id: 'procurement', label: '나라장터/조달', isExternal: true, href: 'https://shop.g2b.go.kr/' },
   { id: 'products', label: '주요제품', isExternal: false, hasMegaMenu: true },
   { id: 'delivery-cases', label: '납품사례', isExternal: false, isDeliveryCasesLink: true },
-  { id: 'planner', label: '시뮬레이터', isExternal: false, isPlannerLink: true },
+  { id: 'planner', label: '3D 인테리어', isExternal: false, isPlannerLink: true },
 ];
 
 export const Navbar = () => {
