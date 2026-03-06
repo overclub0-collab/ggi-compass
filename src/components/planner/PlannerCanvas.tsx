@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { FurnitureItem, PlacedFurniture, RoomDimensions } from '@/types/planner';
 import { ArchitecturalConfig } from '@/components/planner/ArchitecturalSettingsPanel';
+import { Trash2 } from 'lucide-react';
 
 interface PlannerCanvasProps {
   roomDimensions: RoomDimensions;
@@ -12,7 +13,17 @@ interface PlannerCanvasProps {
   onSelect: (id: string | null) => void;
   onMove: (id: string, x: number, y: number, canvasWidth: number, canvasHeight: number) => void;
   architecturalConfig?: ArchitecturalConfig;
+  onArchConfigChange?: (config: ArchitecturalConfig) => void;
 }
+
+type ArchDragInfo = {
+  category: keyof ArchitecturalConfig;
+  index: number;
+  startMouseX: number;
+  startMouseY: number;
+  startRatio: number;
+  wall: string;
+};
 
 // Helper: get wall position in px for an architectural element
 function getWallPosition(
@@ -40,10 +51,13 @@ export const PlannerCanvas = ({
   onSelect,
   onMove,
   architecturalConfig,
+  onArchConfigChange,
 }: PlannerCanvasProps) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [archDrag, setArchDrag] = useState<ArchDragInfo | null>(null);
+  const [hoveredArch, setHoveredArch] = useState<string | null>(null);
 
   const canvasWidth = roomDimensions.width * scale;
   const canvasHeight = roomDimensions.height * scale;
@@ -82,19 +96,34 @@ export const PlannerCanvas = ({
   }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (archDrag && canvasRef.current && architecturalConfig && onArchConfigChange) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const isH = archDrag.wall === 'back' || archDrag.wall === 'front';
+      const mousePos = isH ? (e.clientX - rect.left) : (e.clientY - rect.top);
+      const totalLen = isH ? canvasWidth : canvasHeight;
+      const newRatio = Math.max(0.05, Math.min(0.95, mousePos / totalLen));
+      
+      const newConfig = { ...architecturalConfig };
+      const arr = [...(newConfig[archDrag.category] as any[])];
+      arr[archDrag.index] = { ...arr[archDrag.index], positionRatio: newRatio };
+      (newConfig as any)[archDrag.category] = arr;
+      onArchConfigChange(newConfig);
+      return;
+    }
     if (!dragging || !canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left - dragOffset.x + rect.left;
     const y = e.clientY - rect.top - dragOffset.y + rect.top;
     onMove(dragging, x, y, canvasWidth, canvasHeight);
-  }, [dragging, dragOffset, onMove, canvasWidth, canvasHeight]);
+  }, [dragging, dragOffset, onMove, canvasWidth, canvasHeight, archDrag, architecturalConfig, onArchConfigChange]);
 
   const handleMouseUp = useCallback(() => {
     setDragging(null);
+    setArchDrag(null);
   }, []);
 
   useEffect(() => {
-    if (dragging) {
+    if (dragging || archDrag) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -102,7 +131,7 @@ export const PlannerCanvas = ({
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [dragging, handleMouseMove, handleMouseUp]);
+  }, [dragging, archDrag, handleMouseMove, handleMouseUp]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent, item: PlacedFurniture) => {
     e.stopPropagation();
@@ -140,7 +169,31 @@ export const PlannerCanvas = ({
     }
   }, [dragging, handleTouchMove, handleTouchEnd]);
 
-  // Render architectural elements on 2D canvas
+  // Delete an architectural element
+  const handleDeleteArch = (category: keyof ArchitecturalConfig, index: number) => {
+    if (!architecturalConfig || !onArchConfigChange) return;
+    const newConfig = { ...architecturalConfig };
+    const arr = [...(newConfig[category] as any[])];
+    arr.splice(index, 1);
+    (newConfig as any)[category] = arr;
+    onArchConfigChange(newConfig);
+  };
+
+  // Start dragging an architectural element
+  const handleArchMouseDown = (e: React.MouseEvent, category: keyof ArchitecturalConfig, index: number, wall: string, ratio: number) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    setArchDrag({
+      category,
+      index,
+      startMouseX: e.clientX,
+      startMouseY: e.clientY,
+      startRatio: ratio,
+      wall,
+    });
+  };
+
+  // Render architectural elements on 2D canvas — NOW INTERACTIVE
   const renderArchElements = () => {
     if (!architecturalConfig) return null;
     const elements: React.ReactNode[] = [];
@@ -150,27 +203,40 @@ export const PlannerCanvas = ({
       const widthPx = win.width * 1000 * scale;
       const pos = getWallPosition(win.wall, win.positionRatio, canvasWidth, canvasHeight, widthPx);
       const isH = pos.isHorizontal;
+      const key = `win-${idx}`;
+      const isHovered = hoveredArch === key;
+
       elements.push(
         <div
-          key={`win-${idx}`}
-          className="absolute pointer-events-none"
+          key={key}
+          className={cn("absolute cursor-grab active:cursor-grabbing group/arch z-10", archDrag?.category === 'windows' && archDrag.index === idx && "z-30")}
           style={{
             left: pos.x,
             top: pos.y,
-            width: isH ? widthPx : 8,
-            height: isH ? 8 : widthPx,
+            width: isH ? widthPx : 12,
+            height: isH ? 12 : widthPx,
           }}
+          onMouseDown={(e) => handleArchMouseDown(e, 'windows', idx, win.wall, win.positionRatio)}
+          onMouseEnter={() => setHoveredArch(key)}
+          onMouseLeave={() => setHoveredArch(null)}
         >
-          {/* Window: blue double line with glass fill */}
-          <div className="w-full h-full relative">
-            <div className="absolute inset-0 bg-sky-200/60 border-2 border-sky-500" />
-            {/* Center line for double pane */}
+          <div className={cn("w-full h-full relative transition-all", isHovered && "ring-2 ring-sky-400 rounded-sm")}>
+            <div className="absolute inset-0 bg-sky-200/70 border-2 border-sky-500 rounded-sm" />
             <div className={cn("absolute bg-sky-500", isH ? "left-0 right-0 top-1/2 h-[1px]" : "top-0 bottom-0 left-1/2 w-[1px]")} />
           </div>
           <span className={cn(
-            "absolute text-[7px] font-bold text-sky-700 whitespace-nowrap",
+            "absolute text-[7px] font-bold text-sky-700 whitespace-nowrap pointer-events-none",
             isH ? "-bottom-3 left-1/2 -translate-x-1/2" : "-right-3 top-1/2 -translate-y-1/2"
           )}>창</span>
+          {/* Delete button */}
+          {isHovered && onArchConfigChange && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDeleteArch('windows', idx); }}
+              className="absolute -top-3 -right-3 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg z-20 hover:scale-110 transition-transform"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
       );
     });
@@ -180,35 +246,50 @@ export const PlannerCanvas = ({
       const widthPx = door.width * 1000 * scale;
       const pos = getWallPosition(door.wall, door.positionRatio, canvasWidth, canvasHeight, widthPx);
       const isH = pos.isHorizontal;
+      const key = `door-${idx}`;
+      const isHovered = hoveredArch === key;
+      const materialColor = door.material === 'glass' ? 'bg-sky-100/70 border-sky-400' :
+                           door.material === 'metal' ? 'bg-gray-300/70 border-gray-500' :
+                           'bg-amber-100/70 border-amber-600';
+
       elements.push(
         <div
-          key={`door-${idx}`}
-          className="absolute pointer-events-none"
+          key={key}
+          className={cn("absolute cursor-grab active:cursor-grabbing group/arch z-10", archDrag?.category === 'doors' && archDrag.index === idx && "z-30")}
           style={{
             left: pos.x,
             top: pos.y,
-            width: isH ? widthPx : 10,
-            height: isH ? 10 : widthPx,
+            width: isH ? widthPx : 14,
+            height: isH ? 14 : widthPx,
           }}
+          onMouseDown={(e) => handleArchMouseDown(e, 'doors', idx, door.wall, door.positionRatio)}
+          onMouseEnter={() => setHoveredArch(key)}
+          onMouseLeave={() => setHoveredArch(null)}
         >
-          {/* Door: opening arc */}
-          <div className="w-full h-full relative">
-            <div className="absolute inset-0 bg-amber-100/60 border-2 border-amber-600" />
-            {/* Door swing arc */}
+          <div className={cn("w-full h-full relative transition-all", isHovered && "ring-2 ring-amber-400 rounded-sm")}>
+            <div className={cn("absolute inset-0 border-2 rounded-sm", materialColor)} />
             {isH ? (
-              <svg className="absolute -bottom-1" width={widthPx} height={widthPx * 0.4} viewBox={`0 0 ${widthPx} ${widthPx * 0.4}`}>
+              <svg className="absolute -bottom-1 pointer-events-none" width={widthPx} height={widthPx * 0.4} viewBox={`0 0 ${widthPx} ${widthPx * 0.4}`}>
                 <path d={`M 0 0 A ${widthPx} ${widthPx * 0.4} 0 0 0 ${widthPx} 0`} fill="none" stroke="hsl(30, 70%, 50%)" strokeWidth="1" strokeDasharray="3 2" />
               </svg>
             ) : (
-              <svg className="absolute -right-1" width={widthPx * 0.4} height={widthPx} viewBox={`0 0 ${widthPx * 0.4} ${widthPx}`}>
+              <svg className="absolute -right-1 pointer-events-none" width={widthPx * 0.4} height={widthPx} viewBox={`0 0 ${widthPx * 0.4} ${widthPx}`}>
                 <path d={`M 0 0 A ${widthPx * 0.4} ${widthPx} 0 0 1 0 ${widthPx}`} fill="none" stroke="hsl(30, 70%, 50%)" strokeWidth="1" strokeDasharray="3 2" />
               </svg>
             )}
           </div>
           <span className={cn(
-            "absolute text-[7px] font-bold text-amber-700 whitespace-nowrap",
+            "absolute text-[7px] font-bold text-amber-700 whitespace-nowrap pointer-events-none",
             isH ? "-bottom-3 left-1/2 -translate-x-1/2" : "-right-3 top-1/2 -translate-y-1/2"
           )}>문</span>
+          {isHovered && onArchConfigChange && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDeleteArch('doors', idx); }}
+              className="absolute -top-3 -right-3 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg z-20 hover:scale-110 transition-transform"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
       );
     });
@@ -217,18 +298,32 @@ export const PlannerCanvas = ({
     architecturalConfig.columns.forEach((col, idx) => {
       const radiusPx = col.radius * 1000 * scale;
       const pos = getWallPosition(col.wall, col.positionRatio, canvasWidth, canvasHeight, radiusPx * 2);
+      const key = `col-${idx}`;
+      const isHovered = hoveredArch === key;
+
       elements.push(
         <div
-          key={`col-${idx}`}
-          className="absolute pointer-events-none"
+          key={key}
+          className={cn("absolute cursor-grab active:cursor-grabbing z-10")}
           style={{
             left: pos.x,
             top: pos.y,
             width: radiusPx * 2,
             height: radiusPx * 2,
           }}
+          onMouseDown={(e) => handleArchMouseDown(e, 'columns', idx, col.wall, col.positionRatio)}
+          onMouseEnter={() => setHoveredArch(key)}
+          onMouseLeave={() => setHoveredArch(null)}
         >
-          <div className="w-full h-full rounded-full bg-stone-300 border-2 border-stone-500 shadow-inner" />
+          <div className={cn("w-full h-full rounded-full bg-stone-300 border-2 border-stone-500 shadow-inner transition-all", isHovered && "ring-2 ring-stone-400")} />
+          {isHovered && onArchConfigChange && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDeleteArch('columns', idx); }}
+              className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg z-20 hover:scale-110 transition-transform"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
       );
     });
@@ -238,66 +333,136 @@ export const PlannerCanvas = ({
       const widthPx = part.width * 1000 * scale;
       const pos = getWallPosition(part.wall, part.positionRatio, canvasWidth, canvasHeight, widthPx);
       const isH = pos.isHorizontal;
+      const key = `part-${idx}`;
+      const isHovered = hoveredArch === key;
+
       elements.push(
         <div
-          key={`part-${idx}`}
-          className="absolute pointer-events-none"
+          key={key}
+          className={cn("absolute cursor-grab active:cursor-grabbing z-10")}
           style={{
             left: pos.x,
             top: pos.y,
-            width: isH ? widthPx : 6,
-            height: isH ? 6 : widthPx,
+            width: isH ? widthPx : 8,
+            height: isH ? 8 : widthPx,
           }}
+          onMouseDown={(e) => handleArchMouseDown(e, 'partitions', idx, part.wall, part.positionRatio)}
+          onMouseEnter={() => setHoveredArch(key)}
+          onMouseLeave={() => setHoveredArch(null)}
         >
-          <div className="w-full h-full bg-stone-400/70 border border-stone-600" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)' }} />
+          <div className={cn("w-full h-full bg-stone-400/70 border border-stone-600 transition-all", isHovered && "ring-2 ring-stone-500")} 
+            style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)' }} />
+          {isHovered && onArchConfigChange && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDeleteArch('partitions', idx); }}
+              className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg z-20 hover:scale-110 transition-transform"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
       );
     });
 
     // Outlets
     architecturalConfig.outlets.forEach((outlet, idx) => {
-      const size = 10;
+      const size = 14;
       const pos = getWallPosition(outlet.wall, outlet.positionRatio, canvasWidth, canvasHeight, size);
+      const key = `outlet-${idx}`;
+      const isHovered = hoveredArch === key;
+
       elements.push(
         <div
-          key={`outlet-${idx}`}
-          className="absolute pointer-events-none"
+          key={key}
+          className={cn("absolute cursor-grab active:cursor-grabbing z-10")}
           style={{
             left: pos.x,
             top: pos.y,
             width: size,
             height: size,
           }}
+          onMouseDown={(e) => handleArchMouseDown(e, 'outlets', idx, outlet.wall, outlet.positionRatio)}
+          onMouseEnter={() => setHoveredArch(key)}
+          onMouseLeave={() => setHoveredArch(null)}
         >
-          <div className="w-full h-full rounded-sm bg-yellow-200 border border-yellow-600 flex items-center justify-center">
-            <span className="text-[5px]">⚡</span>
+          <div className={cn("w-full h-full rounded-sm bg-yellow-200 border border-yellow-600 flex items-center justify-center transition-all", isHovered && "ring-2 ring-yellow-400")}>
+            <span className="text-[6px]">⚡</span>
           </div>
+          {isHovered && onArchConfigChange && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDeleteArch('outlets', idx); }}
+              className="absolute -top-2 -right-2 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg z-20 hover:scale-110 transition-transform"
+            >
+              <Trash2 className="h-2.5 w-2.5" />
+            </button>
+          )}
         </div>
       );
     });
 
-    // Ceiling lights (show as circle in center area)
+    // Ceiling lights
     architecturalConfig.ceilingLights.forEach((light, idx) => {
-      const size = 16;
+      const size = 18;
+      const key = `light-${idx}`;
+      const isHovered = hoveredArch === key;
+
       elements.push(
         <div
-          key={`light-${idx}`}
-          className="absolute pointer-events-none"
+          key={key}
+          className={cn("absolute cursor-grab active:cursor-grabbing z-10")}
           style={{
             left: light.xRatio * canvasWidth - size / 2,
             top: light.zRatio * canvasHeight - size / 2,
             width: size,
             height: size,
           }}
+          onMouseDown={(e) => {
+            if (e.button !== 0) return;
+            e.stopPropagation();
+            // For lights, we need both x and z ratio drag
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startXRatio = light.xRatio;
+            const startZRatio = light.zRatio;
+            
+            const onMove = (ev: MouseEvent) => {
+              if (!canvasRef.current || !architecturalConfig || !onArchConfigChange) return;
+              const rect = canvasRef.current.getBoundingClientRect();
+              const newXRatio = Math.max(0.05, Math.min(0.95, (ev.clientX - rect.left) / canvasWidth));
+              const newZRatio = Math.max(0.05, Math.min(0.95, (ev.clientY - rect.top) / canvasHeight));
+              const newConfig = { ...architecturalConfig };
+              const arr = [...newConfig.ceilingLights];
+              arr[idx] = { ...arr[idx], xRatio: newXRatio, zRatio: newZRatio };
+              newConfig.ceilingLights = arr;
+              onArchConfigChange(newConfig);
+            };
+            const onUp = () => {
+              window.removeEventListener('mousemove', onMove);
+              window.removeEventListener('mouseup', onUp);
+            };
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+          }}
+          onMouseEnter={() => setHoveredArch(key)}
+          onMouseLeave={() => setHoveredArch(null)}
         >
           <div className={cn(
-            "w-full h-full rounded-full border-2 flex items-center justify-center",
-            light.type === 'panel' ? 'bg-yellow-100/50 border-yellow-400' :
-            light.type === 'pendant' ? 'bg-orange-100/50 border-orange-400' :
-            'bg-white/50 border-gray-400'
+            "w-full h-full rounded-full border-2 flex items-center justify-center transition-all",
+            light.type === 'panel' ? 'bg-yellow-100/60 border-yellow-400' :
+            light.type === 'pendant' ? 'bg-orange-100/60 border-orange-400' :
+            'bg-white/60 border-gray-400',
+            isHovered && "ring-2 ring-yellow-400 scale-110"
           )}>
-            <span className="text-[6px]">💡</span>
+            <span className="text-[7px]">💡</span>
           </div>
+          {isHovered && onArchConfigChange && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDeleteArch('ceilingLights', idx); }}
+              className="absolute -top-2 -right-2 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg z-20 hover:scale-110 transition-transform"
+            >
+              <Trash2 className="h-2.5 w-2.5" />
+            </button>
+          )}
         </div>
       );
     });
@@ -309,7 +474,7 @@ export const PlannerCanvas = ({
     <div className="flex-1 bg-muted/30 p-4 overflow-auto flex items-center justify-center">
       {/* Tooltip hint */}
       <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
-        클릭: 제품정보 & 이동 | 빈 공간 클릭: 선택 해제
+        가구/건축요소 드래그: 이동 | 건축요소 호버: 🗑️ 삭제
       </div>
       <div
         ref={canvasRef}
@@ -340,6 +505,12 @@ export const PlannerCanvas = ({
         >
           {roomDimensions.height / 1000}m
         </div>
+
+        {/* Wall labels */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-5 text-[9px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded">뒷벽</div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-5 text-[9px] font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded">앞벽</div>
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 text-[9px] font-bold text-green-500 bg-green-50 px-1 py-0.5 rounded" style={{ writingMode: 'vertical-rl' }}>좌벽</div>
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 text-[9px] font-bold text-orange-500 bg-orange-50 px-1 py-0.5 rounded" style={{ writingMode: 'vertical-rl' }}>우벽</div>
 
         {/* Architectural elements */}
         {renderArchElements()}

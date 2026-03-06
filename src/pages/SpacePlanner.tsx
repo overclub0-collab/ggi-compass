@@ -147,6 +147,7 @@ const SpacePlanner = () => {
             onSelect={handleSelect}
             onMove={updateFurniturePosition}
             architecturalConfig={archConfig}
+            onArchConfigChange={setArchConfig}
           />
         ) : (
           <PlannerCanvas3D
