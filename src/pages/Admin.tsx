@@ -786,7 +786,7 @@ const Admin = () => {
 
               {/* Category Info + Bulk Toolbar */}
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       checked={allPageSelected}
@@ -805,11 +805,25 @@ const Admin = () => {
                       <span className="text-sm font-semibold text-primary">{selectedIds.size}개 선택됨</span>
                     )}
                   </div>
-                  {selectedCategory && (
-                    <Button variant="ghost" size="sm" onClick={() => handleCategorySelect(null)} className="text-muted-foreground">
-                      <X className="h-4 w-4 mr-1" />필터 해제
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Select value={String(itemsPerPage)} onValueChange={handlePageSizeChange}>
+                      <SelectTrigger className="h-9 w-[130px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAGE_SIZE_OPTIONS.map(size => (
+                          <SelectItem key={size} value={String(size)}>
+                            {size}개씩 보기
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedCategory && (
+                      <Button variant="ghost" size="sm" onClick={() => handleCategorySelect(null)} className="text-muted-foreground">
+                        <X className="h-4 w-4 mr-1" />필터 해제
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Bulk Action Bar */}
@@ -914,75 +928,57 @@ const Admin = () => {
                 )}
               </div>
 
-              {/* Pagination & Page Size */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">목록보기:</span>
-                  <Select value={String(itemsPerPage)} onValueChange={handlePageSizeChange}>
-                    <SelectTrigger className="h-9 w-[130px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PAGE_SIZE_OPTIONS.map(size => (
-                        <SelectItem key={size} value={String(size)}>
-                          {size}개씩 보기
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {totalPages > 1 && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="h-9 px-3"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      이전
-                    </Button>
-                    <div className="flex gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
-                        .reduce<(number | '...')[]>((acc, p, idx, arr) => {
-                          if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
-                          acc.push(p);
-                          return acc;
-                        }, [])
-                        .map((p, i) =>
-                          p === '...' ? (
-                            <span key={`el-${i}`} className="flex items-center px-2 text-muted-foreground text-sm">…</span>
-                          ) : (
-                            <button
-                              key={p}
-                              onClick={() => setCurrentPage(p as number)}
-                              className={`w-9 h-9 rounded-md text-sm font-medium transition-colors ${
-                                currentPage === p
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'hover:bg-muted text-foreground'
-                              }`}
-                            >
-                              {p}
-                            </button>
-                          )
-                        )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="h-9 px-3"
-                    >
-                      다음
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="h-9 px-3"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    이전
+                  </Button>
+                  <div className="flex gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                      .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                        if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
+                        acc.push(p);
+                        return acc;
+                      }, [])
+                      .map((p, i) =>
+                        p === '...' ? (
+                          <span key={`el-${i}`} className="flex items-center px-2 text-muted-foreground text-sm">…</span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p as number)}
+                            className={`w-9 h-9 rounded-md text-sm font-medium transition-colors ${
+                              currentPage === p
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-muted text-foreground'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        )
+                      )}
                   </div>
-                )}
-              </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="h-9 px-3"
+                  >
+                    다음
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
           ) : activeTab === 'catalogs' ? (
