@@ -4,6 +4,7 @@ import {
   fetchAllExistingProductSlugs,
   generateUniqueSlug,
 } from './productSlugUtils';
+import { fetchCategoryMappings, resolveProductCategories, clearCategoryCache } from './categorySlugResolver';
 
 export interface ProductExportData {
   슬러그: string;
