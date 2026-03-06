@@ -575,12 +575,13 @@ const Admin = () => {
     const isMainCategory = !targetCategory.parent_id;
     
     try {
-      let updateData: { main_category: string | null; subcategory: string | null };
+      let updateData: Record<string, string | null>;
       
       if (isMainCategory) {
         updateData = {
           main_category: targetCategory.slug,
           subcategory: null,
+          category: targetCategory.name,
         };
       } else {
         const parentCategory = categories.find(c => c.id === targetCategory.parent_id);
@@ -591,6 +592,7 @@ const Admin = () => {
         updateData = {
           main_category: parentCategory.slug,
           subcategory: targetCategory.slug,
+          category: parentCategory.name,
         };
       }
 
@@ -602,7 +604,7 @@ const Admin = () => {
       if (error) throw error;
       
       toast.success(`제품이 "${targetCategory.name}" 카테고리로 이동되었습니다.`);
-      fetchProducts();
+      await fetchProducts();
     } catch (error: any) {
       logError('Move product', error);
       toast.error(getErrorMessage(error));
