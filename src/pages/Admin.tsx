@@ -133,7 +133,7 @@ const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users' | 'company' | 'mega-menu'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users' | 'company' | 'mega-menu' | 'homepage'>('dashboard');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
