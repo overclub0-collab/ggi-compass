@@ -30,9 +30,7 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.85 },
       ],
       columns: [],
-      partitions: [
-        { wall: 'right', positionRatio: 0.5, width: 2.0, height: 1.5 },
-      ],
+      partitions: [],
       outlets: [
         { wall: 'back', positionRatio: 0.15 },
         { wall: 'back', positionRatio: 0.85 },
