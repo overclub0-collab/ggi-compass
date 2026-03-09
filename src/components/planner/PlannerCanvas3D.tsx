@@ -200,23 +200,24 @@ function BlackoutCurtain({ width, height, color, openRatio = 0 }: { width: numbe
   );
 }
 
-function RomanShade({ width, height, color }: { width: number; height: number; color: string }) {
+function RomanShade({ width, height, color, openRatio = 0 }: { width: number; height: number; color: string; openRatio?: number }) {
   const shadeW = width - 0.04;
-  const shadeH = height * 0.4;
-  const foldCount = 4;
+  // When open, shade pulls up: fewer visible folds, smaller height
+  const shadeH = height * (0.4 - openRatio * 0.3); // shrinks as it opens
+  const foldCount = Math.max(2, Math.round(4 * (1 - openRatio * 0.5)));
   const foldH = shadeH / foldCount;
   const baseColor = new THREE.Color(color);
   const shadowColor = baseColor.clone().multiplyScalar(0.78);
+  // Shade moves up when opened
+  const yOffset = height * 0.1 + openRatio * height * 0.25;
 
   return (
-    <group position={[0, height * 0.1, 0.055]}>
-      {/* Layered folds — each fold is a curved panel */}
+    <group position={[0, yOffset, 0.055]}>
       {Array.from({ length: foldCount }, (_, i) => {
         const yPos = shadeH / 2 - i * foldH - foldH / 2;
-        const depth = 0.008 + (i / foldCount) * 0.018; // deeper folds at bottom
+        const depth = 0.008 + (i / foldCount) * 0.018 + openRatio * 0.01;
         return (
           <group key={i} position={[0, yPos, 0]}>
-            {/* Main fold fabric */}
             <mesh>
               <boxGeometry args={[shadeW, foldH - 0.004, 0.004]} />
               <meshStandardMaterial
@@ -224,7 +225,6 @@ function RomanShade({ width, height, color }: { width: number; height: number; c
                 roughness={0.85} metalness={0.01} side={THREE.DoubleSide}
               />
             </mesh>
-            {/* Fold shadow crease */}
             <mesh position={[0, -foldH / 2 + 0.002, depth]}>
               <boxGeometry args={[shadeW - 0.01, 0.006, 0.006]} />
               <meshStandardMaterial color={shadowColor} roughness={0.9} />
@@ -232,17 +232,14 @@ function RomanShade({ width, height, color }: { width: number; height: number; c
           </group>
         );
       })}
-      {/* Top mounting bar */}
       <mesh position={[0, shadeH / 2 + 0.015, 0]}>
         <boxGeometry args={[shadeW + 0.02, 0.03, 0.025]} />
         <meshStandardMaterial color="#e0dbd5" roughness={0.5} metalness={0.05} />
       </mesh>
-      {/* Pull cord */}
       <mesh position={[shadeW / 2 - 0.03, -shadeH / 2 - 0.06, 0.01]}>
         <cylinderGeometry args={[0.002, 0.002, 0.12, 4]} />
         <meshStandardMaterial color="#d0c8b8" roughness={0.9} />
       </mesh>
-      {/* Cord handle */}
       <mesh position={[shadeW / 2 - 0.03, -shadeH / 2 - 0.13, 0.01]}>
         <sphereGeometry args={[0.008, 8, 8]} />
         <meshStandardMaterial color="#c0b8a8" roughness={0.6} metalness={0.1} />
