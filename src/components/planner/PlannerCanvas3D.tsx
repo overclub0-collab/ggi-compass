@@ -800,6 +800,7 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 export const PlannerCanvas3D = ({
   roomDimensions, placedFurniture, selectedId,
   onSelect, onRightClickSelect, architecturalConfig, hdriPreset = 'apartment',
+  fpsMode = false, onExitFps,
 }: PlannerCanvas3DProps) => {
   const captureRef = useRef<(() => void) | null>(null);
   const archConfig = architecturalConfig || DEFAULT_ARCHITECTURAL_CONFIG;
