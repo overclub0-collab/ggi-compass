@@ -1287,6 +1287,9 @@ function detectTypeFromKeywords(name: string, cat: string): string {
   // Pet furniture
   if (name.includes('반려') || name.includes('펫') || name.includes('pet') || name.includes('강아지') || name.includes('고양이') || name.includes('하우스') || cat.includes('반려') || cat.includes('pet')) return 'pet';
   
+  // Podium / lectern
+  if (name.includes('강연대') || name.includes('교탁') || name.includes('podium') || name.includes('lectern')) return 'podium';
+  
   // Lab bench
   if (name.includes('실험') || name.includes('lab') || name.includes('과학') || name.includes('약품') || cat.includes('lab')) return 'lab';
   
