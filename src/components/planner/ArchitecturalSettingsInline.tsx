@@ -41,6 +41,27 @@ const LIGHT_TYPES = [
   { value: 'pendant', label: '펜던트등' },
   { value: 'spot', label: '스팟등' },
 ];
+const WINDOW_FRAME_COLORS = [
+  { value: 'white', label: '화이트', swatch: '#ffffff' },
+  { value: 'wood', label: '우드', swatch: '#a0784c' },
+  { value: 'black', label: '블랙', swatch: '#222222' },
+  { value: 'silver', label: '실버', swatch: '#c0c0c0' },
+];
+const CURTAIN_TYPES = [
+  { value: 'none', label: '없음' },
+  { value: 'sheer', label: '쉬어 커튼' },
+  { value: 'blackout', label: '암막 커튼' },
+  { value: 'roman', label: '로만 셰이드' },
+  { value: 'venetian', label: '베네시안 블라인드' },
+];
+const CURTAIN_COLORS = [
+  { value: '#f5f0e8', label: '아이보리', swatch: '#f5f0e8' },
+  { value: '#e8e4db', label: '베이지', swatch: '#e8e4db' },
+  { value: '#d0cdc8', label: '그레이', swatch: '#d0cdc8' },
+  { value: '#c5cfbe', label: '세이지', swatch: '#c5cfbe' },
+  { value: '#2c3e50', label: '네이비', swatch: '#2c3e50' },
+  { value: '#8b4513', label: '브라운', swatch: '#8b4513' },
+];
 const WALL_OPTIONS = [
   { value: 'back', label: '뒷벽', color: 'bg-blue-500' },
   { value: 'left', label: '좌벽', color: 'bg-green-500' },
@@ -274,6 +295,48 @@ function WindowsSection({ config, update }: { config: ArchitecturalConfig; updat
           <PositionSlider value={win.positionRatio} onChange={(v) => {
             const u = [...config.windows]; u[idx] = { ...win, positionRatio: v }; update('windows', u);
           }} />
+          {/* Frame Color */}
+          <div>
+            <Label className="text-[10px] text-[#000]/60">프레임 컬러</Label>
+            <div className="flex gap-1.5 mt-1">
+              {WINDOW_FRAME_COLORS.map(fc => (
+                <button key={fc.value} onClick={() => {
+                  const u = [...config.windows]; u[idx] = { ...win, frameColor: fc.value as WindowConfig['frameColor'] }; update('windows', u);
+                }}
+                  className={cn("w-7 h-7 rounded-md border-2 transition-all", (win.frameColor || 'white') === fc.value ? 'border-primary ring-1 ring-primary scale-110' : 'border-border')}
+                  style={{ backgroundColor: fc.swatch }}
+                  title={fc.label}
+                />
+              ))}
+            </div>
+          </div>
+          {/* Curtain Type */}
+          <div>
+            <Label className="text-[10px] text-[#000]/60">커튼</Label>
+            <Select value={win.curtain || 'none'} onValueChange={(v) => {
+              const u = [...config.windows]; u[idx] = { ...win, curtain: v as WindowConfig['curtain'] }; update('windows', u);
+            }}>
+              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>{CURTAIN_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          {/* Curtain Color — only if curtain is not 'none' */}
+          {win.curtain && win.curtain !== 'none' && (
+            <div>
+              <Label className="text-[10px] text-[#000]/60">커튼 컬러</Label>
+              <div className="flex gap-1.5 mt-1">
+                {CURTAIN_COLORS.map(cc => (
+                  <button key={cc.value} onClick={() => {
+                    const u = [...config.windows]; u[idx] = { ...win, curtainColor: cc.value }; update('windows', u);
+                  }}
+                    className={cn("w-7 h-7 rounded-md border-2 transition-all", (win.curtainColor || '#f5f0e8') === cc.value ? 'border-primary ring-1 ring-primary scale-110' : 'border-border')}
+                    style={{ backgroundColor: cc.swatch }}
+                    title={cc.label}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </ItemCard>
       ))}
     </>
