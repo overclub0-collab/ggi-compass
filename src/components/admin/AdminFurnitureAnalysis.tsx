@@ -260,9 +260,37 @@ export default function AdminFurnitureAnalysis() {
     }
   };
 
+  const getDefaultAnalysis = (): Record<string, unknown> => ({
+    furnitureType: 'generic',
+    shape: 'rectangular',
+    topShape: 'rectangular',
+    legStyle: '4-legs',
+    legCount: 4,
+    hasArmrest: false,
+    hasBackrest: false,
+    hasDrawer: false,
+    drawerCount: 0,
+    hasDoor: false,
+    doorCount: 0,
+    hasShelf: false,
+    shelfCount: 0,
+    hasCushion: false,
+    primaryMaterial: 'wood',
+    secondaryMaterial: 'metal',
+    primaryColor: '#c8a87c',
+    secondaryColor: '#333333',
+    accentColor: '#999999',
+    topThickness: 0.03,
+    legThickness: 0.04,
+    proportions: { widthToDepthRatio: 1.5, heightToWidthRatio: 0.6, seatHeightRatio: 0 },
+    sections: { layout: 'single', hasOpenFront: false, hasBoardArea: false },
+    details: [],
+    texture: { surfaceFinish: 'satin', roughnessEstimate: 0.6, metalnessEstimate: 0 },
+  });
+
   const handleEdit = (record: ProductRecord) => {
     setSelectedRecord(record);
-    setEditingAnalysis(record.analysis ? { ...record.analysis } : null);
+    setEditingAnalysis(record.analysis ? { ...record.analysis } : getDefaultAnalysis());
   };
 
   const handleSaveAnalysis = async () => {
@@ -332,7 +360,7 @@ export default function AdminFurnitureAnalysis() {
       const batch = unanalyzed.slice(i, i + batchSize);
       const results = await Promise.allSettled(
         batch.map(async (r) => {
-          const { error } = await supabase.functions.invoke('analyze-furniture', {
+          const { data, error } = await supabase.functions.invoke('analyze-furniture', {
             body: {
               product_id: r.id,
               image_url: r.thumbnail_url,
@@ -340,10 +368,22 @@ export default function AdminFurnitureAnalysis() {
             },
           });
           if (error) throw error;
+          if (data?.error) throw new Error(data.error);
         })
       );
 
-      failed += results.filter((r) => r.status === 'rejected').length;
+      const batchFailed = results.filter((r) => r.status === 'rejected');
+      failed += batchFailed.length;
+
+      // Stop bulk if we get credit errors
+      if (batchFailed.length > 0) {
+        const firstErr = (batchFailed[0] as PromiseRejectedResult).reason?.message || '';
+        if (firstErr.includes('크레딧') || firstErr.includes('credit') || firstErr.includes('402')) {
+          toast.error('AI 크레딧이 부족하여 전체 분석을 중단합니다.');
+          break;
+        }
+      }
+
       setBulkProgress({
         current: Math.min(i + batchSize, unanalyzed.length),
         total: unanalyzed.length,
@@ -352,7 +392,7 @@ export default function AdminFurnitureAnalysis() {
 
       // Delay between batches to avoid rate limits
       if (i + batchSize < unanalyzed.length && !bulkAbortRef.current) {
-        await new Promise((r) => setTimeout(r, 1500));
+        await new Promise((r) => setTimeout(r, 2000));
       }
     }
 
@@ -570,11 +610,9 @@ export default function AdminFurnitureAnalysis() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  {hasAnalysis && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(record)} title="보기/수정">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(record)} title={hasAnalysis ? '보기/수정' : '수동 생성'}>
+                    {hasAnalysis ? <Eye className="h-4 w-4" /> : <Plus className="h-4 w-4 text-muted-foreground" />}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
