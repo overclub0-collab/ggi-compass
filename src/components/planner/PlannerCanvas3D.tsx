@@ -550,8 +550,52 @@ function SnapshotHelper({ onCapture }: { onCapture: (fn: () => void) => void }) 
   return null;
 }
 
+// ===== Collision Detection Helper =====
+function checkCollision(
+  newPos: THREE.Vector3,
+  roomW: number, roomD: number,
+  furniture: PlacedFurniture[],
+  playerRadius: number = 0.25
+): boolean {
+  const wallMargin = playerRadius + 0.06; // wall thickness offset
+  // Wall collision
+  if (newPos.x < wallMargin || newPos.x > roomW - wallMargin) return true;
+  if (newPos.z < wallMargin || newPos.z > roomD - wallMargin) return true;
+
+  // Furniture collision (AABB check)
+  const roomScale = 0.1;
+  for (const item of furniture) {
+    const fw = item.furniture.width / 1000;
+    const fd = item.furniture.height / 1000;
+    const fx = (item.x / roomScale) / 1000 + fw / 2;
+    const fz = (item.y / roomScale) / 1000 + fd / 2;
+
+    // Simple AABB with rotation consideration
+    const rot = (item.rotation * Math.PI) / 180;
+    const cosR = Math.abs(Math.cos(rot));
+    const sinR = Math.abs(Math.sin(rot));
+    const effectiveW = fw * cosR + fd * sinR;
+    const effectiveD = fw * sinR + fd * cosR;
+
+    const halfW = effectiveW / 2 + playerRadius;
+    const halfD = effectiveD / 2 + playerRadius;
+
+    if (
+      newPos.x > fx - halfW && newPos.x < fx + halfW &&
+      newPos.z > fz - halfD && newPos.z < fz + halfD
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // ===== Keyboard Camera Controls (WASD + QE + RF) =====
-function KeyboardCameraControls({ fpsMode }: { fpsMode?: boolean }) {
+function KeyboardCameraControls({ fpsMode, roomDimensions, placedFurniture }: {
+  fpsMode?: boolean;
+  roomDimensions?: RoomDimensions;
+  placedFurniture?: PlacedFurniture[];
+}) {
   const { camera } = useThree();
   const keys = useRef<Set<string>>(new Set());
 
@@ -584,16 +628,45 @@ function KeyboardCameraControls({ fpsMode }: { fpsMode?: boolean }) {
     const right = new THREE.Vector3();
     right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
-    if (keys.current.has('w')) { camera.position.addScaledVector(forward, speed); }
-    if (keys.current.has('s')) { camera.position.addScaledVector(forward, -speed); }
-    if (keys.current.has('a')) { camera.position.addScaledVector(right, -speed); }
-    if (keys.current.has('d')) { camera.position.addScaledVector(right, speed); }
+    if (fpsMode && roomDimensions) {
+      // FPS mode with collision detection
+      const roomW = roomDimensions.width / 1000;
+      const roomD = roomDimensions.height / 1000;
+      const furniture = placedFurniture || [];
+      const newPos = camera.position.clone();
 
-    if (!fpsMode) {
-      if (keys.current.has('r')) { camera.position.y += speed; }
-      if (keys.current.has('f')) { camera.position.y = Math.max(0.2, camera.position.y - speed); }
-      if (keys.current.has('q')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed); }
-      if (keys.current.has('e')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed); }
+      if (keys.current.has('w')) newPos.addScaledVector(forward, speed);
+      if (keys.current.has('s')) newPos.addScaledVector(forward, -speed);
+      if (keys.current.has('a')) newPos.addScaledVector(right, -speed);
+      if (keys.current.has('d')) newPos.addScaledVector(right, speed);
+
+      // Try full move first
+      if (!checkCollision(newPos, roomW, roomD, furniture)) {
+        camera.position.copy(newPos);
+      } else {
+        // Try sliding along axes independently
+        const slideX = camera.position.clone();
+        slideX.x = newPos.x;
+        if (!checkCollision(slideX, roomW, roomD, furniture)) {
+          camera.position.x = slideX.x;
+        }
+        const slideZ = camera.position.clone();
+        slideZ.z = newPos.z;
+        if (!checkCollision(slideZ, roomW, roomD, furniture)) {
+          camera.position.z = slideZ.z;
+        }
+      }
+    } else {
+      // Standard orbit mode — no collision
+      if (keys.current.has('w')) camera.position.addScaledVector(forward, speed);
+      if (keys.current.has('s')) camera.position.addScaledVector(forward, -speed);
+      if (keys.current.has('a')) camera.position.addScaledVector(right, -speed);
+      if (keys.current.has('d')) camera.position.addScaledVector(right, speed);
+
+      if (keys.current.has('r')) camera.position.y += speed;
+      if (keys.current.has('f')) camera.position.y = Math.max(0.2, camera.position.y - speed);
+      if (keys.current.has('q')) camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed);
+      if (keys.current.has('e')) camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed);
     }
   });
 
