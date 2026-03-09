@@ -62,9 +62,10 @@ const SpacePlanner = () => {
   }, [removeFurniture, pinnedId]);
 
   const handleSelect = useCallback((id: string | null) => {
-    if (id === null && pinnedId) return;
+    // Never deselect on empty-space click — selection persists until X button
+    if (id === null) return;
     setSelectedId(id);
-  }, [setSelectedId, pinnedId]);
+  }, [setSelectedId]);
 
   const handleZoomIn = () => setScale(prev => Math.min(prev * 1.2, 0.3));
   const handleZoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.05));
