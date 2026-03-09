@@ -1605,6 +1605,7 @@ function AIEnhancedSofa({ w, d, h, color, isSelected, analysis }: {
   return (
     <group>
       {/* Base frame */}
+      {(() => { usePartTexture('body'); return null; })()}
       <RoundedBox args={[w, seatH, d]} radius={0.015} smoothness={4} position={[0, seatH / 2, 0]} castShadow receiveShadow>
         {matFn(darken(colors.primary, 0.06), isSelected)}
       </RoundedBox>
@@ -1613,7 +1614,7 @@ function AIEnhancedSofa({ w, d, h, color, isSelected, analysis }: {
         const cx = -(w / 2 - armW - 0.02) + cushionW * i + cushionW / 2;
         return (
           <RoundedBox key={`cushion-${i}`} args={[cushionW - 0.01, 0.07, d * 0.72]} radius={0.015} smoothness={4} position={[cx, seatH + 0.035, d * 0.04]} castShadow>
-            {matFn(lighten(colors.primary, 0.05), isSelected)}
+            {(() => { usePartTexture('cushion'); return matFn(lighten(colors.primary, 0.05), isSelected); })()}
           </RoundedBox>
         );
       })}
@@ -1622,13 +1623,14 @@ function AIEnhancedSofa({ w, d, h, color, isSelected, analysis }: {
         const cx = -(w / 2 - armW - 0.02) + cushionW * i + cushionW / 2;
         return (
           <RoundedBox key={`back-${i}`} args={[cushionW - 0.015, backH * 0.6, 0.18]} radius={0.02} smoothness={4} position={[cx, seatH + backH * 0.42, -(d / 2 - 0.1)]} castShadow>
-            {matFn(lighten(colors.primary, 0.08), isSelected)}
+            {(() => { usePartTexture('back'); return matFn(lighten(colors.primary, 0.08), isSelected); })()}
           </RoundedBox>
         );
       })}
       {/* Arms */}
       {hasArms && [-(w / 2 - armW / 2), (w / 2 - armW / 2)].map((x, i) => (
         <group key={`arm-${i}`}>
+          {(() => { usePartTexture('arms'); return null; })()}
           <mesh position={[x, seatH + backH * 0.28, 0]} castShadow>
             <boxGeometry args={[armW, backH * 0.55, d * 0.88]} />
             {matFn(darken(colors.primary, 0.04), isSelected)}
@@ -1641,6 +1643,7 @@ function AIEnhancedSofa({ w, d, h, color, isSelected, analysis }: {
         </group>
       ))}
       {/* Feet */}
+      {(() => { usePartTexture('legs'); return null; })()}
       {[
         [-(w / 2 - 0.06), 0, -(d / 2 - 0.06)],
         [(w / 2 - 0.06), 0, -(d / 2 - 0.06)],
@@ -1652,6 +1655,7 @@ function AIEnhancedSofa({ w, d, h, color, isSelected, analysis }: {
           {analysis.secondaryMaterial === 'wood' ? woodMat(colors.secondary, isSelected) : metalMat(colors.secondary, isSelected)}
         </mesh>
       ))}
+      {(() => { useDefaultTexture(); return null; })()}
     </group>
   );
 }
