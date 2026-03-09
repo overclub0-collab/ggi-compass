@@ -1,5 +1,5 @@
 import { useRef, useMemo } from 'react';
-import { Edges, Text } from '@react-three/drei';
+import { Edges, Text, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { PlacedFurniture } from '@/types/planner';
 import { ThreeEvent } from '@react-three/fiber';
@@ -7,10 +7,143 @@ import { ThreeEvent } from '@react-three/fiber';
 const EDGE_COLOR = '#1a1a1a';
 const SELECTED_EDGE = '#0066cc';
 
-// ===== PBR Material helpers =====
+// ===== Procedural Texture Generators =====
+
+function createWoodTexture(baseColor: string, scale = 1): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+  const c = new THREE.Color(baseColor);
+  
+  // Base fill
+  ctx.fillStyle = `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
+  ctx.fillRect(0, 0, 512, 512);
+  
+  // Wood grain lines
+  for (let i = 0; i < 80; i++) {
+    const y = Math.random() * 512;
+    const variation = (Math.random() - 0.5) * 30;
+    const darker = c.clone().multiplyScalar(0.85 + Math.random() * 0.1);
+    ctx.strokeStyle = `rgba(${Math.round(darker.r*255)},${Math.round(darker.g*255)},${Math.round(darker.b*255)},${0.15 + Math.random() * 0.2})`;
+    ctx.lineWidth = 0.5 + Math.random() * 2;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    for (let x = 0; x < 512; x += 20) {
+      ctx.lineTo(x, y + Math.sin(x * 0.02 * scale) * (3 + variation * 0.3) + (Math.random() - 0.5) * 2);
+    }
+    ctx.stroke();
+  }
+  
+  // Knots (occasional)
+  for (let i = 0; i < 2; i++) {
+    const kx = Math.random() * 512;
+    const ky = Math.random() * 512;
+    const kr = 5 + Math.random() * 12;
+    const kColor = c.clone().multiplyScalar(0.7);
+    ctx.beginPath();
+    ctx.arc(kx, ky, kr, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${Math.round(kColor.r*255)},${Math.round(kColor.g*255)},${Math.round(kColor.b*255)},0.3)`;
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(scale, scale);
+  return tex;
+}
+
+function createMetalTexture(baseColor: string): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+  const c = new THREE.Color(baseColor);
+  
+  ctx.fillStyle = `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
+  ctx.fillRect(0, 0, 256, 256);
+  
+  // Brushed metal streaks
+  for (let i = 0; i < 200; i++) {
+    const y = Math.random() * 256;
+    const lighter = c.clone().lerp(new THREE.Color('#ffffff'), 0.1 + Math.random() * 0.15);
+    ctx.strokeStyle = `rgba(${Math.round(lighter.r*255)},${Math.round(lighter.g*255)},${Math.round(lighter.b*255)},${0.05 + Math.random() * 0.1})`;
+    ctx.lineWidth = 0.3 + Math.random() * 0.8;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(256, y + (Math.random() - 0.5) * 3);
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+function createFabricTexture(baseColor: string): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+  const c = new THREE.Color(baseColor);
+  
+  ctx.fillStyle = `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
+  ctx.fillRect(0, 0, 256, 256);
+  
+  // Weave pattern
+  for (let x = 0; x < 256; x += 3) {
+    for (let y = 0; y < 256; y += 3) {
+      const bright = ((x + y) % 6 < 3) ? 0.97 : 1.03;
+      const wc = c.clone().multiplyScalar(bright);
+      ctx.fillStyle = `rgba(${Math.round(wc.r*255)},${Math.round(wc.g*255)},${Math.round(wc.b*255)},0.4)`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(3, 3);
+  return tex;
+}
+
+function createWoodNormalMap(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+  
+  // Neutral normal (128,128,255)
+  ctx.fillStyle = 'rgb(128,128,255)';
+  ctx.fillRect(0, 0, 512, 512);
+  
+  // Grain bumps
+  for (let i = 0; i < 60; i++) {
+    const y = Math.random() * 512;
+    ctx.strokeStyle = `rgba(${120 + Math.random()*16},${125 + Math.random()*8},255,0.3)`;
+    ctx.lineWidth = 1 + Math.random() * 2;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    for (let x = 0; x < 512; x += 15) {
+      ctx.lineTo(x, y + Math.sin(x * 0.03) * 3);
+    }
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+// ===== PBR Material helpers with procedural textures =====
 function woodMat(color: string, isSelected = false) {
+  const map = useMemo(() => createWoodTexture(color), [color]);
+  const normalMap = useMemo(() => createWoodNormalMap(), []);
+  
   return (
     <meshStandardMaterial
+      map={map}
+      normalMap={normalMap}
+      normalScale={new THREE.Vector2(0.3, 0.3)}
       color={color}
       roughness={0.72}
       metalness={0.02}
@@ -22,8 +155,11 @@ function woodMat(color: string, isSelected = false) {
 }
 
 function metalMat(color: string, isSelected = false) {
+  const map = useMemo(() => createMetalTexture(color), [color]);
+  
   return (
     <meshStandardMaterial
+      map={map}
       color={color}
       roughness={0.28}
       metalness={0.9}
@@ -48,8 +184,11 @@ function plasticMat(color: string, isSelected = false) {
 }
 
 function fabricMat(color: string, isSelected = false) {
+  const map = useMemo(() => createFabricTexture(color), [color]);
+  
   return (
     <meshStandardMaterial
+      map={map}
       color={color}
       roughness={0.92}
       metalness={0.0}
@@ -87,12 +226,10 @@ function DeskModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Tabletop */}
-      <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[w, topH, d]} />
+      {/* Tabletop — rounded edges */}
+      <RoundedBox args={[w, topH, d]} radius={0.008} smoothness={4} position={[0, h - topH / 2, 0]} castShadow receiveShadow>
         {woodMat(color, isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
-      </mesh>
+      </RoundedBox>
       {/* Edge banding */}
       <mesh position={[0, h - topH, 0]} castShadow>
         <boxGeometry args={[w + 0.002, 0.003, d + 0.002]} />
@@ -160,24 +297,19 @@ function ChairModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Seat */}
-      <mesh position={[0, seatY, d * 0.04]} castShadow receiveShadow>
-        <boxGeometry args={[w * 0.92, seatH, d * 0.85]} />
+      {/* Seat — rounded */}
+      <RoundedBox args={[w * 0.92, seatH, d * 0.85]} radius={0.012} smoothness={4} position={[0, seatY, d * 0.04]} castShadow receiveShadow>
         {fabricMat(color, isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
-      </mesh>
+      </RoundedBox>
       {/* Seat cushion highlight */}
-      <mesh position={[0, seatY + seatH / 2 + 0.003, d * 0.04]}>
-        <boxGeometry args={[w * 0.84, 0.006, d * 0.76]} />
+      <RoundedBox args={[w * 0.84, 0.006, d * 0.76]} radius={0.003} smoothness={2} position={[0, seatY + seatH / 2 + 0.003, d * 0.04]}>
         {fabricMat(lighten(color, 0.08), isSelected)}
-      </mesh>
+      </RoundedBox>
 
       {/* Backrest */}
-      <mesh position={[0, seatY + backH * 0.5, -(d / 2 - backThick / 2)]} castShadow>
-        <boxGeometry args={[w * 0.85, backH * 0.8, backThick]} />
+      <RoundedBox args={[w * 0.85, backH * 0.8, backThick]} radius={0.008} smoothness={4} position={[0, seatY + backH * 0.5, -(d / 2 - backThick / 2)]} castShadow>
         {fabricMat(lighten(color, 0.04), isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={1} />
-      </mesh>
+      </RoundedBox>
       {/* Backrest top rail */}
       <mesh position={[0, seatY + backH * 0.92, -(d / 2 - backThick / 2)]} castShadow>
         <boxGeometry args={[w * 0.9, 0.028, backThick + 0.008]} />
@@ -438,31 +570,25 @@ function SofaModel({ w, d, h, color, isSelected }: {
   return (
     <group>
       {/* Base frame */}
-      <mesh position={[0, seatH / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[w, seatH, d]} />
+      <RoundedBox args={[w, seatH, d]} radius={0.015} smoothness={4} position={[0, seatH / 2, 0]} castShadow receiveShadow>
         {fabricMat(darken(color, 0.06), isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
-      </mesh>
+      </RoundedBox>
       {/* Seat cushions */}
       {Array.from({ length: cushionCount }, (_, i) => {
         const cx = -(w / 2 - armW - 0.02) + cushionW * i + cushionW / 2;
         return (
-          <mesh key={`cushion-${i}`} position={[cx, seatH + 0.035, d * 0.04]} castShadow>
-            <boxGeometry args={[cushionW - 0.01, 0.07, d * 0.72]} />
+          <RoundedBox key={`cushion-${i}`} args={[cushionW - 0.01, 0.07, d * 0.72]} radius={0.015} smoothness={4} position={[cx, seatH + 0.035, d * 0.04]} castShadow>
             {fabricMat(lighten(color, 0.05), isSelected)}
-            <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
-          </mesh>
+          </RoundedBox>
         );
       })}
       {/* Back cushions */}
       {Array.from({ length: cushionCount }, (_, i) => {
         const cx = -(w / 2 - armW - 0.02) + cushionW * i + cushionW / 2;
         return (
-          <mesh key={`back-${i}`} position={[cx, seatH + backH * 0.42, -(d / 2 - 0.1)]} castShadow>
-            <boxGeometry args={[cushionW - 0.015, backH * 0.6, 0.18]} />
+          <RoundedBox key={`back-${i}`} args={[cushionW - 0.015, backH * 0.6, 0.18]} radius={0.02} smoothness={4} position={[cx, seatH + backH * 0.42, -(d / 2 - 0.1)]} castShadow>
             {fabricMat(lighten(color, 0.08), isSelected)}
-            <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
-          </mesh>
+          </RoundedBox>
         );
       })}
       {/* Arms */}
@@ -649,11 +775,9 @@ function DiningTableModel({ w, d, h, color, isSelected }: {
   return (
     <group>
       {/* Thick tabletop with rounded look */}
-      <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[w, topH, d]} />
+      <RoundedBox args={[w, topH, d]} radius={0.01} smoothness={4} position={[0, h - topH / 2, 0]} castShadow receiveShadow>
         {woodMat(color, isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
-      </mesh>
+      </RoundedBox>
       {/* Edge rounding strip */}
       <mesh position={[0, h - topH - 0.002, 0]}>
         <boxGeometry args={[w - 0.01, 0.004, d - 0.01]} />
@@ -862,11 +986,9 @@ function GenericModel({ w, d, h, color, isSelected }: {
   const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
   return (
     <group>
-      <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[w, h, d]} />
+      <RoundedBox args={[w, h, d]} radius={0.01} smoothness={4} position={[0, h / 2, 0]} castShadow receiveShadow>
         {woodMat(color, isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
-      </mesh>
+      </RoundedBox>
       <mesh position={[0, 0.005, 0]}>
         <boxGeometry args={[w + 0.01, 0.01, d + 0.01]} />
         {metalMat(darken(color, 0.3), isSelected)}
