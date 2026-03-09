@@ -2057,6 +2057,235 @@ function AIEnhancedBlackboard({ w, d, h, color, isSelected, analysis }: {
   );
 }
 
+// ========== AI-enhanced Bunk Bed ==========
+function AIEnhancedBunkBed({ w, d, h, color, isSelected, analysis }: {
+  w: number; d: number; h: number; color: string; isSelected: boolean; analysis: FurnitureAnalysis;
+}) {
+  const colors = getColorsFromAnalysis(analysis, color);
+  const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
+  const frameW = Math.max(0.03, w * (analysis.legThickness || 0.04));
+  const mattressH = 0.08;
+  const lowerY = h * 0.22;
+  const upperY = h * 0.62;
+  const legMatFn = analysis.secondaryMaterial === 'wood' ? woodMat : metalMat;
+  const details = analysis.details || [];
+  const hasLadder = !details.includes('no-ladder');
+  const hasGuardRail = !details.includes('no-guardrail');
+  const shelfCount = analysis.shelfCount || 0;
+
+  return (
+    <group>
+      {/* 4 corner posts */}
+      {[
+        [-(w / 2 - frameW / 2), 0, -(d / 2 - frameW / 2)],
+        [(w / 2 - frameW / 2), 0, -(d / 2 - frameW / 2)],
+        [-(w / 2 - frameW / 2), 0, (d / 2 - frameW / 2)],
+        [(w / 2 - frameW / 2), 0, (d / 2 - frameW / 2)],
+      ].map(([px, , pz], i) => (
+        <mesh key={`post-${i}`} position={[px, h / 2, pz]} castShadow>
+          <boxGeometry args={[frameW, h, frameW]} />
+          {legMatFn(colors.secondary, isSelected)}
+          <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
+        </mesh>
+      ))}
+
+      {/* Lower bed frame + mattress */}
+      <mesh position={[0, lowerY, 0]}>
+        <boxGeometry args={[w - frameW * 2, 0.02, d - frameW * 2]} />
+        {legMatFn(darken(colors.secondary, 0.1), isSelected)}
+      </mesh>
+      <mesh position={[0, lowerY + mattressH / 2 + 0.01, 0]} castShadow>
+        <boxGeometry args={[w - frameW * 2 - 0.02, mattressH, d - frameW * 2 - 0.02]} />
+        {fabricMat(colors.primary, isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={0.5} />
+      </mesh>
+
+      {/* Upper bed frame + mattress */}
+      <mesh position={[0, upperY, 0]}>
+        <boxGeometry args={[w - frameW * 2, 0.02, d - frameW * 2]} />
+        {legMatFn(darken(colors.secondary, 0.1), isSelected)}
+      </mesh>
+      <mesh position={[0, upperY + mattressH / 2 + 0.01, 0]} castShadow>
+        <boxGeometry args={[w - frameW * 2 - 0.02, mattressH, d - frameW * 2 - 0.02]} />
+        {fabricMat(colors.primary, isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={0.5} />
+      </mesh>
+
+      {/* Guard rail */}
+      {hasGuardRail && (
+        <>
+          <mesh position={[0, upperY + mattressH + 0.08, d / 2 - frameW / 2]}>
+            <boxGeometry args={[w - frameW * 2, 0.025, 0.015]} />
+            {legMatFn(darken(colors.secondary, 0.05), isSelected)}
+          </mesh>
+          <mesh position={[0, upperY + mattressH + 0.08, -(d / 2 - frameW / 2)]}>
+            <boxGeometry args={[w - frameW * 2, 0.025, 0.015]} />
+            {legMatFn(darken(colors.secondary, 0.05), isSelected)}
+          </mesh>
+        </>
+      )}
+
+      {/* Ladder */}
+      {hasLadder && (
+        <group>
+          {/* Ladder rails */}
+          {[-0.05, 0.05].map((xOff, i) => (
+            <mesh key={`lr-${i}`} position={[w / 2 - frameW - 0.02 + xOff, (lowerY + upperY) / 2, d / 2 - frameW / 2 + 0.02]}>
+              <boxGeometry args={[0.015, upperY - lowerY + 0.1, 0.015]} />
+              {legMatFn(colors.secondary, isSelected)}
+            </mesh>
+          ))}
+          {/* Ladder rungs */}
+          {[0.25, 0.5, 0.75].map((ratio, i) => (
+            <mesh key={`rung-${i}`} position={[w / 2 - frameW - 0.02, lowerY + (upperY - lowerY) * ratio, d / 2 - frameW / 2 + 0.04]}>
+              <boxGeometry args={[0.12, 0.012, 0.015]} />
+              {legMatFn(colors.secondary, isSelected)}
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* Side horizontal braces */}
+      {[-1, 1].map(side => (
+        <group key={`brace-${side}`}>
+          <mesh position={[side * (w / 2 - frameW / 2), lowerY * 0.5, 0]}>
+            <boxGeometry args={[frameW * 0.6, 0.02, d - frameW * 2]} />
+            {legMatFn(darken(colors.secondary, 0.15), isSelected)}
+          </mesh>
+        </group>
+      ))}
+
+      {/* Optional under-bed shelf/storage */}
+      {shelfCount > 0 && (
+        <mesh position={[0, lowerY * 0.4, 0]}>
+          <boxGeometry args={[w - frameW * 2 - 0.04, 0.015, d - frameW * 2 - 0.04]} />
+          {legMatFn(darken(colors.secondary, 0.05), isSelected)}
+        </mesh>
+      )}
+
+      {/* Pillow indicators */}
+      {[lowerY, upperY].map((bedY, bi) => (
+        <RoundedBox key={`pillow-${bi}`} args={[w * 0.3, 0.04, 0.18]} radius={0.015} smoothness={3}
+          position={[-(w / 2 - frameW - w * 0.18), bedY + mattressH + 0.03, -(d / 2 - frameW - 0.12)]} castShadow>
+          {fabricMat(lighten(colors.primary, 0.15), isSelected)}
+        </RoundedBox>
+      ))}
+    </group>
+  );
+}
+
+// ========== AI-enhanced Pet Furniture ==========
+function AIEnhancedPet({ w, d, h, color, isSelected, analysis }: {
+  w: number; d: number; h: number; color: string; isSelected: boolean; analysis: FurnitureAnalysis;
+}) {
+  const colors = getColorsFromAnalysis(analysis, color);
+  const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
+  const primaryMatFn = analysis.primaryMaterial === 'metal' ? metalMat :
+    analysis.primaryMaterial === 'plastic' ? plasticMat : woodMat;
+  const details = analysis.details || [];
+  const wallThick = 0.02;
+  const hasRoof = !details.includes('open-top');
+  const hasCushion = analysis.hasCushion ?? true;
+  const hasDoor = analysis.hasDoor ?? true;
+  const roofH = h * 0.25;
+  const bodyH = hasRoof ? h - roofH : h;
+  const doorW = w * 0.4;
+  const doorH = bodyH * 0.7;
+  const hasShelf = analysis.hasShelf ?? false;
+
+  return (
+    <group>
+      {/* Back wall */}
+      <mesh position={[0, bodyH / 2, -(d / 2 - wallThick / 2)]} castShadow>
+        <boxGeometry args={[w, bodyH, wallThick]} />
+        {primaryMatFn(colors.primary, isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
+      </mesh>
+      {/* Left wall */}
+      <mesh position={[-(w / 2 - wallThick / 2), bodyH / 2, 0]} castShadow>
+        <boxGeometry args={[wallThick, bodyH, d]} />
+        {primaryMatFn(colors.primary, isSelected)}
+      </mesh>
+      {/* Right wall */}
+      <mesh position={[(w / 2 - wallThick / 2), bodyH / 2, 0]} castShadow>
+        <boxGeometry args={[wallThick, bodyH, d]} />
+        {primaryMatFn(colors.primary, isSelected)}
+      </mesh>
+
+      {/* Front wall with door opening */}
+      {hasDoor ? (
+        <>
+          <mesh position={[-(w / 2 - wallThick / 2) + (w - doorW) / 4, bodyH / 2, d / 2 - wallThick / 2]} castShadow>
+            <boxGeometry args={[(w - doorW) / 2 - wallThick, bodyH, wallThick]} />
+            {primaryMatFn(colors.primary, isSelected)}
+          </mesh>
+          <mesh position={[(w / 2 - wallThick / 2) - (w - doorW) / 4, bodyH / 2, d / 2 - wallThick / 2]} castShadow>
+            <boxGeometry args={[(w - doorW) / 2 - wallThick, bodyH, wallThick]} />
+            {primaryMatFn(colors.primary, isSelected)}
+          </mesh>
+          <mesh position={[0, bodyH - (bodyH - doorH) / 4, d / 2 - wallThick / 2]} castShadow>
+            <boxGeometry args={[doorW, (bodyH - doorH) / 2, wallThick]} />
+            {primaryMatFn(colors.primary, isSelected)}
+          </mesh>
+          {/* Door arch */}
+          <mesh position={[0, doorH * 0.95, d / 2 - wallThick / 2 + 0.002]}>
+            <ringGeometry args={[0, doorW / 2 - 0.005, 16, 1, 0, Math.PI]} />
+            <meshStandardMaterial color={darken(colors.primary, 0.2)} roughness={0.7} metalness={0.05} side={THREE.DoubleSide} />
+          </mesh>
+        </>
+      ) : (
+        <mesh position={[0, bodyH / 2, d / 2 - wallThick / 2]} castShadow>
+          <boxGeometry args={[w, bodyH, wallThick]} />
+          {primaryMatFn(colors.primary, isSelected)}
+        </mesh>
+      )}
+
+      {/* Floor */}
+      <mesh position={[0, wallThick / 2, 0]} receiveShadow>
+        <boxGeometry args={[w, wallThick, d]} />
+        {primaryMatFn(darken(colors.primary, 0.1), isSelected)}
+      </mesh>
+
+      {/* Internal shelf */}
+      {hasShelf && (
+        <mesh position={[0, bodyH * 0.5, 0]}>
+          <boxGeometry args={[w - wallThick * 2 - 0.01, wallThick * 0.6, d - wallThick * 2]} />
+          {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
+        </mesh>
+      )}
+
+      {/* Roof */}
+      {hasRoof && (
+        <>
+          <mesh position={[-(w / 4), bodyH + roofH * 0.4, 0]} rotation={[0, 0, Math.PI * 0.12]} castShadow>
+            <boxGeometry args={[w * 0.55, 0.015, d + 0.04]} />
+            {primaryMatFn(darken(colors.primary, 0.2), isSelected)}
+            <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
+          </mesh>
+          <mesh position={[(w / 4), bodyH + roofH * 0.4, 0]} rotation={[0, 0, -Math.PI * 0.12]} castShadow>
+            <boxGeometry args={[w * 0.55, 0.015, d + 0.04]} />
+            {primaryMatFn(darken(colors.primary, 0.2), isSelected)}
+            <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
+          </mesh>
+          {/* Ridge beam */}
+          <mesh position={[0, bodyH + roofH * 0.55, 0]}>
+            <boxGeometry args={[0.03, 0.02, d + 0.06]} />
+            {primaryMatFn(darken(colors.primary, 0.3), isSelected)}
+          </mesh>
+        </>
+      )}
+
+      {/* Interior cushion */}
+      {hasCushion && (
+        <RoundedBox args={[w * 0.85, 0.04, d * 0.85]} radius={0.01} smoothness={3}
+          position={[0, wallThick + 0.02, 0]} castShadow>
+          {fabricMat(colors.accent || '#e8d5c4', isSelected)}
+        </RoundedBox>
+      )}
+    </group>
+  );
+}
+
 // ========== AI-enhanced Generic (fallback) ==========
 function AIEnhancedGeneric({ w, d, h, color, isSelected, analysis }: {
   w: number; d: number; h: number; color: string; isSelected: boolean; analysis: FurnitureAnalysis;
@@ -2149,6 +2378,10 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
           return <AIEnhancedRoundTable {...props} />;
         case 'blackboard':
           return <AIEnhancedBlackboard {...props} />;
+        case 'bunkbed':
+          return <AIEnhancedBunkBed {...props} />;
+        case 'pet':
+          return <AIEnhancedPet {...props} />;
         default:
           return <AIEnhancedGeneric {...props} />;
       }
