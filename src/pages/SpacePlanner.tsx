@@ -175,6 +175,7 @@ const SpacePlanner = () => {
             onSelect={handleSelect}
             onRightClickSelect={handleRightClickSelect}
             architecturalConfig={archConfig}
+            hdriPreset={hdriPreset}
           />
         )}
 
