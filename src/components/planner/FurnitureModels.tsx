@@ -1309,7 +1309,7 @@ function detectTypeFromKeywords(name: string, cat: string): string {
   if (name.includes('선반') || name.includes('책장') || name.includes('shelf') || name.includes('진열') || name.includes('거치대') || cat.includes('shelf')) return 'shelf';
   
   // Desk / table / conference table / workstation (broad — last)
-  if (name.includes('책상') || name.includes('탁자') || name.includes('테이블') || name.includes('강연대') || name.includes('교탁') || name.includes('desk') || name.includes('table') || name.includes('작업대') || name.includes('워크') || name.includes('회의') || name.includes('conference') || name.includes('세미나') || cat.includes('desk') || cat.includes('table')) return 'desk';
+  if (name.includes('책상') || name.includes('탁자') || name.includes('테이블') || name.includes('desk') || name.includes('table') || name.includes('작업대') || name.includes('워크') || name.includes('회의') || name.includes('conference') || name.includes('세미나') || cat.includes('desk') || cat.includes('table')) return 'desk';
 
   return 'generic';
 }
