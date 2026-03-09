@@ -405,65 +405,169 @@ function DoorElement({ position, rotation, width = 0.9, height = 2.1, type = 'sw
   position: [number, number, number]; rotation: [number, number, number];
   width?: number; height?: number; type?: string; material?: string;
 }) {
-  const frameColor = '#d5d0c5';
   const isDouble = type === 'double';
   const panelW = isDouble ? width / 2 : width;
   const isGlass = material === 'glass';
   const isMetal = material === 'metal';
 
-  const panelColor = isGlass ? '#a8c8d8' : isMetal ? '#b0b0b0' : '#b8a990';
-  const panelRough = isGlass ? 0.1 : isMetal ? 0.25 : 0.7;
-  const panelMetal = isGlass ? 0.05 : isMetal ? 0.85 : 0.02;
-  const panelOpacity = isGlass ? 0.4 : 1;
-  const panelTransparent = isGlass;
+  // Frame material — metal doors use aluminum, others use painted wood
+  const frameProps = isMetal
+    ? { color: '#7a7a7a', roughness: 0.25, metalness: 0.85 }
+    : { color: '#d5d0c5', roughness: 0.6, metalness: 0.05 };
 
   return (
     <group position={position} rotation={rotation}>
       {(isDouble ? [-(panelW / 2 + 0.002), (panelW / 2 + 0.002)] : [0]).map((xOff, i) => (
         <group key={i}>
-          <mesh position={[xOff, height / 2, 0]}>
-            <boxGeometry args={[panelW - (isDouble ? 0.004 : 0), height, 0.04]} />
-            <meshPhysicalMaterial color={panelColor} roughness={panelRough} metalness={panelMetal}
-              transparent={panelTransparent} opacity={panelOpacity}
-              transmission={isGlass ? 0.5 : 0} thickness={isGlass ? 0.02 : 0} />
-            <Edges threshold={15} color={EDGE_COLOR} lineWidth={1} />
-          </mesh>
-          {!isGlass && (
+          {/* === METAL DOOR (샷시문) — Aluminum frame with glass center === */}
+          {isMetal && (
             <>
-              <mesh position={[xOff, height * 0.65, 0.022]}>
-                <boxGeometry args={[panelW * 0.65, height * 0.3, 0.005]} />
-                <meshStandardMaterial color={isGlass ? '#c0d8e8' : isMetal ? '#c0c0c0' : '#c4b5a0'} roughness={panelRough} metalness={panelMetal} />
+              {/* Outer aluminum panel */}
+              <mesh position={[xOff, height / 2, 0]}>
+                <boxGeometry args={[panelW - (isDouble ? 0.004 : 0), height, 0.045]} />
+                <meshPhysicalMaterial color="#888" roughness={0.2} metalness={0.9} clearcoat={0.3} />
+                <Edges threshold={15} color={EDGE_COLOR} lineWidth={1} />
               </mesh>
-              <mesh position={[xOff, height * 0.25, 0.022]}>
-                <boxGeometry args={[panelW * 0.65, height * 0.25, 0.005]} />
-                <meshStandardMaterial color={isMetal ? '#c0c0c0' : '#c4b5a0'} roughness={panelRough} metalness={panelMetal} />
+              {/* Inner glass pane — large center window */}
+              <mesh position={[xOff, height * 0.55, 0.001]}>
+                <boxGeometry args={[panelW * 0.75, height * 0.55, 0.006]} />
+                <meshPhysicalMaterial
+                  color="#c8dce8" transparent opacity={0.3}
+                  roughness={0.02} metalness={0.05}
+                  transmission={0.7} thickness={0.006} ior={1.5}
+                  clearcoat={1} clearcoatRoughness={0.05}
+                />
+              </mesh>
+              {/* Horizontal divider bar */}
+              <mesh position={[xOff, height * 0.28, 0.024]}>
+                <boxGeometry args={[panelW * 0.78, 0.03, 0.005]} />
+                <meshStandardMaterial color="#777" roughness={0.2} metalness={0.9} />
+              </mesh>
+              {/* Lower kick plate — solid aluminum */}
+              <mesh position={[xOff, height * 0.12, 0.024]}>
+                <boxGeometry args={[panelW * 0.75, height * 0.2, 0.004]} />
+                <meshStandardMaterial color="#999" roughness={0.3} metalness={0.85} />
+              </mesh>
+              {/* Door handle — lever type */}
+              <mesh position={[xOff + (isDouble ? (i === 0 ? panelW * 0.35 : -panelW * 0.35) : panelW * 0.38), height * 0.47, 0.04]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.008, 0.008, 0.12, 8]} />
+                <meshStandardMaterial color="#aaa" roughness={0.15} metalness={0.95} />
+              </mesh>
+              {/* Handle base plate */}
+              <mesh position={[xOff + (isDouble ? (i === 0 ? panelW * 0.35 : -panelW * 0.35) : panelW * 0.38), height * 0.47, 0.03]}>
+                <boxGeometry args={[0.03, 0.08, 0.005]} />
+                <meshStandardMaterial color="#999" roughness={0.2} metalness={0.9} />
               </mesh>
             </>
           )}
-          <mesh position={[xOff + (isDouble ? (i === 0 ? panelW * 0.35 : -panelW * 0.35) : panelW * 0.38), height * 0.47, 0.035]}>
-            <cylinderGeometry args={[0.012, 0.012, 0.12, 8]} />
-            <meshStandardMaterial color="#888" roughness={0.2} metalness={0.9} />
-          </mesh>
+          {/* === GLASS DOOR — Full glass with thin frame === */}
+          {isGlass && (
+            <>
+              {/* Glass panel */}
+              <mesh position={[xOff, height / 2, 0]}>
+                <boxGeometry args={[panelW - (isDouble ? 0.004 : 0), height, 0.012]} />
+                <meshPhysicalMaterial
+                  color="#b8dae8" transparent opacity={0.2}
+                  roughness={0.01} metalness={0.05}
+                  transmission={0.85} thickness={0.012} ior={1.52}
+                  clearcoat={1} clearcoatRoughness={0.02}
+                  envMapIntensity={2}
+                />
+                <Edges threshold={15} color="#666" lineWidth={0.8} />
+              </mesh>
+              {/* Glass edge highlight */}
+              <mesh position={[xOff, height / 2, 0.007]}>
+                <planeGeometry args={[panelW * 0.9, height * 0.9]} />
+                <meshPhysicalMaterial color="#e8f0ff" transparent opacity={0.05} roughness={0} metalness={0.2} envMapIntensity={3} />
+              </mesh>
+              {/* Handle — tubular stainless */}
+              <mesh position={[xOff + (isDouble ? (i === 0 ? panelW * 0.35 : -panelW * 0.35) : panelW * 0.38), height * 0.47, 0.02]}>
+                <cylinderGeometry args={[0.01, 0.01, 0.2, 8]} />
+                <meshStandardMaterial color="#c0c0c0" roughness={0.1} metalness={0.95} />
+              </mesh>
+              {/* Handle mounts */}
+              {[-0.08, 0.08].map((yOff, j) => (
+                <mesh key={j} position={[xOff + (isDouble ? (i === 0 ? panelW * 0.35 : -panelW * 0.35) : panelW * 0.38), height * 0.47 + yOff, 0.012]}>
+                  <cylinderGeometry args={[0.006, 0.006, 0.016, 6]} rotation={[Math.PI / 2, 0, 0]} />
+                  <meshStandardMaterial color="#b0b0b0" roughness={0.15} metalness={0.9} />
+                </mesh>
+              ))}
+            </>
+          )}
+          {/* === WOOD DOOR — Paneled wood with grain === */}
+          {!isMetal && !isGlass && (
+            <>
+              {/* Main wood panel */}
+              <mesh position={[xOff, height / 2, 0]}>
+                <boxGeometry args={[panelW - (isDouble ? 0.004 : 0), height, 0.04]} />
+                <meshStandardMaterial color="#b8a590" roughness={0.72} metalness={0.02} />
+                <Edges threshold={15} color={EDGE_COLOR} lineWidth={1} />
+              </mesh>
+              {/* Upper raised panel */}
+              <mesh position={[xOff, height * 0.68, 0.022]}>
+                <boxGeometry args={[panelW * 0.65, height * 0.32, 0.006]} />
+                <meshStandardMaterial color="#c4b5a0" roughness={0.65} metalness={0.02} />
+              </mesh>
+              {/* Lower raised panel */}
+              <mesh position={[xOff, height * 0.28, 0.022]}>
+                <boxGeometry args={[panelW * 0.65, height * 0.28, 0.006]} />
+                <meshStandardMaterial color="#c4b5a0" roughness={0.65} metalness={0.02} />
+              </mesh>
+              {/* Panel molding edges (top panel) */}
+              {[
+                [0, height * 0.52, panelW * 0.65, 0.008],
+                [0, height * 0.84, panelW * 0.65, 0.008],
+                [-panelW * 0.325, height * 0.68, 0.008, height * 0.32],
+                [panelW * 0.325, height * 0.68, 0.008, height * 0.32],
+              ].map(([x, y, w2, h2], j) => (
+                <mesh key={`mold-t-${j}`} position={[xOff + (x as number), y as number, 0.026]}>
+                  <boxGeometry args={[w2 as number, h2 as number, 0.003]} />
+                  <meshStandardMaterial color="#a89880" roughness={0.7} metalness={0.02} />
+                </mesh>
+              ))}
+              {/* Handle — round knob */}
+              <mesh position={[xOff + (isDouble ? (i === 0 ? panelW * 0.35 : -panelW * 0.35) : panelW * 0.38), height * 0.47, 0.035]}>
+                <sphereGeometry args={[0.018, 12, 12]} />
+                <meshStandardMaterial color="#8b7355" roughness={0.4} metalness={0.3} />
+              </mesh>
+              {/* Handle base */}
+              <mesh position={[xOff + (isDouble ? (i === 0 ? panelW * 0.35 : -panelW * 0.35) : panelW * 0.38), height * 0.47, 0.025]}>
+                <cylinderGeometry args={[0.012, 0.014, 0.01, 8]} />
+                <meshStandardMaterial color="#7a6345" roughness={0.5} metalness={0.2} />
+              </mesh>
+            </>
+          )}
         </group>
       ))}
       {/* Frame */}
       <mesh position={[-width / 2 - 0.03, height / 2, 0]}>
         <boxGeometry args={[0.06, height + 0.06, 0.08]} />
-        <meshStandardMaterial color={isMetal ? '#888' : frameColor} roughness={isMetal ? 0.3 : 0.6} metalness={isMetal ? 0.7 : 0.05} />
+        <meshStandardMaterial color={frameProps.color} roughness={frameProps.roughness} metalness={frameProps.metalness} />
       </mesh>
       <mesh position={[width / 2 + 0.03, height / 2, 0]}>
         <boxGeometry args={[0.06, height + 0.06, 0.08]} />
-        <meshStandardMaterial color={isMetal ? '#888' : frameColor} roughness={isMetal ? 0.3 : 0.6} metalness={isMetal ? 0.7 : 0.05} />
+        <meshStandardMaterial color={frameProps.color} roughness={frameProps.roughness} metalness={frameProps.metalness} />
       </mesh>
       <mesh position={[0, height + 0.03, 0]}>
         <boxGeometry args={[width + 0.12, 0.06, 0.08]} />
-        <meshStandardMaterial color={isMetal ? '#888' : frameColor} roughness={isMetal ? 0.3 : 0.6} metalness={isMetal ? 0.7 : 0.05} />
+        <meshStandardMaterial color={frameProps.color} roughness={frameProps.roughness} metalness={frameProps.metalness} />
+      </mesh>
+      {/* Threshold / bottom sill */}
+      <mesh position={[0, 0.005, 0]}>
+        <boxGeometry args={[width + 0.04, 0.01, 0.06]} />
+        <meshStandardMaterial color={isMetal ? '#666' : '#a09585'} roughness={isMetal ? 0.3 : 0.7} metalness={isMetal ? 0.6 : 0.03} />
       </mesh>
       {type === 'sliding' && (
-        <mesh position={[0, height + 0.06, 0]}>
-          <boxGeometry args={[width + 0.2, 0.03, 0.06]} />
-          <meshStandardMaterial color="#999" roughness={0.3} metalness={0.7} />
-        </mesh>
+        <>
+          <mesh position={[0, height + 0.06, 0]}>
+            <boxGeometry args={[width + 0.2, 0.03, 0.06]} />
+            <meshStandardMaterial color="#999" roughness={0.3} metalness={0.7} />
+          </mesh>
+          <mesh position={[0, -0.01, 0]}>
+            <boxGeometry args={[width + 0.2, 0.015, 0.04]} />
+            <meshStandardMaterial color="#999" roughness={0.3} metalness={0.7} />
+          </mesh>
+        </>
       )}
     </group>
   );
