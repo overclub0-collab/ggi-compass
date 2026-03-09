@@ -761,6 +761,14 @@ const Admin = () => {
             <Building2 className="h-4 w-4 mr-2" />
             기업소개
           </Button>
+          <Button
+            variant={activeTab === 'ai-analysis' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('ai-analysis')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            AI 분석
+          </Button>
         </div>
       </header>
 
