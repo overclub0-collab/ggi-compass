@@ -164,20 +164,32 @@ These products vary DRAMATICALLY. Analyze the ACTUAL image carefully:
 IMPORTANT: Count EXACTLY from the image. If a locker has 4 columns × 5 rows = 20 compartments, report doorCount=20, compartmentGrid={cols:4,rows:5}. Do NOT guess — analyze the image precisely.
 For leg style, look at the ACTUAL leg structure visible in the image, not assumptions.`;
 
-    // Use faster model to avoid timeouts
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
+    // Try multiple models with failover
+    const modelsToTry = [
+      "google/gemini-3-flash-preview",
+      "google/gemini-2.5-flash-lite",
+      "google/gemini-2.5-flash",
+    ];
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 50000); // 50s timeout
+
+    let response: Response | null = null;
+    let lastStatus = 0;
+
+    for (const model of modelsToTry) {
+      console.log(`Trying model: ${model}`);
+      try {
+        const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
           { role: "system", content: systemPrompt },
           {
             role: "user",
