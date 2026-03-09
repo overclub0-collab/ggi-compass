@@ -1,0 +1,1 @@
+TRUNCATE TABLE furniture_analysis_cache;

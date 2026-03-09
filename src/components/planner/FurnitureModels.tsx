@@ -3,7 +3,7 @@ import { Edges, Text, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { PlacedFurniture } from '@/types/planner';
 import { ThreeEvent } from '@react-three/fiber';
-import { getCachedAnalysis, FurnitureAnalysis, TextureAnalysis, PartTextures } from '@/hooks/useFurnitureAnalysis';
+import { getCachedAnalysis, FurnitureAnalysis, TextureAnalysis, PartTextures, SectionLayout } from '@/hooks/useFurnitureAnalysis';
 
 const EDGE_COLOR = '#1a1a1a';
 const SELECTED_EDGE = '#0066cc';
@@ -1287,6 +1287,9 @@ function detectTypeFromKeywords(name: string, cat: string): string {
   // Pet furniture
   if (name.includes('반려') || name.includes('펫') || name.includes('pet') || name.includes('강아지') || name.includes('고양이') || name.includes('하우스') || cat.includes('반려') || cat.includes('pet')) return 'pet';
   
+  // Podium / lectern
+  if (name.includes('강연대') || name.includes('교탁') || name.includes('podium') || name.includes('lectern')) return 'podium';
+  
   // Lab bench
   if (name.includes('실험') || name.includes('lab') || name.includes('과학') || name.includes('약품') || cat.includes('lab')) return 'lab';
   
@@ -1306,7 +1309,7 @@ function detectTypeFromKeywords(name: string, cat: string): string {
   if (name.includes('선반') || name.includes('책장') || name.includes('shelf') || name.includes('진열') || name.includes('거치대') || cat.includes('shelf')) return 'shelf';
   
   // Desk / table / conference table / workstation (broad — last)
-  if (name.includes('책상') || name.includes('탁자') || name.includes('테이블') || name.includes('강연대') || name.includes('교탁') || name.includes('desk') || name.includes('table') || name.includes('작업대') || name.includes('워크') || name.includes('회의') || name.includes('conference') || name.includes('세미나') || cat.includes('desk') || cat.includes('table')) return 'desk';
+  if (name.includes('책상') || name.includes('탁자') || name.includes('테이블') || name.includes('desk') || name.includes('table') || name.includes('작업대') || name.includes('워크') || name.includes('회의') || name.includes('conference') || name.includes('세미나') || cat.includes('desk') || cat.includes('table')) return 'desk';
 
   return 'generic';
 }
@@ -1329,7 +1332,7 @@ function getModelFromAnalysis(analysis: FurnitureAnalysis, item: PlacedFurniture
   }
 
   // If keyword says specific structural types that AI might miss, prefer keyword
-  const structuralTypes = ['blackboard', 'bunkbed', 'pet', 'lab'];
+  const structuralTypes = ['blackboard', 'bunkbed', 'pet', 'lab', 'podium'];
   if (structuralTypes.includes(keywordType) && !structuralTypes.includes(aiType)) {
     return keywordType;
   }
@@ -1697,83 +1700,182 @@ function AIEnhancedStorage({ w, d, h, color, isSelected, analysis }: {
   const shelfCount = analysis.shelfCount || 3;
   const hasDrawer = analysis.hasDrawer ?? false;
   const drawerCount = analysis.drawerCount || 0;
-  const primaryMatFn = analysis.primaryMaterial === 'wood' ? woodMat : metalMat;
+  const primaryMatFn = analysis.primaryMaterial === 'wood' || analysis.primaryMaterial === 'melamine' || analysis.primaryMaterial === 'hpl' ? woodMat : metalMat;
   const panelThick = 0.018;
+  const sections = analysis.sections;
+  const grid = sections?.compartmentGrid;
+  const isGridLayout = sections?.layout === 'grid' && grid;
 
   return (
     <group>
       {/* Outer shell */}
       {(() => { usePartTexture('body'); return null; })()}
-      <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[w, h, d]} />
+      {/* Back panel */}
+      <mesh position={[0, h / 2, -(d / 2 - 0.004)]} castShadow>
+        <boxGeometry args={[w, h, 0.008]} />
+        {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
+      </mesh>
+      {/* Top */}
+      <mesh position={[0, h - panelThick / 2, 0]} castShadow>
+        <boxGeometry args={[w, panelThick, d]} />
         {primaryMatFn(colors.primary, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
       </mesh>
-      <mesh position={[0, h + 0.003, 0]}>
-        <boxGeometry args={[w + 0.004, 0.006, d + 0.004]} />
-        {(() => { usePartTexture('top'); return primaryMatFn(darken(colors.primary, 0.1), isSelected); })()}
+      {/* Bottom */}
+      <mesh position={[0, panelThick / 2, 0]} castShadow>
+        <boxGeometry args={[w, panelThick, d]} />
+        {primaryMatFn(colors.primary, isSelected)}
+      </mesh>
+      {/* Left side */}
+      <mesh position={[-(w / 2 - panelThick / 2), h / 2, 0]} castShadow>
+        <boxGeometry args={[panelThick, h, d]} />
+        {primaryMatFn(darken(colors.primary, 0.08), isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
+      </mesh>
+      {/* Right side */}
+      <mesh position={[(w / 2 - panelThick / 2), h / 2, 0]} castShadow>
+        <boxGeometry args={[panelThick, h, d]} />
+        {primaryMatFn(darken(colors.primary, 0.08), isSelected)}
       </mesh>
 
-      {/* Internal shelves */}
-      {hasShelf && Array.from({ length: shelfCount - 1 }, (_, i) => {
-        const y = (h / shelfCount) * (i + 1);
-        return (
-          <mesh key={`shelf-${i}`} position={[0, y, 0]}>
-            <boxGeometry args={[w - panelThick * 2, panelThick * 0.6, d - panelThick]} />
-            {(() => { usePartTexture('shelves'); return primaryMatFn(darken(colors.primary, 0.15), isSelected); })()}
-          </mesh>
-        );
-      })}
-
-      {/* Doors */}
-      {hasDoor && Array.from({ length: doorCount }, (_, i) => {
-        const doorW = (w - 0.01) / doorCount;
-        const cx = -(w / 2) + doorW * i + doorW / 2 + 0.005;
-        return (
-          <group key={`door-${i}`}>
-            <mesh position={[cx, h / 2, d / 2 + 0.002]}>
-              <boxGeometry args={[doorW - 0.008, h * 0.96, 0.003]} />
-              {(() => { usePartTexture('doors'); return primaryMatFn(lighten(colors.primary, 0.03), isSelected); })()}
-            </mesh>
-            <mesh position={[cx + doorW * 0.35, h / 2, d / 2 + 0.012]}>
-              <boxGeometry args={[0.012, 0.045, 0.01]} />
-              {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
-            </mesh>
-          </group>
-        );
-      })}
-
-      {/* Drawers */}
-      {hasDrawer && Array.from({ length: Math.min(drawerCount, 4) }, (_, i) => {
-        const drawerH = Math.min(0.12, h / (drawerCount + 1));
-        const yOff = drawerH * (i + 0.5) + 0.01 * i;
-        return (
-          <group key={`drawer-${i}`}>
-            <mesh position={[0, yOff, d / 2 + 0.002]}>
-              <boxGeometry args={[w * 0.95, drawerH - 0.01, 0.003]} />
-              {(() => { usePartTexture('drawers'); return primaryMatFn(lighten(colors.primary, 0.02), isSelected); })()}
-            </mesh>
-            <mesh position={[0, yOff, d / 2 + 0.012]}>
-              <boxGeometry args={[0.06, 0.012, 0.01]} />
-              {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
-            </mesh>
-          </group>
-        );
-      })}
+      {isGridLayout ? (
+        // Grid layout (lockers / cubby storage)
+        <>
+          {/* Vertical dividers */}
+          {Array.from({ length: grid!.cols - 1 }, (_, i) => {
+            const x = -(w / 2 - panelThick) + ((w - panelThick * 2) / grid!.cols) * (i + 1);
+            return (
+              <mesh key={`vd-${i}`} position={[x, h / 2, 0]}>
+                <boxGeometry args={[panelThick * 0.7, h - panelThick * 2, d - panelThick]} />
+                {primaryMatFn(darken(colors.primary, 0.06), isSelected)}
+              </mesh>
+            );
+          })}
+          {/* Horizontal dividers */}
+          {Array.from({ length: grid!.rows - 1 }, (_, i) => {
+            const y = panelThick + ((h - panelThick * 2) / grid!.rows) * (i + 1);
+            return (
+              <mesh key={`hd-${i}`} position={[0, y, 0]}>
+                <boxGeometry args={[w - panelThick * 2, panelThick * 0.6, d - panelThick]} />
+                {primaryMatFn(darken(colors.primary, 0.04), isSelected)}
+              </mesh>
+            );
+          })}
+          {/* Individual compartment doors */}
+          {hasDoor && Array.from({ length: grid!.cols }, (_, ci) => {
+            const cellW = (w - panelThick * 2) / grid!.cols;
+            const cx = -(w / 2 - panelThick) + cellW * ci + cellW / 2;
+            return Array.from({ length: grid!.rows }, (_, ri) => {
+              const cellH = (h - panelThick * 2) / grid!.rows;
+              const cy = panelThick + cellH * ri + cellH / 2;
+              return (
+                <group key={`door-${ci}-${ri}`}>
+                  <mesh position={[cx, cy, d / 2 + 0.001]}>
+                    <boxGeometry args={[cellW - panelThick * 1.5, cellH - panelThick * 1.2, 0.003]} />
+                    {(() => { usePartTexture('doors'); return primaryMatFn(lighten(colors.primary, 0.03), isSelected); })()}
+                  </mesh>
+                  {/* Handle */}
+                  <mesh position={[cx, cy, d / 2 + 0.01]}>
+                    <boxGeometry args={[cellW * 0.15, 0.008, 0.008]} />
+                    {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
+                  </mesh>
+                  {/* Number label area */}
+                  {analysis.details?.includes('number-labels') && (
+                    <mesh position={[cx, cy + cellH * 0.3, d / 2 + 0.005]}>
+                      <planeGeometry args={[cellW * 0.3, cellH * 0.15]} />
+                      <meshStandardMaterial color="#f0f0e8" roughness={0.6} />
+                    </mesh>
+                  )}
+                </group>
+              );
+            });
+          })}
+          {/* Ventilation holes */}
+          {analysis.details?.includes('ventilation-holes') && Array.from({ length: grid!.cols }, (_, ci) => {
+            const cellW = (w - panelThick * 2) / grid!.cols;
+            const cx = -(w / 2 - panelThick) + cellW * ci + cellW / 2;
+            return Array.from({ length: grid!.rows }, (_, ri) => {
+              const cellH = (h - panelThick * 2) / grid!.rows;
+              const cy = panelThick + cellH * ri + cellH * 0.15;
+              return (
+                <mesh key={`vent-${ci}-${ri}`} position={[cx, cy, d / 2 + 0.004]}>
+                  <planeGeometry args={[cellW * 0.4, cellH * 0.08]} />
+                  <meshStandardMaterial color={darken(colors.primary, 0.15)} roughness={0.8} metalness={0.3} />
+                </mesh>
+              );
+            });
+          })}
+        </>
+      ) : (
+        <>
+          {/* Standard shelves */}
+          {hasShelf && Array.from({ length: shelfCount - 1 }, (_, i) => {
+            const y = (h / shelfCount) * (i + 1);
+            return (
+              <mesh key={`shelf-${i}`} position={[0, y, 0]}>
+                <boxGeometry args={[w - panelThick * 2, panelThick * 0.6, d - panelThick]} />
+                {(() => { usePartTexture('shelves'); return primaryMatFn(darken(colors.primary, 0.15), isSelected); })()}
+              </mesh>
+            );
+          })}
+          {/* Standard doors */}
+          {hasDoor && Array.from({ length: doorCount }, (_, i) => {
+            const dw = (w - 0.01) / doorCount;
+            const cx = -(w / 2) + dw * i + dw / 2 + 0.005;
+            return (
+              <group key={`door-${i}`}>
+                <mesh position={[cx, h / 2, d / 2 + 0.002]}>
+                  <boxGeometry args={[dw - 0.008, h * 0.96, 0.003]} />
+                  {(() => { usePartTexture('doors'); return primaryMatFn(lighten(colors.primary, 0.03), isSelected); })()}
+                </mesh>
+                <mesh position={[cx + dw * 0.35, h / 2, d / 2 + 0.012]}>
+                  <boxGeometry args={[0.012, 0.045, 0.01]} />
+                  {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
+                </mesh>
+              </group>
+            );
+          })}
+          {/* Drawers */}
+          {hasDrawer && Array.from({ length: Math.min(drawerCount, 4) }, (_, i) => {
+            const drH = Math.min(0.12, h / (drawerCount + 1));
+            const yOff = drH * (i + 0.5) + 0.01 * i;
+            return (
+              <group key={`drawer-${i}`}>
+                <mesh position={[0, yOff, d / 2 + 0.002]}>
+                  <boxGeometry args={[w * 0.95, drH - 0.01, 0.003]} />
+                  {(() => { usePartTexture('drawers'); return primaryMatFn(lighten(colors.primary, 0.02), isSelected); })()}
+                </mesh>
+                <mesh position={[0, yOff, d / 2 + 0.012]}>
+                  <boxGeometry args={[0.06, 0.012, 0.01]} />
+                  {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
+                </mesh>
+              </group>
+            );
+          })}
+        </>
+      )}
 
       {/* Base feet */}
       {(() => { usePartTexture('legs'); return null; })()}
-      {[
-        [-(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
-        [(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
-        [-(w / 2 - 0.03), 0, (d / 2 - 0.03)],
-        [(w / 2 - 0.03), 0, (d / 2 - 0.03)],
-      ].map(([fx, , fz], i) => (
-        <mesh key={`foot-${i}`} position={[fx, 0.006, fz]}>
-          <cylinderGeometry args={[0.012, 0.015, 0.012, 8]} />
-          <meshStandardMaterial color="#333" roughness={0.7} metalness={0.5} />
+      {analysis.details?.includes('adjustable-feet') || analysis.details?.includes('casters') ? (
+        [
+          [-(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
+          [(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
+          [-(w / 2 - 0.03), 0, (d / 2 - 0.03)],
+          [(w / 2 - 0.03), 0, (d / 2 - 0.03)],
+        ].map(([fx, , fz], i) => (
+          <mesh key={`foot-${i}`} position={[fx, 0.006, fz]}>
+            <cylinderGeometry args={[0.012, 0.015, 0.012, 8]} />
+            <meshStandardMaterial color="#333" roughness={0.7} metalness={0.5} />
+          </mesh>
+        ))
+      ) : (
+        // Plinth base
+        <mesh position={[0, 0.015, 0]}>
+          <boxGeometry args={[w - 0.01, 0.03, d - 0.02]} />
+          {primaryMatFn(darken(colors.primary, 0.12), isSelected)}
         </mesh>
-      ))}
+      )}
     </group>
   );
 }
@@ -1983,25 +2085,33 @@ function AIEnhancedBlackboard({ w, d, h, color, isSelected, analysis }: {
   const colors = getColorsFromAnalysis(analysis, color);
   const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
   const panelThick = 0.02;
-  const primaryMatFn = analysis.primaryMaterial === 'metal' ? metalMat : woodMat;
+  const primaryMatFn = analysis.primaryMaterial === 'metal' ? metalMat :
+    (analysis.primaryMaterial === 'melamine' || analysis.primaryMaterial === 'hpl') ? woodMat : woodMat;
   
   const hasShelf = analysis.hasShelf ?? true;
   const shelfCount = analysis.shelfCount || 2;
   const hasDoor = analysis.hasDoor ?? true;
   const doorCount = analysis.doorCount || 2;
   const details = analysis.details || [];
+  const sections = analysis.sections;
   const hasUpperShelves = hasShelf || details.includes('upper-shelf') || details.includes('compartments');
   
-  const lowerH = h * 0.28;
-  const boardH = h * 0.42;
-  const upperH = h * 0.22;
-  const fillerH = h * 0.06;
-  const sideW = w * 0.12;
+  // Use AI-detected section ratios or fallback
+  const lowerH = h * (sections?.bottomRatio || 0.28);
+  const topFillerRatio = 0.04;
+  const fillerH = h * topFillerRatio;
+  const remainH = h - lowerH - fillerH;
+  const boardRatio = sections?.middleRatio || 0.55;
+  const boardH = remainH * boardRatio;
+  const upperH = remainH * (1 - boardRatio);
+  const sideW = w * (sections?.leftSideRatio || 0.12);
   const boardAreaW = w - sideW * 2;
+  const upperCols = sections?.columns || 4;
+  const upperRows = sections?.rows || (shelfCount > 0 ? shelfCount : 2);
 
   return (
     <group>
-      {/* 하부장 */}
+      {/* 하부장 본체 */}
       <mesh position={[0, lowerH / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[w, lowerH, d]} />
         {primaryMatFn(colors.primary, isSelected)}
@@ -2017,6 +2127,7 @@ function AIEnhancedBlackboard({ w, d, h, color, isSelected, analysis }: {
               <boxGeometry args={[dw - 0.008, lowerH - 0.02, 0.003]} />
               {primaryMatFn(lighten(colors.primary, 0.02), isSelected)}
             </mesh>
+            {/* Handle */}
             <mesh position={[cx + dw * 0.35, lowerH / 2, d / 2 + 0.012]} rotation={[Math.PI / 2, 0, 0]}>
               <cylinderGeometry args={[0.005, 0.005, 0.04, 8]} />
               <meshStandardMaterial color={colors.secondary} roughness={0.2} metalness={0.95} />
@@ -2025,78 +2136,102 @@ function AIEnhancedBlackboard({ w, d, h, color, isSelected, analysis }: {
         );
       })}
 
-      {/* 양 사이드 장 */}
+      {/* 양 사이드 장 (수납 컬럼) */}
       {[-1, 1].map((side) => {
         const sx = side * (w / 2 - sideW / 2);
         const sideFullH = boardH + upperH;
         const sideY = lowerH + sideFullH / 2;
+        const sideShelves = Math.max(2, Math.round(sideFullH / 0.35));
         return (
           <group key={`side-${side}`}>
+            {/* Side cabinet body */}
             <mesh position={[sx, sideY, 0]} castShadow>
               <boxGeometry args={[sideW, sideFullH, d]} />
               {primaryMatFn(colors.primary, isSelected)}
               <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
             </mesh>
-            {Array.from({ length: 3 }, (_, i) => (
-              <mesh key={`ss-${i}`} position={[sx, lowerH + (sideFullH / 4) * (i + 1), 0]}>
+            {/* Side shelves */}
+            {Array.from({ length: sideShelves - 1 }, (_, i) => (
+              <mesh key={`ss-${i}`} position={[sx, lowerH + (sideFullH / sideShelves) * (i + 1), 0]}>
                 <boxGeometry args={[sideW - panelThick * 2, panelThick * 0.5, d - panelThick]} />
                 {primaryMatFn(darken(colors.primary, 0.08), isSelected)}
               </mesh>
             ))}
+            {/* Open front visible depth */}
+            <mesh position={[sx, sideY, d / 2 - panelThick / 2]}>
+              <boxGeometry args={[sideW, sideFullH, panelThick * 0.3]} />
+              {primaryMatFn(darken(colors.primary, 0.03), isSelected)}
+            </mesh>
           </group>
         );
       })}
 
-      {/* 화이트보드/칠판 */}
+      {/* 화이트보드/칠판 영역 */}
       <mesh position={[0, lowerH + boardH / 2, -(d / 2 - panelThick / 2)]} castShadow>
         <boxGeometry args={[boardAreaW - 0.04, boardH - 0.04, panelThick]} />
-        <meshStandardMaterial color="#f5f3ee" roughness={0.15} metalness={0.08} envMapIntensity={0.8} />
+        <meshStandardMaterial color="#f5f3ee" roughness={0.12} metalness={0.08} envMapIntensity={0.8} />
       </mesh>
-      {/* 보드 프레임 */}
+      {/* 보드 프레임 (상) */}
       <mesh position={[0, lowerH + boardH, -(d / 2 - panelThick / 2)]}>
-        <boxGeometry args={[boardAreaW, 0.03, panelThick + 0.01]} />
+        <boxGeometry args={[boardAreaW, 0.025, panelThick + 0.008]} />
         {primaryMatFn(darken(colors.primary, 0.12), isSelected)}
       </mesh>
-      <mesh position={[0, lowerH + 0.015, -(d / 2 - panelThick / 2)]}>
-        <boxGeometry args={[boardAreaW, 0.03, panelThick + 0.01]} />
+      {/* 보드 프레임 (하) */}
+      <mesh position={[0, lowerH + 0.012, -(d / 2 - panelThick / 2)]}>
+        <boxGeometry args={[boardAreaW, 0.025, panelThick + 0.008]} />
         {primaryMatFn(darken(colors.primary, 0.12), isSelected)}
       </mesh>
-      <mesh position={[0, lowerH + 0.012, -(d / 2 - 0.04)]}>
-        <boxGeometry args={[boardAreaW * 0.85, 0.015, 0.06]} />
-        {primaryMatFn(darken(colors.primary, 0.1), isSelected)}
-      </mesh>
+      {/* 보드 좌우 프레임 */}
+      {[-1, 1].map(side => (
+        <mesh key={`bf-${side}`} position={[side * (boardAreaW / 2 - 0.012), lowerH + boardH / 2, -(d / 2 - panelThick / 2)]}>
+          <boxGeometry args={[0.025, boardH, panelThick + 0.008]} />
+          {primaryMatFn(darken(colors.primary, 0.12), isSelected)}
+        </mesh>
+      ))}
+      {/* 분필/마커 받이 */}
+      {(details.includes('marker-tray') || details.includes('chalk-tray')) && (
+        <mesh position={[0, lowerH + 0.01, -(d / 2 - 0.04)]}>
+          <boxGeometry args={[boardAreaW * 0.85, 0.012, 0.06]} />
+          {primaryMatFn(darken(colors.primary, 0.1), isSelected)}
+        </mesh>
+      )}
 
-      {/* 상부 선반장 */}
+      {/* 상부 선반장 — 칸막이 포함 */}
       {hasUpperShelves && (
         <>
+          {/* Back panel */}
           <mesh position={[0, lowerH + boardH + upperH / 2, -(d / 2 - panelThick / 2)]}>
             <boxGeometry args={[boardAreaW, upperH, panelThick]} />
             {primaryMatFn(lighten(colors.primary, 0.04), isSelected)}
           </mesh>
-          {Array.from({ length: Math.max(1, Math.min(shelfCount - 1, 2)) }, (_, i) => (
-            <mesh key={`us-${i}`} position={[0, lowerH + boardH + upperH * ((i + 1) / (shelfCount || 2)), 0]}>
-              <boxGeometry args={[boardAreaW - 0.02, panelThick, d]} />
-              {primaryMatFn(colors.primary, isSelected)}
-            </mesh>
-          ))}
-          {Array.from({ length: 3 }, (_, i) => (
-            <mesh key={`ud-${i}`} position={[-(boardAreaW / 2) + (boardAreaW / 4) * (i + 1), lowerH + boardH + upperH / 2, 0]}>
-              <boxGeometry args={[panelThick * 0.6, upperH, d - panelThick]} />
-              {primaryMatFn(darken(colors.primary, 0.06), isSelected)}
-            </mesh>
-          ))}
+          {/* Top cap */}
           <mesh position={[0, lowerH + boardH + upperH, 0]}>
             <boxGeometry args={[boardAreaW, panelThick, d]} />
             {primaryMatFn(colors.primary, isSelected)}
           </mesh>
+          {/* Bottom separator */}
           <mesh position={[0, lowerH + boardH, 0]}>
             <boxGeometry args={[boardAreaW, panelThick, d]} />
             {primaryMatFn(colors.primary, isSelected)}
           </mesh>
+          {/* Horizontal shelves in upper area */}
+          {Array.from({ length: Math.max(0, upperRows - 1) }, (_, i) => (
+            <mesh key={`us-${i}`} position={[0, lowerH + boardH + upperH * ((i + 1) / upperRows), 0]}>
+              <boxGeometry args={[boardAreaW - 0.02, panelThick * 0.8, d]} />
+              {primaryMatFn(colors.primary, isSelected)}
+            </mesh>
+          ))}
+          {/* Vertical dividers in upper area */}
+          {Array.from({ length: Math.max(0, upperCols - 1) }, (_, i) => (
+            <mesh key={`ud-${i}`} position={[-(boardAreaW / 2) + (boardAreaW / upperCols) * (i + 1), lowerH + boardH + upperH / 2, 0]}>
+              <boxGeometry args={[panelThick * 0.6, upperH - panelThick, d - panelThick]} />
+              {primaryMatFn(darken(colors.primary, 0.06), isSelected)}
+            </mesh>
+          ))}
         </>
       )}
 
-      {/* 상부 마감 휠라 */}
+      {/* 상부 마감 필라 */}
       <mesh position={[0, h - fillerH / 2, 0]} castShadow>
         <boxGeometry args={[w + 0.01, fillerH, d + 0.005]} />
         {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
@@ -2105,7 +2240,6 @@ function AIEnhancedBlackboard({ w, d, h, color, isSelected, analysis }: {
     </group>
   );
 }
-
 // ========== AI-enhanced Bunk Bed ==========
 function AIEnhancedBunkBed({ w, d, h, color, isSelected, analysis }: {
   w: number; d: number; h: number; color: string; isSelected: boolean; analysis: FurnitureAnalysis;
@@ -2442,6 +2576,8 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
           return <AIEnhancedBunkBed {...props} />;
         case 'pet':
           return <AIEnhancedPet {...props} />;
+        case 'podium':
+          return <AIEnhancedDesk {...props} />; // Podium uses enhanced desk model
         default:
           return <AIEnhancedGeneric {...props} />;
       }

@@ -37,6 +37,20 @@ export interface PartTextures {
   accent?: TextureAnalysis;    // 악센트 부분
 }
 
+export interface SectionLayout {
+  layout: 'single' | 'top-bottom' | 'left-center-right' | 'grid' | 'complex';
+  bottomRatio?: number;
+  middleRatio?: number;
+  topRatio?: number;
+  leftSideRatio?: number;
+  columns?: number;
+  rows?: number;
+  compartmentGrid?: { cols: number; rows: number };
+  hasOpenFront?: boolean;
+  hasBoardArea?: boolean;
+  boardPosition?: 'center' | 'top' | 'back';
+}
+
 export interface FurnitureAnalysis {
   furnitureType: string;
   shape: string;
@@ -64,6 +78,7 @@ export interface FurnitureAnalysis {
     heightToWidthRatio: number;
     seatHeightRatio?: number;
   };
+  sections?: SectionLayout;
   details: string[];
   texture?: TextureAnalysis;
   partTextures?: PartTextures;
