@@ -1697,83 +1697,182 @@ function AIEnhancedStorage({ w, d, h, color, isSelected, analysis }: {
   const shelfCount = analysis.shelfCount || 3;
   const hasDrawer = analysis.hasDrawer ?? false;
   const drawerCount = analysis.drawerCount || 0;
-  const primaryMatFn = analysis.primaryMaterial === 'wood' ? woodMat : metalMat;
+  const primaryMatFn = analysis.primaryMaterial === 'wood' || analysis.primaryMaterial === 'melamine' || analysis.primaryMaterial === 'hpl' ? woodMat : metalMat;
   const panelThick = 0.018;
+  const sections = analysis.sections;
+  const grid = sections?.compartmentGrid;
+  const isGridLayout = sections?.layout === 'grid' && grid;
 
   return (
     <group>
       {/* Outer shell */}
       {(() => { usePartTexture('body'); return null; })()}
-      <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[w, h, d]} />
+      {/* Back panel */}
+      <mesh position={[0, h / 2, -(d / 2 - 0.004)]} castShadow>
+        <boxGeometry args={[w, h, 0.008]} />
+        {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
+      </mesh>
+      {/* Top */}
+      <mesh position={[0, h - panelThick / 2, 0]} castShadow>
+        <boxGeometry args={[w, panelThick, d]} />
         {primaryMatFn(colors.primary, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
       </mesh>
-      <mesh position={[0, h + 0.003, 0]}>
-        <boxGeometry args={[w + 0.004, 0.006, d + 0.004]} />
-        {(() => { usePartTexture('top'); return primaryMatFn(darken(colors.primary, 0.1), isSelected); })()}
+      {/* Bottom */}
+      <mesh position={[0, panelThick / 2, 0]} castShadow>
+        <boxGeometry args={[w, panelThick, d]} />
+        {primaryMatFn(colors.primary, isSelected)}
+      </mesh>
+      {/* Left side */}
+      <mesh position={[-(w / 2 - panelThick / 2), h / 2, 0]} castShadow>
+        <boxGeometry args={[panelThick, h, d]} />
+        {primaryMatFn(darken(colors.primary, 0.08), isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
+      </mesh>
+      {/* Right side */}
+      <mesh position={[(w / 2 - panelThick / 2), h / 2, 0]} castShadow>
+        <boxGeometry args={[panelThick, h, d]} />
+        {primaryMatFn(darken(colors.primary, 0.08), isSelected)}
       </mesh>
 
-      {/* Internal shelves */}
-      {hasShelf && Array.from({ length: shelfCount - 1 }, (_, i) => {
-        const y = (h / shelfCount) * (i + 1);
-        return (
-          <mesh key={`shelf-${i}`} position={[0, y, 0]}>
-            <boxGeometry args={[w - panelThick * 2, panelThick * 0.6, d - panelThick]} />
-            {(() => { usePartTexture('shelves'); return primaryMatFn(darken(colors.primary, 0.15), isSelected); })()}
-          </mesh>
-        );
-      })}
-
-      {/* Doors */}
-      {hasDoor && Array.from({ length: doorCount }, (_, i) => {
-        const doorW = (w - 0.01) / doorCount;
-        const cx = -(w / 2) + doorW * i + doorW / 2 + 0.005;
-        return (
-          <group key={`door-${i}`}>
-            <mesh position={[cx, h / 2, d / 2 + 0.002]}>
-              <boxGeometry args={[doorW - 0.008, h * 0.96, 0.003]} />
-              {(() => { usePartTexture('doors'); return primaryMatFn(lighten(colors.primary, 0.03), isSelected); })()}
-            </mesh>
-            <mesh position={[cx + doorW * 0.35, h / 2, d / 2 + 0.012]}>
-              <boxGeometry args={[0.012, 0.045, 0.01]} />
-              {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
-            </mesh>
-          </group>
-        );
-      })}
-
-      {/* Drawers */}
-      {hasDrawer && Array.from({ length: Math.min(drawerCount, 4) }, (_, i) => {
-        const drawerH = Math.min(0.12, h / (drawerCount + 1));
-        const yOff = drawerH * (i + 0.5) + 0.01 * i;
-        return (
-          <group key={`drawer-${i}`}>
-            <mesh position={[0, yOff, d / 2 + 0.002]}>
-              <boxGeometry args={[w * 0.95, drawerH - 0.01, 0.003]} />
-              {(() => { usePartTexture('drawers'); return primaryMatFn(lighten(colors.primary, 0.02), isSelected); })()}
-            </mesh>
-            <mesh position={[0, yOff, d / 2 + 0.012]}>
-              <boxGeometry args={[0.06, 0.012, 0.01]} />
-              {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
-            </mesh>
-          </group>
-        );
-      })}
+      {isGridLayout ? (
+        // Grid layout (lockers / cubby storage)
+        <>
+          {/* Vertical dividers */}
+          {Array.from({ length: grid!.cols - 1 }, (_, i) => {
+            const x = -(w / 2 - panelThick) + ((w - panelThick * 2) / grid!.cols) * (i + 1);
+            return (
+              <mesh key={`vd-${i}`} position={[x, h / 2, 0]}>
+                <boxGeometry args={[panelThick * 0.7, h - panelThick * 2, d - panelThick]} />
+                {primaryMatFn(darken(colors.primary, 0.06), isSelected)}
+              </mesh>
+            );
+          })}
+          {/* Horizontal dividers */}
+          {Array.from({ length: grid!.rows - 1 }, (_, i) => {
+            const y = panelThick + ((h - panelThick * 2) / grid!.rows) * (i + 1);
+            return (
+              <mesh key={`hd-${i}`} position={[0, y, 0]}>
+                <boxGeometry args={[w - panelThick * 2, panelThick * 0.6, d - panelThick]} />
+                {primaryMatFn(darken(colors.primary, 0.04), isSelected)}
+              </mesh>
+            );
+          })}
+          {/* Individual compartment doors */}
+          {hasDoor && Array.from({ length: grid!.cols }, (_, ci) => {
+            const cellW = (w - panelThick * 2) / grid!.cols;
+            const cx = -(w / 2 - panelThick) + cellW * ci + cellW / 2;
+            return Array.from({ length: grid!.rows }, (_, ri) => {
+              const cellH = (h - panelThick * 2) / grid!.rows;
+              const cy = panelThick + cellH * ri + cellH / 2;
+              return (
+                <group key={`door-${ci}-${ri}`}>
+                  <mesh position={[cx, cy, d / 2 + 0.001]}>
+                    <boxGeometry args={[cellW - panelThick * 1.5, cellH - panelThick * 1.2, 0.003]} />
+                    {(() => { usePartTexture('doors'); return primaryMatFn(lighten(colors.primary, 0.03), isSelected); })()}
+                  </mesh>
+                  {/* Handle */}
+                  <mesh position={[cx, cy, d / 2 + 0.01]}>
+                    <boxGeometry args={[cellW * 0.15, 0.008, 0.008]} />
+                    {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
+                  </mesh>
+                  {/* Number label area */}
+                  {analysis.details?.includes('number-labels') && (
+                    <mesh position={[cx, cy + cellH * 0.3, d / 2 + 0.005]}>
+                      <planeGeometry args={[cellW * 0.3, cellH * 0.15]} />
+                      <meshStandardMaterial color="#f0f0e8" roughness={0.6} />
+                    </mesh>
+                  )}
+                </group>
+              );
+            });
+          })}
+          {/* Ventilation holes */}
+          {analysis.details?.includes('ventilation-holes') && Array.from({ length: grid!.cols }, (_, ci) => {
+            const cellW = (w - panelThick * 2) / grid!.cols;
+            const cx = -(w / 2 - panelThick) + cellW * ci + cellW / 2;
+            return Array.from({ length: grid!.rows }, (_, ri) => {
+              const cellH = (h - panelThick * 2) / grid!.rows;
+              const cy = panelThick + cellH * ri + cellH * 0.15;
+              return (
+                <mesh key={`vent-${ci}-${ri}`} position={[cx, cy, d / 2 + 0.004]}>
+                  <planeGeometry args={[cellW * 0.4, cellH * 0.08]} />
+                  <meshStandardMaterial color={darken(colors.primary, 0.15)} roughness={0.8} metalness={0.3} />
+                </mesh>
+              );
+            });
+          })}
+        </>
+      ) : (
+        <>
+          {/* Standard shelves */}
+          {hasShelf && Array.from({ length: shelfCount - 1 }, (_, i) => {
+            const y = (h / shelfCount) * (i + 1);
+            return (
+              <mesh key={`shelf-${i}`} position={[0, y, 0]}>
+                <boxGeometry args={[w - panelThick * 2, panelThick * 0.6, d - panelThick]} />
+                {(() => { usePartTexture('shelves'); return primaryMatFn(darken(colors.primary, 0.15), isSelected); })()}
+              </mesh>
+            );
+          })}
+          {/* Standard doors */}
+          {hasDoor && Array.from({ length: doorCount }, (_, i) => {
+            const dw = (w - 0.01) / doorCount;
+            const cx = -(w / 2) + dw * i + dw / 2 + 0.005;
+            return (
+              <group key={`door-${i}`}>
+                <mesh position={[cx, h / 2, d / 2 + 0.002]}>
+                  <boxGeometry args={[dw - 0.008, h * 0.96, 0.003]} />
+                  {(() => { usePartTexture('doors'); return primaryMatFn(lighten(colors.primary, 0.03), isSelected); })()}
+                </mesh>
+                <mesh position={[cx + dw * 0.35, h / 2, d / 2 + 0.012]}>
+                  <boxGeometry args={[0.012, 0.045, 0.01]} />
+                  {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
+                </mesh>
+              </group>
+            );
+          })}
+          {/* Drawers */}
+          {hasDrawer && Array.from({ length: Math.min(drawerCount, 4) }, (_, i) => {
+            const drH = Math.min(0.12, h / (drawerCount + 1));
+            const yOff = drH * (i + 0.5) + 0.01 * i;
+            return (
+              <group key={`drawer-${i}`}>
+                <mesh position={[0, yOff, d / 2 + 0.002]}>
+                  <boxGeometry args={[w * 0.95, drH - 0.01, 0.003]} />
+                  {(() => { usePartTexture('drawers'); return primaryMatFn(lighten(colors.primary, 0.02), isSelected); })()}
+                </mesh>
+                <mesh position={[0, yOff, d / 2 + 0.012]}>
+                  <boxGeometry args={[0.06, 0.012, 0.01]} />
+                  {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
+                </mesh>
+              </group>
+            );
+          })}
+        </>
+      )}
 
       {/* Base feet */}
       {(() => { usePartTexture('legs'); return null; })()}
-      {[
-        [-(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
-        [(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
-        [-(w / 2 - 0.03), 0, (d / 2 - 0.03)],
-        [(w / 2 - 0.03), 0, (d / 2 - 0.03)],
-      ].map(([fx, , fz], i) => (
-        <mesh key={`foot-${i}`} position={[fx, 0.006, fz]}>
-          <cylinderGeometry args={[0.012, 0.015, 0.012, 8]} />
-          <meshStandardMaterial color="#333" roughness={0.7} metalness={0.5} />
+      {analysis.details?.includes('adjustable-feet') || analysis.details?.includes('casters') ? (
+        [
+          [-(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
+          [(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
+          [-(w / 2 - 0.03), 0, (d / 2 - 0.03)],
+          [(w / 2 - 0.03), 0, (d / 2 - 0.03)],
+        ].map(([fx, , fz], i) => (
+          <mesh key={`foot-${i}`} position={[fx, 0.006, fz]}>
+            <cylinderGeometry args={[0.012, 0.015, 0.012, 8]} />
+            <meshStandardMaterial color="#333" roughness={0.7} metalness={0.5} />
+          </mesh>
+        ))
+      ) : (
+        // Plinth base
+        <mesh position={[0, 0.015, 0]}>
+          <boxGeometry args={[w - 0.01, 0.03, d - 0.02]} />
+          {primaryMatFn(darken(colors.primary, 0.12), isSelected)}
         </mesh>
-      ))}
+      )}
     </group>
   );
 }
