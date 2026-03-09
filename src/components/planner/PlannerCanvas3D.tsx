@@ -564,7 +564,8 @@ function Room({ dimensions, archConfig }: { dimensions: RoomDimensions; archConf
         const { position, rotation } = getWallPosition(win.wall, win.positionRatio, wallH * 0.55);
         return (
           <WindowElement key={`win-${idx}`} position={position} rotation={rotation}
-            width={win.width} height={win.height} type={win.type} />
+            width={win.width} height={win.height} type={win.type}
+            frameColor={win.frameColor || 'white'} curtain={win.curtain || 'none'} curtainColor={win.curtainColor || '#f5f0e8'} />
         );
       })}
 
