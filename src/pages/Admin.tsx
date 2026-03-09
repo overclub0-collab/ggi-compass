@@ -1044,6 +1044,8 @@ const Admin = () => {
             <AdminHomepageManager />
           ) : activeTab === 'company' ? (
             <AdminCompanyInfo />
+          ) : activeTab === 'ai-analysis' ? (
+            <AdminFurnitureAnalysis />
           ) : null}
         </main>
       </div>
