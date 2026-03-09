@@ -658,6 +658,7 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
         />
       </EffectComposer>
 
+      <KeyboardCameraControls />
       <OrbitControls
         target={[w / 2, 0.5, d / 2]}
         minPolarAngle={0.05}
