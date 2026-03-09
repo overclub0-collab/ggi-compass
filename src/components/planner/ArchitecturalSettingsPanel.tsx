@@ -14,6 +14,9 @@ export interface WindowConfig {
   height: number;
   wall: 'back' | 'left' | 'right' | 'front';
   positionRatio: number;
+  frameColor?: 'white' | 'wood' | 'black' | 'silver';
+  curtain?: 'none' | 'sheer' | 'blackout' | 'roman' | 'venetian';
+  curtainColor?: string;
 }
 
 export interface DoorConfig {
