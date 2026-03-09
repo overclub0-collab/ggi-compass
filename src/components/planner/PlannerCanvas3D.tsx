@@ -117,17 +117,21 @@ function CurtainRod({ width, yPos }: { width: number; yPos: number }) {
   );
 }
 
-function SheerCurtain({ width, height, color }: { width: number; height: number; color: string }) {
+function SheerCurtain({ width, height, color, openRatio = 0 }: { width: number; height: number; color: string; openRatio?: number }) {
   const curtainH = height + 0.15;
-  const panelW = width * 0.5;
-  const leftGeom = useDrapedGeometry(panelW, curtainH, 48, 0.018, 14);
-  const rightGeom = useDrapedGeometry(panelW, curtainH, 48, 0.018, 14);
+  // openRatio: 0=closed (panels cover window), 1=open (panels bunched at sides)
+  const closedPanelW = width * 0.5;
+  const panelW = closedPanelW * (1 - openRatio * 0.7); // shrink width when open
+  const panelOffset = width * 0.27 + openRatio * (width * 0.22); // move outward when open
+  const foldFreq = 14 + openRatio * 20; // more folds when bunched
+  const foldDepth = 0.018 + openRatio * 0.025;
+  const leftGeom = useDrapedGeometry(panelW, curtainH, 48, foldDepth, foldFreq);
+  const rightGeom = useDrapedGeometry(panelW, curtainH, 48, foldDepth, foldFreq);
   const baseColor = new THREE.Color(color);
 
   return (
     <group position={[0, 0, 0.07]}>
-      {/* Left panel */}
-      <mesh geometry={leftGeom} position={[-width * 0.27, 0, 0]}>
+      <mesh geometry={leftGeom} position={[-panelOffset, 0, 0]}>
         <meshPhysicalMaterial
           color={baseColor} transparent opacity={0.28}
           roughness={0.98} metalness={0.0} side={THREE.DoubleSide}
@@ -135,8 +139,7 @@ function SheerCurtain({ width, height, color }: { width: number; height: number;
           sheen={0.3} sheenColor={baseColor.clone().multiplyScalar(1.2)}
         />
       </mesh>
-      {/* Right panel */}
-      <mesh geometry={rightGeom} position={[width * 0.27, 0, 0]}>
+      <mesh geometry={rightGeom} position={[panelOffset, 0, 0]}>
         <meshPhysicalMaterial
           color={baseColor} transparent opacity={0.28}
           roughness={0.98} metalness={0.0} side={THREE.DoubleSide}
@@ -144,9 +147,9 @@ function SheerCurtain({ width, height, color }: { width: number; height: number;
           sheen={0.3} sheenColor={baseColor.clone().multiplyScalar(1.2)}
         />
       </mesh>
-      {/* Tiebacks */}
-      {[-1, 1].map(side => (
-        <mesh key={side} position={[side * width * 0.42, -height * 0.15, 0.015]} rotation={[0, 0, side * 0.15]}>
+      {/* Tiebacks — visible when partially open */}
+      {openRatio > 0.3 && [-1, 1].map(side => (
+        <mesh key={side} position={[side * (panelOffset + panelW * 0.3), -height * 0.15, 0.015]} rotation={[0, 0, side * 0.15]}>
           <torusGeometry args={[0.03, 0.004, 6, 16, Math.PI]} />
           <meshStandardMaterial color={baseColor.clone().multiplyScalar(0.7)} roughness={0.8} />
         </mesh>
@@ -156,11 +159,15 @@ function SheerCurtain({ width, height, color }: { width: number; height: number;
   );
 }
 
-function BlackoutCurtain({ width, height, color }: { width: number; height: number; color: string }) {
+function BlackoutCurtain({ width, height, color, openRatio = 0 }: { width: number; height: number; color: string; openRatio?: number }) {
   const curtainH = height + 0.2;
-  const panelW = width * 0.55;
-  const leftGeom = useDrapedGeometry(panelW, curtainH, 50, 0.035, 10);
-  const rightGeom = useDrapedGeometry(panelW, curtainH, 50, 0.035, 10);
+  const closedPanelW = width * 0.55;
+  const panelW = closedPanelW * (1 - openRatio * 0.7);
+  const panelOffset = width * 0.28 + openRatio * (width * 0.22);
+  const foldFreq = 10 + openRatio * 18;
+  const foldDepth = 0.035 + openRatio * 0.03;
+  const leftGeom = useDrapedGeometry(panelW, curtainH, 50, foldDepth, foldFreq);
+  const rightGeom = useDrapedGeometry(panelW, curtainH, 50, foldDepth, foldFreq);
   const baseColor = new THREE.Color(color);
   const darkerColor = baseColor.clone().multiplyScalar(0.8);
 
@@ -168,15 +175,13 @@ function BlackoutCurtain({ width, height, color }: { width: number; height: numb
     <group position={[0, 0, 0.07]}>
       {[-1, 1].map((side, idx) => (
         <group key={side}>
-          {/* Outer (visible) layer */}
-          <mesh geometry={idx === 0 ? leftGeom : rightGeom} position={[side * width * 0.28, 0, 0]}>
+          <mesh geometry={idx === 0 ? leftGeom : rightGeom} position={[side * panelOffset, 0, 0]}>
             <meshStandardMaterial
               color={baseColor} roughness={0.88} metalness={0.02}
               side={THREE.DoubleSide}
             />
           </mesh>
-          {/* Inner lining — slightly lighter */}
-          <mesh geometry={idx === 0 ? leftGeom : rightGeom} position={[side * width * 0.28, 0, -0.008]}>
+          <mesh geometry={idx === 0 ? leftGeom : rightGeom} position={[side * panelOffset, 0, -0.008]}>
             <meshStandardMaterial
               color={darkerColor} roughness={0.95} metalness={0.0}
               side={THREE.DoubleSide}
@@ -184,9 +189,8 @@ function BlackoutCurtain({ width, height, color }: { width: number; height: numb
           </mesh>
         </group>
       ))}
-      {/* Weighted hem at bottom */}
       {[-1, 1].map(side => (
-        <mesh key={`hem-${side}`} position={[side * width * 0.28, -curtainH / 2 + 0.01, 0]}>
+        <mesh key={`hem-${side}`} position={[side * panelOffset, -curtainH / 2 + 0.01, 0]}>
           <boxGeometry args={[panelW, 0.025, 0.012]} />
           <meshStandardMaterial color={darkerColor} roughness={0.9} />
         </mesh>
@@ -196,23 +200,24 @@ function BlackoutCurtain({ width, height, color }: { width: number; height: numb
   );
 }
 
-function RomanShade({ width, height, color }: { width: number; height: number; color: string }) {
+function RomanShade({ width, height, color, openRatio = 0 }: { width: number; height: number; color: string; openRatio?: number }) {
   const shadeW = width - 0.04;
-  const shadeH = height * 0.4;
-  const foldCount = 4;
+  // When open, shade pulls up: fewer visible folds, smaller height
+  const shadeH = height * (0.4 - openRatio * 0.3); // shrinks as it opens
+  const foldCount = Math.max(2, Math.round(4 * (1 - openRatio * 0.5)));
   const foldH = shadeH / foldCount;
   const baseColor = new THREE.Color(color);
   const shadowColor = baseColor.clone().multiplyScalar(0.78);
+  // Shade moves up when opened
+  const yOffset = height * 0.1 + openRatio * height * 0.25;
 
   return (
-    <group position={[0, height * 0.1, 0.055]}>
-      {/* Layered folds — each fold is a curved panel */}
+    <group position={[0, yOffset, 0.055]}>
       {Array.from({ length: foldCount }, (_, i) => {
         const yPos = shadeH / 2 - i * foldH - foldH / 2;
-        const depth = 0.008 + (i / foldCount) * 0.018; // deeper folds at bottom
+        const depth = 0.008 + (i / foldCount) * 0.018 + openRatio * 0.01;
         return (
           <group key={i} position={[0, yPos, 0]}>
-            {/* Main fold fabric */}
             <mesh>
               <boxGeometry args={[shadeW, foldH - 0.004, 0.004]} />
               <meshStandardMaterial
@@ -220,7 +225,6 @@ function RomanShade({ width, height, color }: { width: number; height: number; c
                 roughness={0.85} metalness={0.01} side={THREE.DoubleSide}
               />
             </mesh>
-            {/* Fold shadow crease */}
             <mesh position={[0, -foldH / 2 + 0.002, depth]}>
               <boxGeometry args={[shadeW - 0.01, 0.006, 0.006]} />
               <meshStandardMaterial color={shadowColor} roughness={0.9} />
@@ -228,17 +232,14 @@ function RomanShade({ width, height, color }: { width: number; height: number; c
           </group>
         );
       })}
-      {/* Top mounting bar */}
       <mesh position={[0, shadeH / 2 + 0.015, 0]}>
         <boxGeometry args={[shadeW + 0.02, 0.03, 0.025]} />
         <meshStandardMaterial color="#e0dbd5" roughness={0.5} metalness={0.05} />
       </mesh>
-      {/* Pull cord */}
       <mesh position={[shadeW / 2 - 0.03, -shadeH / 2 - 0.06, 0.01]}>
         <cylinderGeometry args={[0.002, 0.002, 0.12, 4]} />
         <meshStandardMaterial color="#d0c8b8" roughness={0.9} />
       </mesh>
-      {/* Cord handle */}
       <mesh position={[shadeW / 2 - 0.03, -shadeH / 2 - 0.13, 0.01]}>
         <sphereGeometry args={[0.008, 8, 8]} />
         <meshStandardMaterial color="#c0b8a8" roughness={0.6} metalness={0.1} />
@@ -247,22 +248,26 @@ function RomanShade({ width, height, color }: { width: number; height: number; c
   );
 }
 
-function VenetianBlinds({ width, height, color }: { width: number; height: number; color: string }) {
-  const slatCount = Math.floor(height / 0.045);
+function VenetianBlinds({ width, height, color, openRatio = 0 }: { width: number; height: number; color: string; openRatio?: number }) {
+  // When open, slats tilt flat and pull up
+  const visibleHeight = height * (1 - openRatio * 0.8);
+  const slatCount = Math.max(3, Math.floor(visibleHeight / 0.045));
   const slatW = width - 0.04;
   const baseColor = new THREE.Color(color);
+  const tiltAngle = 0.18 * (1 - openRatio); // slats go flat when open
+  const yStart = height / 2 - (height - visibleHeight); // pull up from bottom
 
   return (
-    <group position={[0, 0, 0.045]}>
+    <group position={[0, (height - visibleHeight) / 2, 0.045]}>
       {/* Top headrail */}
-      <mesh position={[0, height / 2 + 0.025, 0]}>
+      <mesh position={[0, yStart + 0.025, 0]}>
         <boxGeometry args={[slatW + 0.03, 0.045, 0.035]} />
         <meshStandardMaterial color="#e0dbd5" roughness={0.4} metalness={0.15} />
       </mesh>
-      {/* Slats with alternating tilt for realism */}
+      {/* Slats */}
       {Array.from({ length: slatCount }, (_, i) => {
-        const yPos = height / 2 - i * (height / slatCount) - 0.02;
-        const tilt = 0.18 + Math.sin(i * 0.5) * 0.04; // slight variation
+        const yPos = yStart - i * (visibleHeight / slatCount) - 0.02;
+        const tilt = tiltAngle + Math.sin(i * 0.5) * 0.04 * (1 - openRatio);
         return (
           <mesh key={i} position={[0, yPos, 0]} rotation={[tilt, 0, 0]}>
             <boxGeometry args={[slatW, 0.002, 0.024]} />
@@ -275,13 +280,13 @@ function VenetianBlinds({ width, height, color }: { width: number; height: numbe
       })}
       {/* Lift cords */}
       {[-0.35, 0, 0.35].map((xRatio, i) => (
-        <mesh key={i} position={[xRatio * slatW, 0, 0.002]}>
-          <cylinderGeometry args={[0.001, 0.001, height, 4]} />
+        <mesh key={i} position={[xRatio * slatW, (yStart - visibleHeight / 2), 0.002]}>
+          <cylinderGeometry args={[0.001, 0.001, visibleHeight, 4]} />
           <meshStandardMaterial color="#d5d0c5" roughness={0.9} transparent opacity={0.5} />
         </mesh>
       ))}
       {/* Bottom rail */}
-      <mesh position={[0, -height / 2 + 0.01, 0]}>
+      <mesh position={[0, yStart - visibleHeight + 0.01, 0]}>
         <boxGeometry args={[slatW, 0.015, 0.025]} />
         <meshStandardMaterial color="#d8d2c8" roughness={0.4} metalness={0.2} />
       </mesh>
@@ -291,10 +296,10 @@ function VenetianBlinds({ width, height, color }: { width: number; height: numbe
 
 // ===== Architectural Elements =====
 
-function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = 'double', frameColor = 'white', curtain = 'none', curtainColor = '#f5f0e8' }: {
+function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = 'double', frameColor = 'white', curtain = 'none', curtainColor = '#f5f0e8', curtainOpenRatio = 0 }: {
   position: [number, number, number]; rotation: [number, number, number];
   width?: number; height?: number; type?: string;
-  frameColor?: string; curtain?: string; curtainColor?: string;
+  frameColor?: string; curtain?: string; curtainColor?: string; curtainOpenRatio?: number;
 }) {
   const FRAME_COLORS: Record<string, { color: string; roughness: number; metalness: number }> = {
     'white': { color: '#e8e4db', roughness: 0.5, metalness: 0.05 },
@@ -388,10 +393,10 @@ function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = '
       <pointLight position={[0, 0, -0.5]} intensity={0.4} color="#fffbe6" distance={5} />
 
       {/* Curtains */}
-      {curtain === 'sheer' && <SheerCurtain width={width} height={height} color={curtainColor} />}
-      {curtain === 'blackout' && <BlackoutCurtain width={width} height={height} color={curtainColor} />}
-      {curtain === 'roman' && <RomanShade width={width} height={height} color={curtainColor} />}
-      {curtain === 'venetian' && <VenetianBlinds width={width} height={height} color={curtainColor} />}
+      {curtain === 'sheer' && <SheerCurtain width={width} height={height} color={curtainColor} openRatio={curtainOpenRatio} />}
+      {curtain === 'blackout' && <BlackoutCurtain width={width} height={height} color={curtainColor} openRatio={curtainOpenRatio} />}
+      {curtain === 'roman' && <RomanShade width={width} height={height} color={curtainColor} openRatio={curtainOpenRatio} />}
+      {curtain === 'venetian' && <VenetianBlinds width={width} height={height} color={curtainColor} openRatio={curtainOpenRatio} />}
     </group>
   );
 }
@@ -802,7 +807,7 @@ function Room({ dimensions, archConfig }: { dimensions: RoomDimensions; archConf
         return (
           <WindowElement key={`win-${idx}`} position={position} rotation={rotation}
             width={win.width} height={win.height} type={win.type}
-            frameColor={win.frameColor || 'white'} curtain={win.curtain || 'none'} curtainColor={win.curtainColor || '#f5f0e8'} />
+            frameColor={win.frameColor || 'white'} curtain={win.curtain || 'none'} curtainColor={win.curtainColor || '#f5f0e8'} curtainOpenRatio={win.curtainOpenRatio ?? 0} />
         );
       })}
 
