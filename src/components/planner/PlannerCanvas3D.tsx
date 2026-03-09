@@ -1,5 +1,5 @@
-import { useRef, useCallback } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { useRef, useCallback, useEffect } from 'react';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid, Text, SoftShadows, ContactShadows, Edges, Environment } from '@react-three/drei';
 import { EffectComposer, SSAO, Bloom } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
