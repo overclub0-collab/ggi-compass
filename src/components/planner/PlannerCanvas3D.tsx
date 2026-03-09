@@ -22,6 +22,8 @@ interface PlannerCanvas3DProps {
   onRightClickSelect?: (id: string) => void;
   architecturalConfig?: ArchitecturalConfig;
   hdriPreset?: HdriPresetType;
+  fpsMode?: boolean;
+  onExitFps?: () => void;
 }
 
 const EDGE_COLOR = '#2a2a2a';
@@ -549,13 +551,12 @@ function SnapshotHelper({ onCapture }: { onCapture: (fn: () => void) => void }) 
 }
 
 // ===== Keyboard Camera Controls (WASD + QE + RF) =====
-function KeyboardCameraControls() {
+function KeyboardCameraControls({ fpsMode }: { fpsMode?: boolean }) {
   const { camera } = useThree();
   const keys = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => {
-      // Don't capture if user is typing in an input
       if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
       keys.current.add(e.key.toLowerCase());
     };
@@ -572,10 +573,9 @@ function KeyboardCameraControls() {
 
   useFrame((_, delta) => {
     if (keys.current.size === 0) return;
-    const speed = 4 * delta;
+    const speed = (fpsMode ? 2.5 : 4) * delta;
     const rotSpeed = 1.5 * delta;
 
-    // Forward direction (camera's look direction projected on XZ plane)
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
     forward.y = 0;
@@ -584,25 +584,91 @@ function KeyboardCameraControls() {
     const right = new THREE.Vector3();
     right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
-    // WASD: pan camera position
     if (keys.current.has('w')) { camera.position.addScaledVector(forward, speed); }
     if (keys.current.has('s')) { camera.position.addScaledVector(forward, -speed); }
     if (keys.current.has('a')) { camera.position.addScaledVector(right, -speed); }
     if (keys.current.has('d')) { camera.position.addScaledVector(right, speed); }
 
-    // R/F: move up/down
-    if (keys.current.has('r')) { camera.position.y += speed; }
-    if (keys.current.has('f')) { camera.position.y = Math.max(0.2, camera.position.y - speed); }
-
-    // Q/E: rotate camera around Y axis
-    if (keys.current.has('q')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed); }
-    if (keys.current.has('e')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed); }
+    if (!fpsMode) {
+      if (keys.current.has('r')) { camera.position.y += speed; }
+      if (keys.current.has('f')) { camera.position.y = Math.max(0.2, camera.position.y - speed); }
+      if (keys.current.has('q')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed); }
+      if (keys.current.has('e')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed); }
+    }
   });
 
   return null;
 }
 
-function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig, hdriPreset, onCaptureReady }:
+// ===== FPS Camera Controls (PointerLock-like mouse look) =====
+function FPSCameraControls({ roomDimensions, onExitFps }: { roomDimensions: RoomDimensions; onExitFps?: () => void }) {
+  const { camera, gl } = useThree();
+  const isLocked = useRef(false);
+  const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'));
+  const EYE_HEIGHT = 1.6;
+
+  // Set initial FPS position
+  useEffect(() => {
+    const w = roomDimensions.width / 1000;
+    const d = roomDimensions.height / 1000;
+    camera.position.set(w / 2, EYE_HEIGHT, d - 1);
+    camera.rotation.set(0, Math.PI, 0);
+    euler.current.setFromQuaternion(camera.quaternion, 'YXZ');
+  }, []);
+
+  // Lock height in FPS mode
+  useFrame(() => {
+    camera.position.y = EYE_HEIGHT;
+  });
+
+  // Pointer lock for mouse look
+  useEffect(() => {
+    const canvas = gl.domElement;
+
+    const onClick = () => {
+      canvas.requestPointerLock();
+    };
+
+    const onLockChange = () => {
+      isLocked.current = document.pointerLockElement === canvas;
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isLocked.current) return;
+      const sensitivity = 0.002;
+      euler.current.y -= e.movementX * sensitivity;
+      euler.current.x -= e.movementY * sensitivity;
+      euler.current.x = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, euler.current.x));
+      camera.quaternion.setFromEuler(euler.current);
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isLocked.current) {
+        document.exitPointerLock();
+        onExitFps?.();
+      }
+    };
+
+    canvas.addEventListener('click', onClick);
+    document.addEventListener('pointerlockchange', onLockChange);
+    document.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      canvas.removeEventListener('click', onClick);
+      document.removeEventListener('pointerlockchange', onLockChange);
+      document.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('keydown', onKeyDown);
+      if (document.pointerLockElement === canvas) {
+        document.exitPointerLock();
+      }
+    };
+  }, [gl, camera, onExitFps]);
+
+  return null;
+}
+
+function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig, hdriPreset, onCaptureReady, fpsMode, onExitFps }:
   Omit<PlannerCanvas3DProps, 'scale' | 'architecturalConfig'> & { archConfig: ArchitecturalConfig; hdriPreset: HdriPresetType; onCaptureReady: (fn: () => void) => void }) {
   const w = roomDimensions.width / 1000;
   const d = roomDimensions.height / 1000;
@@ -712,17 +778,21 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
         />
       </EffectComposer>
 
-      <KeyboardCameraControls />
-      <OrbitControls
-        target={[w / 2, 0.5, d / 2]}
-        minPolarAngle={0.05}
-        maxPolarAngle={Math.PI * 0.95}
-        minDistance={0.5} maxDistance={30}
-        enableDamping dampingFactor={0.06}
-        enablePan panSpeed={0.8}
-        rotateSpeed={0.7}
-        zoomSpeed={1.2}
-      />
+      <KeyboardCameraControls fpsMode={fpsMode} />
+      {fpsMode ? (
+        <FPSCameraControls roomDimensions={roomDimensions} onExitFps={onExitFps} />
+      ) : (
+        <OrbitControls
+          target={[w / 2, 0.5, d / 2]}
+          minPolarAngle={0.05}
+          maxPolarAngle={Math.PI * 0.95}
+          minDistance={0.5} maxDistance={30}
+          enableDamping dampingFactor={0.06}
+          enablePan panSpeed={0.8}
+          rotateSpeed={0.7}
+          zoomSpeed={1.2}
+        />
+      )}
     </>
   );
 }
@@ -730,6 +800,7 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 export const PlannerCanvas3D = ({
   roomDimensions, placedFurniture, selectedId,
   onSelect, onRightClickSelect, architecturalConfig, hdriPreset = 'apartment',
+  fpsMode = false, onExitFps,
 }: PlannerCanvas3DProps) => {
   const captureRef = useRef<(() => void) | null>(null);
   const archConfig = architecturalConfig || DEFAULT_ARCHITECTURAL_CONFIG;
@@ -748,9 +819,11 @@ export const PlannerCanvas3D = ({
 
   return (
     <div className="flex-1 bg-muted/30 relative" onContextMenu={(e) => e.preventDefault()}>
-      {/* Tooltip — static, no animation */}
+      {/* Tooltip */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
-        WASD: 이동 | QE: 회전 | RF: 상하 | 마우스 드래그: 궤도 회전 | 좌클릭: 선택 | 우클릭: 정보 고정
+        {fpsMode
+          ? '🚶 1인칭 모드 | 클릭하여 마우스 잠금 | WASD: 이동 | ESC: 나가기'
+          : 'WASD: 이동 | QE: 회전 | RF: 상하 | 마우스 드래그: 궤도 회전 | 좌클릭: 선택 | 우클릭: 정보 고정'}
       </div>
 
       <Button
@@ -763,7 +836,7 @@ export const PlannerCanvas3D = ({
 
       <Canvas
         shadows
-        camera={{ position: [8, 6, 8], fov: 45 }}
+        camera={{ position: fpsMode ? [roomDimensions.width / 2000, 1.6, roomDimensions.height / 1000 - 1] : [8, 6, 8], fov: fpsMode ? 75 : 45 }}
         style={{ width: '100%', height: '100%' }}
         gl={{ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
         dpr={[1, 2]}
@@ -782,6 +855,8 @@ export const PlannerCanvas3D = ({
           archConfig={archConfig}
           hdriPreset={hdriPreset}
           onCaptureReady={handleCaptureReady}
+          fpsMode={fpsMode}
+          onExitFps={onExitFps}
         />
       </Canvas>
     </div>

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers, Sun } from 'lucide-react';
+import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers, Sun, Footprints } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { PlannerLeftPanel } from '@/components/planner/PlannerLeftPanel';
@@ -28,6 +28,7 @@ const SpacePlanner = () => {
   const [started, setStarted] = useState(false);
   const [consultationOpen, setConsultationOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [fpsMode, setFpsMode] = useState(false);
   const [, setDraggingFurniture] = useState<FurnitureItem | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [archConfig, setArchConfig] = useState<ArchitecturalConfig>(DEFAULT_ARCHITECTURAL_CONFIG);
@@ -121,6 +122,18 @@ const SpacePlanner = () => {
             </div>
           )}
 
+          {/* FPS mode toggle — 3D only */}
+          {viewMode === '3d' && (
+            <Button
+              variant="ghost" size="sm"
+              onClick={() => setFpsMode(prev => !prev)}
+              className={`h-7 px-2.5 text-xs font-bold gap-1 ${fpsMode ? 'bg-amber-500/30 text-amber-200' : 'text-white/60 bg-white/10'}`}
+            >
+              <Footprints className="h-3 w-3" />
+              {fpsMode ? '1인칭' : '워크스루'}
+            </Button>
+          )}
+
           {/* HDRI Environment Preset — 3D only */}
           {viewMode === '3d' && (
             <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2 py-0.5">
@@ -176,6 +189,8 @@ const SpacePlanner = () => {
             onRightClickSelect={handleRightClickSelect}
             architecturalConfig={archConfig}
             hdriPreset={hdriPreset}
+            fpsMode={fpsMode}
+            onExitFps={() => setFpsMode(false)}
           />
         )}
 
