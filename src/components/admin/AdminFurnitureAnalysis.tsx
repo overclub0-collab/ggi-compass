@@ -662,6 +662,261 @@ export default function AdminFurnitureAnalysis() {
                   placeholder="crossbar, rounded-edges, metal-frame..."
                 />
               </div>
+              {/* Part Textures */}
+              <div>
+                <Label className="text-xs font-bold mb-2 block">🎨 파트별 텍스처 프리셋</Label>
+                <p className="text-[10px] text-muted-foreground mb-3">
+                  가구의 각 부분에 서로 다른 소재/텍스처를 지정할 수 있습니다.
+                </p>
+                
+                {/* Quick add part buttons */}
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {Object.entries(PART_LABELS)
+                    .filter(([key]) => !((analysis as any).partTextures?.[key]))
+                    .map(([key, label]) => (
+                      <Button
+                        key={key}
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-[10px] px-2"
+                        onClick={() => {
+                          const pt = { ...((analysis as any).partTextures || {}) };
+                          pt[key] = { surfaceFinish: 'matte', roughnessEstimate: 0.5, metalnessEstimate: 0 };
+                          updateField('partTextures', pt);
+                        }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />{label}
+                      </Button>
+                    ))}
+                </div>
+
+                {/* Existing part textures */}
+                {(analysis as any).partTextures && Object.keys((analysis as any).partTextures).length > 0 && (
+                  <Accordion type="multiple" className="space-y-1">
+                    {Object.entries((analysis as any).partTextures).map(([partKey, partTex]: [string, any]) => (
+                      <AccordionItem key={partKey} value={partKey} className="border rounded-md px-3">
+                        <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{PART_LABELS[partKey] || partKey}</span>
+                            <Badge variant="secondary" className="text-[9px]">
+                              {partTex?.woodGrain ? '우드' : partTex?.metalFinish ? '금속' : partTex?.fabricPattern ? '패브릭' : partTex?.surfaceFinish || '?'}
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-3 space-y-3">
+                          {/* Preset quick select */}
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">프리셋 선택</Label>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {Object.entries(TEXTURE_PRESETS).map(([name, preset]) => (
+                                <Button
+                                  key={name}
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 text-[10px] px-2"
+                                  onClick={() => {
+                                    const pt = { ...((analysis as any).partTextures || {}) };
+                                    pt[partKey] = { ...preset };
+                                    updateField('partTextures', pt);
+                                  }}
+                                >
+                                  {name}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Surface finish & PBR */}
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-[10px]">표면 마감</Label>
+                              <Select
+                                value={partTex?.surfaceFinish || 'matte'}
+                                onValueChange={(v) => {
+                                  const pt = { ...((analysis as any).partTextures || {}) };
+                                  pt[partKey] = { ...pt[partKey], surfaceFinish: v };
+                                  updateField('partTextures', pt);
+                                }}
+                              >
+                                <SelectTrigger className="mt-1 h-7 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {SURFACE_FINISHES.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">거칠기 (0~1)</Label>
+                              <Input
+                                type="number" step="0.05" min="0" max="1"
+                                className="mt-1 h-7 text-xs"
+                                value={partTex?.roughnessEstimate ?? 0.5}
+                                onChange={(e) => {
+                                  const pt = { ...((analysis as any).partTextures || {}) };
+                                  pt[partKey] = { ...pt[partKey], roughnessEstimate: parseFloat(e.target.value) || 0.5 };
+                                  updateField('partTextures', pt);
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">금속성 (0~1)</Label>
+                              <Input
+                                type="number" step="0.05" min="0" max="1"
+                                className="mt-1 h-7 text-xs"
+                                value={partTex?.metalnessEstimate ?? 0}
+                                onChange={(e) => {
+                                  const pt = { ...((analysis as any).partTextures || {}) };
+                                  pt[partKey] = { ...pt[partKey], metalnessEstimate: parseFloat(e.target.value) || 0 };
+                                  updateField('partTextures', pt);
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Wood grain details */}
+                          {partTex?.woodGrain && (
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <Label className="text-[10px]">결 방향</Label>
+                                <Select
+                                  value={partTex.woodGrain.direction || 'horizontal'}
+                                  onValueChange={(v) => {
+                                    const pt = { ...((analysis as any).partTextures || {}) };
+                                    pt[partKey] = { ...pt[partKey], woodGrain: { ...pt[partKey].woodGrain, direction: v } };
+                                    updateField('partTextures', pt);
+                                  }}
+                                >
+                                  <SelectTrigger className="mt-1 h-7 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {WOOD_GRAIN_DIRECTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="text-[10px]">강도</Label>
+                                <Select
+                                  value={partTex.woodGrain.intensity || 'moderate'}
+                                  onValueChange={(v) => {
+                                    const pt = { ...((analysis as any).partTextures || {}) };
+                                    pt[partKey] = { ...pt[partKey], woodGrain: { ...pt[partKey].woodGrain, intensity: v } };
+                                    updateField('partTextures', pt);
+                                  }}
+                                >
+                                  <SelectTrigger className="mt-1 h-7 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {WOOD_GRAIN_INTENSITIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="text-[10px]">결 색상</Label>
+                                <div className="flex gap-1 mt-1">
+                                  <input
+                                    type="color"
+                                    value={partTex.woodGrain.grainColor || '#c8a87c'}
+                                    onChange={(e) => {
+                                      const pt = { ...((analysis as any).partTextures || {}) };
+                                      pt[partKey] = { ...pt[partKey], woodGrain: { ...pt[partKey].woodGrain, grainColor: e.target.value } };
+                                      updateField('partTextures', pt);
+                                    }}
+                                    className="w-7 h-7 rounded border cursor-pointer"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Metal finish details */}
+                          {partTex?.metalFinish && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-[10px]">마감 유형</Label>
+                                <Select
+                                  value={partTex.metalFinish.type || 'chrome'}
+                                  onValueChange={(v) => {
+                                    const pt = { ...((analysis as any).partTextures || {}) };
+                                    pt[partKey] = { ...pt[partKey], metalFinish: { ...pt[partKey].metalFinish, type: v } };
+                                    updateField('partTextures', pt);
+                                  }}
+                                >
+                                  <SelectTrigger className="mt-1 h-7 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {METAL_FINISH_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="text-[10px]">브러시 방향</Label>
+                                <Select
+                                  value={partTex.metalFinish.brushDirection || 'vertical'}
+                                  onValueChange={(v) => {
+                                    const pt = { ...((analysis as any).partTextures || {}) };
+                                    pt[partKey] = { ...pt[partKey], metalFinish: { ...pt[partKey].metalFinish, brushDirection: v } };
+                                    updateField('partTextures', pt);
+                                  }}
+                                >
+                                  <SelectTrigger className="mt-1 h-7 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {BRUSH_DIRECTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Fabric details */}
+                          {partTex?.fabricPattern && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-[10px]">패턴 유형</Label>
+                                <Select
+                                  value={partTex.fabricPattern.type || 'plain'}
+                                  onValueChange={(v) => {
+                                    const pt = { ...((analysis as any).partTextures || {}) };
+                                    pt[partKey] = { ...pt[partKey], fabricPattern: { ...pt[partKey].fabricPattern, type: v } };
+                                    updateField('partTextures', pt);
+                                  }}
+                                >
+                                  <SelectTrigger className="mt-1 h-7 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {FABRIC_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="text-[10px]">직조 스케일</Label>
+                                <Input
+                                  type="number" step="0.1" min="0.1" max="5"
+                                  className="mt-1 h-7 text-xs"
+                                  value={partTex.fabricPattern.weaveScale ?? 1}
+                                  onChange={(e) => {
+                                    const pt = { ...((analysis as any).partTextures || {}) };
+                                    pt[partKey] = { ...pt[partKey], fabricPattern: { ...pt[partKey].fabricPattern, weaveScale: parseFloat(e.target.value) || 1 } };
+                                    updateField('partTextures', pt);
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Remove part */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] text-destructive hover:text-destructive"
+                            onClick={() => {
+                              const pt = { ...((analysis as any).partTextures || {}) };
+                              delete pt[partKey];
+                              updateField('partTextures', Object.keys(pt).length > 0 ? pt : undefined);
+                            }}
+                          >
+                            <X className="h-3 w-3 mr-1" />파트 제거
+                          </Button>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                )}
+              </div>
             </div>
           </ScrollArea>
 
