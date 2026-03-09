@@ -1678,15 +1678,15 @@ function AIEnhancedStorage({ w, d, h, color, isSelected, analysis }: {
   return (
     <group>
       {/* Outer shell */}
+      {(() => { usePartTexture('body'); return null; })()}
       <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[w, h, d]} />
         {primaryMatFn(colors.primary, isSelected)}
         <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
       </mesh>
-      {/* Top cap */}
       <mesh position={[0, h + 0.003, 0]}>
         <boxGeometry args={[w + 0.004, 0.006, d + 0.004]} />
-        {primaryMatFn(darken(colors.primary, 0.1), isSelected)}
+        {(() => { usePartTexture('top'); return primaryMatFn(darken(colors.primary, 0.1), isSelected); })()}
       </mesh>
 
       {/* Internal shelves */}
@@ -1695,7 +1695,7 @@ function AIEnhancedStorage({ w, d, h, color, isSelected, analysis }: {
         return (
           <mesh key={`shelf-${i}`} position={[0, y, 0]}>
             <boxGeometry args={[w - panelThick * 2, panelThick * 0.6, d - panelThick]} />
-            {primaryMatFn(darken(colors.primary, 0.15), isSelected)}
+            {(() => { usePartTexture('shelves'); return primaryMatFn(darken(colors.primary, 0.15), isSelected); })()}
           </mesh>
         );
       })}
@@ -1708,12 +1708,11 @@ function AIEnhancedStorage({ w, d, h, color, isSelected, analysis }: {
           <group key={`door-${i}`}>
             <mesh position={[cx, h / 2, d / 2 + 0.002]}>
               <boxGeometry args={[doorW - 0.008, h * 0.96, 0.003]} />
-              {primaryMatFn(lighten(colors.primary, 0.03), isSelected)}
+              {(() => { usePartTexture('doors'); return primaryMatFn(lighten(colors.primary, 0.03), isSelected); })()}
             </mesh>
-            {/* Handle */}
             <mesh position={[cx + doorW * 0.35, h / 2, d / 2 + 0.012]}>
               <boxGeometry args={[0.012, 0.045, 0.01]} />
-              <meshStandardMaterial color={colors.secondary} roughness={0.2} metalness={0.95} />
+              {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
             </mesh>
           </group>
         );
@@ -1727,17 +1726,18 @@ function AIEnhancedStorage({ w, d, h, color, isSelected, analysis }: {
           <group key={`drawer-${i}`}>
             <mesh position={[0, yOff, d / 2 + 0.002]}>
               <boxGeometry args={[w * 0.95, drawerH - 0.01, 0.003]} />
-              {primaryMatFn(lighten(colors.primary, 0.02), isSelected)}
+              {(() => { usePartTexture('drawers'); return primaryMatFn(lighten(colors.primary, 0.02), isSelected); })()}
             </mesh>
             <mesh position={[0, yOff, d / 2 + 0.012]}>
               <boxGeometry args={[0.06, 0.012, 0.01]} />
-              <meshStandardMaterial color={colors.secondary} roughness={0.2} metalness={0.9} />
+              {(() => { usePartTexture('accent'); return metalMat(colors.secondary, isSelected); })()}
             </mesh>
           </group>
         );
       })}
 
       {/* Base feet */}
+      {(() => { usePartTexture('legs'); return null; })()}
       {[
         [-(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
         [(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
