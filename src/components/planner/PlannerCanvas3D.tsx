@@ -296,10 +296,10 @@ function VenetianBlinds({ width, height, color, openRatio = 0 }: { width: number
 
 // ===== Architectural Elements =====
 
-function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = 'double', frameColor = 'white', curtain = 'none', curtainColor = '#f5f0e8' }: {
+function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = 'double', frameColor = 'white', curtain = 'none', curtainColor = '#f5f0e8', curtainOpenRatio = 0 }: {
   position: [number, number, number]; rotation: [number, number, number];
   width?: number; height?: number; type?: string;
-  frameColor?: string; curtain?: string; curtainColor?: string;
+  frameColor?: string; curtain?: string; curtainColor?: string; curtainOpenRatio?: number;
 }) {
   const FRAME_COLORS: Record<string, { color: string; roughness: number; metalness: number }> = {
     'white': { color: '#e8e4db', roughness: 0.5, metalness: 0.05 },
