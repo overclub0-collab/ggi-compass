@@ -52,8 +52,8 @@ export interface CeilingLightConfig {
   zRatio: number;
 }
 
-export type FloorMaterialType = 'wood-light' | 'wood-dark' | 'wood-walnut' | 'marble-white' | 'marble-gray' | 'tile-white' | 'tile-gray' | 'concrete' | 'carpet-gray' | 'carpet-blue';
-export type WallMaterialType = 'paint-white' | 'paint-cream' | 'paint-gray' | 'paint-sage' | 'wallpaper-stripe' | 'wallpaper-texture' | 'brick-white' | 'brick-red' | 'concrete' | 'wood-panel';
+export type FloorMaterialType = 'wood-light' | 'wood-dark' | 'wood-walnut' | 'wood-herringbone' | 'marble-white' | 'marble-gray' | 'marble-calacatta' | 'tile-white' | 'tile-gray' | 'tile-hex' | 'concrete' | 'carpet-gray' | 'carpet-blue' | 'carpet-beige';
+export type WallMaterialType = 'paint-white' | 'paint-cream' | 'paint-gray' | 'paint-sage' | 'paint-navy' | 'paint-terracotta' | 'wallpaper-stripe' | 'wallpaper-texture' | 'wallpaper-damask' | 'wallpaper-grasscloth' | 'brick-white' | 'brick-red' | 'concrete' | 'wood-panel' | 'stone-natural' | 'plaster-venetian';
 
 export interface ArchitecturalConfig {
   windows: WindowConfig[];
