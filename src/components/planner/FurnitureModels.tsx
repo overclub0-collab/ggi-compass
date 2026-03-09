@@ -2082,25 +2082,33 @@ function AIEnhancedBlackboard({ w, d, h, color, isSelected, analysis }: {
   const colors = getColorsFromAnalysis(analysis, color);
   const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
   const panelThick = 0.02;
-  const primaryMatFn = analysis.primaryMaterial === 'metal' ? metalMat : woodMat;
+  const primaryMatFn = analysis.primaryMaterial === 'metal' ? metalMat :
+    (analysis.primaryMaterial === 'melamine' || analysis.primaryMaterial === 'hpl') ? woodMat : woodMat;
   
   const hasShelf = analysis.hasShelf ?? true;
   const shelfCount = analysis.shelfCount || 2;
   const hasDoor = analysis.hasDoor ?? true;
   const doorCount = analysis.doorCount || 2;
   const details = analysis.details || [];
+  const sections = analysis.sections;
   const hasUpperShelves = hasShelf || details.includes('upper-shelf') || details.includes('compartments');
   
-  const lowerH = h * 0.28;
-  const boardH = h * 0.42;
-  const upperH = h * 0.22;
-  const fillerH = h * 0.06;
-  const sideW = w * 0.12;
+  // Use AI-detected section ratios or fallback
+  const lowerH = h * (sections?.bottomRatio || 0.28);
+  const topFillerRatio = 0.04;
+  const fillerH = h * topFillerRatio;
+  const remainH = h - lowerH - fillerH;
+  const boardRatio = sections?.middleRatio || 0.55;
+  const boardH = remainH * boardRatio;
+  const upperH = remainH * (1 - boardRatio);
+  const sideW = w * (sections?.leftSideRatio || 0.12);
   const boardAreaW = w - sideW * 2;
+  const upperCols = sections?.columns || 4;
+  const upperRows = sections?.rows || (shelfCount > 0 ? shelfCount : 2);
 
   return (
     <group>
-      {/* 하부장 */}
+      {/* 하부장 본체 */}
       <mesh position={[0, lowerH / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[w, lowerH, d]} />
         {primaryMatFn(colors.primary, isSelected)}
@@ -2116,6 +2124,7 @@ function AIEnhancedBlackboard({ w, d, h, color, isSelected, analysis }: {
               <boxGeometry args={[dw - 0.008, lowerH - 0.02, 0.003]} />
               {primaryMatFn(lighten(colors.primary, 0.02), isSelected)}
             </mesh>
+            {/* Handle */}
             <mesh position={[cx + dw * 0.35, lowerH / 2, d / 2 + 0.012]} rotation={[Math.PI / 2, 0, 0]}>
               <cylinderGeometry args={[0.005, 0.005, 0.04, 8]} />
               <meshStandardMaterial color={colors.secondary} roughness={0.2} metalness={0.95} />
@@ -2124,78 +2133,102 @@ function AIEnhancedBlackboard({ w, d, h, color, isSelected, analysis }: {
         );
       })}
 
-      {/* 양 사이드 장 */}
+      {/* 양 사이드 장 (수납 컬럼) */}
       {[-1, 1].map((side) => {
         const sx = side * (w / 2 - sideW / 2);
         const sideFullH = boardH + upperH;
         const sideY = lowerH + sideFullH / 2;
+        const sideShelves = Math.max(2, Math.round(sideFullH / 0.35));
         return (
           <group key={`side-${side}`}>
+            {/* Side cabinet body */}
             <mesh position={[sx, sideY, 0]} castShadow>
               <boxGeometry args={[sideW, sideFullH, d]} />
               {primaryMatFn(colors.primary, isSelected)}
               <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
             </mesh>
-            {Array.from({ length: 3 }, (_, i) => (
-              <mesh key={`ss-${i}`} position={[sx, lowerH + (sideFullH / 4) * (i + 1), 0]}>
+            {/* Side shelves */}
+            {Array.from({ length: sideShelves - 1 }, (_, i) => (
+              <mesh key={`ss-${i}`} position={[sx, lowerH + (sideFullH / sideShelves) * (i + 1), 0]}>
                 <boxGeometry args={[sideW - panelThick * 2, panelThick * 0.5, d - panelThick]} />
                 {primaryMatFn(darken(colors.primary, 0.08), isSelected)}
               </mesh>
             ))}
+            {/* Open front visible depth */}
+            <mesh position={[sx, sideY, d / 2 - panelThick / 2]}>
+              <boxGeometry args={[sideW, sideFullH, panelThick * 0.3]} />
+              {primaryMatFn(darken(colors.primary, 0.03), isSelected)}
+            </mesh>
           </group>
         );
       })}
 
-      {/* 화이트보드/칠판 */}
+      {/* 화이트보드/칠판 영역 */}
       <mesh position={[0, lowerH + boardH / 2, -(d / 2 - panelThick / 2)]} castShadow>
         <boxGeometry args={[boardAreaW - 0.04, boardH - 0.04, panelThick]} />
-        <meshStandardMaterial color="#f5f3ee" roughness={0.15} metalness={0.08} envMapIntensity={0.8} />
+        <meshStandardMaterial color="#f5f3ee" roughness={0.12} metalness={0.08} envMapIntensity={0.8} />
       </mesh>
-      {/* 보드 프레임 */}
+      {/* 보드 프레임 (상) */}
       <mesh position={[0, lowerH + boardH, -(d / 2 - panelThick / 2)]}>
-        <boxGeometry args={[boardAreaW, 0.03, panelThick + 0.01]} />
+        <boxGeometry args={[boardAreaW, 0.025, panelThick + 0.008]} />
         {primaryMatFn(darken(colors.primary, 0.12), isSelected)}
       </mesh>
-      <mesh position={[0, lowerH + 0.015, -(d / 2 - panelThick / 2)]}>
-        <boxGeometry args={[boardAreaW, 0.03, panelThick + 0.01]} />
+      {/* 보드 프레임 (하) */}
+      <mesh position={[0, lowerH + 0.012, -(d / 2 - panelThick / 2)]}>
+        <boxGeometry args={[boardAreaW, 0.025, panelThick + 0.008]} />
         {primaryMatFn(darken(colors.primary, 0.12), isSelected)}
       </mesh>
-      <mesh position={[0, lowerH + 0.012, -(d / 2 - 0.04)]}>
-        <boxGeometry args={[boardAreaW * 0.85, 0.015, 0.06]} />
-        {primaryMatFn(darken(colors.primary, 0.1), isSelected)}
-      </mesh>
+      {/* 보드 좌우 프레임 */}
+      {[-1, 1].map(side => (
+        <mesh key={`bf-${side}`} position={[side * (boardAreaW / 2 - 0.012), lowerH + boardH / 2, -(d / 2 - panelThick / 2)]}>
+          <boxGeometry args={[0.025, boardH, panelThick + 0.008]} />
+          {primaryMatFn(darken(colors.primary, 0.12), isSelected)}
+        </mesh>
+      ))}
+      {/* 분필/마커 받이 */}
+      {(details.includes('marker-tray') || details.includes('chalk-tray')) && (
+        <mesh position={[0, lowerH + 0.01, -(d / 2 - 0.04)]}>
+          <boxGeometry args={[boardAreaW * 0.85, 0.012, 0.06]} />
+          {primaryMatFn(darken(colors.primary, 0.1), isSelected)}
+        </mesh>
+      )}
 
-      {/* 상부 선반장 */}
+      {/* 상부 선반장 — 칸막이 포함 */}
       {hasUpperShelves && (
         <>
+          {/* Back panel */}
           <mesh position={[0, lowerH + boardH + upperH / 2, -(d / 2 - panelThick / 2)]}>
             <boxGeometry args={[boardAreaW, upperH, panelThick]} />
             {primaryMatFn(lighten(colors.primary, 0.04), isSelected)}
           </mesh>
-          {Array.from({ length: Math.max(1, Math.min(shelfCount - 1, 2)) }, (_, i) => (
-            <mesh key={`us-${i}`} position={[0, lowerH + boardH + upperH * ((i + 1) / (shelfCount || 2)), 0]}>
-              <boxGeometry args={[boardAreaW - 0.02, panelThick, d]} />
-              {primaryMatFn(colors.primary, isSelected)}
-            </mesh>
-          ))}
-          {Array.from({ length: 3 }, (_, i) => (
-            <mesh key={`ud-${i}`} position={[-(boardAreaW / 2) + (boardAreaW / 4) * (i + 1), lowerH + boardH + upperH / 2, 0]}>
-              <boxGeometry args={[panelThick * 0.6, upperH, d - panelThick]} />
-              {primaryMatFn(darken(colors.primary, 0.06), isSelected)}
-            </mesh>
-          ))}
+          {/* Top cap */}
           <mesh position={[0, lowerH + boardH + upperH, 0]}>
             <boxGeometry args={[boardAreaW, panelThick, d]} />
             {primaryMatFn(colors.primary, isSelected)}
           </mesh>
+          {/* Bottom separator */}
           <mesh position={[0, lowerH + boardH, 0]}>
             <boxGeometry args={[boardAreaW, panelThick, d]} />
             {primaryMatFn(colors.primary, isSelected)}
           </mesh>
+          {/* Horizontal shelves in upper area */}
+          {Array.from({ length: Math.max(0, upperRows - 1) }, (_, i) => (
+            <mesh key={`us-${i}`} position={[0, lowerH + boardH + upperH * ((i + 1) / upperRows), 0]}>
+              <boxGeometry args={[boardAreaW - 0.02, panelThick * 0.8, d]} />
+              {primaryMatFn(colors.primary, isSelected)}
+            </mesh>
+          ))}
+          {/* Vertical dividers in upper area */}
+          {Array.from({ length: Math.max(0, upperCols - 1) }, (_, i) => (
+            <mesh key={`ud-${i}`} position={[-(boardAreaW / 2) + (boardAreaW / upperCols) * (i + 1), lowerH + boardH + upperH / 2, 0]}>
+              <boxGeometry args={[panelThick * 0.6, upperH - panelThick, d - panelThick]} />
+              {primaryMatFn(darken(colors.primary, 0.06), isSelected)}
+            </mesh>
+          ))}
         </>
       )}
 
-      {/* 상부 마감 휠라 */}
+      {/* 상부 마감 필라 */}
       <mesh position={[0, h - fillerH / 2, 0]} castShadow>
         <boxGeometry args={[w + 0.01, fillerH, d + 0.005]} />
         {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
@@ -2204,7 +2237,6 @@ function AIEnhancedBlackboard({ w, d, h, color, isSelected, analysis }: {
     </group>
   );
 }
-
 // ========== AI-enhanced Bunk Bed ==========
 function AIEnhancedBunkBed({ w, d, h, color, isSelected, analysis }: {
   w: number; d: number; h: number; color: string; isSelected: boolean; analysis: FurnitureAnalysis;
