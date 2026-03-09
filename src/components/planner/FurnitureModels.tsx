@@ -10,41 +10,76 @@ const SELECTED_EDGE = '#0066cc';
 
 // ===== Procedural Texture Generators =====
 
+// Global texture analysis context for current rendering
+let _currentTextureAnalysis: TextureAnalysis | undefined;
+
 function createWoodTexture(baseColor: string, scale = 1): THREE.CanvasTexture {
+  const textureInfo = _currentTextureAnalysis?.woodGrain;
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
   const c = new THREE.Color(baseColor);
   
-  // Base fill
   ctx.fillStyle = `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
   ctx.fillRect(0, 0, 512, 512);
   
-  // Wood grain lines
-  for (let i = 0; i < 80; i++) {
-    const y = Math.random() * 512;
+  const direction = textureInfo?.direction || 'horizontal';
+  const intensity = textureInfo?.intensity || 'moderate';
+  const knotFrequency = textureInfo?.knotFrequency || 'few';
+  const grainColor = textureInfo?.grainColor ? new THREE.Color(textureInfo.grainColor) : c.clone().multiplyScalar(0.82);
+  
+  const lineCount = intensity === 'subtle' ? 40 : intensity === 'pronounced' ? 140 : 80;
+  const baseOpacity = intensity === 'subtle' ? 0.08 : intensity === 'pronounced' ? 0.25 : 0.15;
+  
+  for (let i = 0; i < lineCount; i++) {
+    const pos = Math.random() * 512;
     const variation = (Math.random() - 0.5) * 30;
-    const darker = c.clone().multiplyScalar(0.85 + Math.random() * 0.1);
-    ctx.strokeStyle = `rgba(${Math.round(darker.r*255)},${Math.round(darker.g*255)},${Math.round(darker.b*255)},${0.15 + Math.random() * 0.2})`;
+    const darker = grainColor.clone().multiplyScalar(0.9 + Math.random() * 0.1);
+    ctx.strokeStyle = `rgba(${Math.round(darker.r*255)},${Math.round(darker.g*255)},${Math.round(darker.b*255)},${baseOpacity + Math.random() * 0.15})`;
     ctx.lineWidth = 0.5 + Math.random() * 2;
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    for (let x = 0; x < 512; x += 20) {
-      ctx.lineTo(x, y + Math.sin(x * 0.02 * scale) * (3 + variation * 0.3) + (Math.random() - 0.5) * 2);
+    
+    if (direction === 'vertical') {
+      ctx.moveTo(pos, 0);
+      for (let y = 0; y < 512; y += 20) {
+        ctx.lineTo(pos + Math.sin(y * 0.02 * scale) * (3 + variation * 0.3) + (Math.random() - 0.5) * 2, y);
+      }
+    } else if (direction === 'diagonal') {
+      ctx.moveTo(pos, 0);
+      for (let t = 0; t < 512; t += 20) {
+        ctx.lineTo(pos + t * 0.5 + Math.sin(t * 0.02) * 3, t);
+      }
+    } else if (direction === 'radial') {
+      const cx2 = 256, cy2 = 256;
+      const angle = Math.random() * Math.PI * 2;
+      const r1 = 20 + Math.random() * 80;
+      ctx.arc(cx2, cy2, r1 + 50 + Math.random() * 100, angle - 0.3, angle + 0.3);
+    } else {
+      ctx.moveTo(0, pos);
+      for (let x = 0; x < 512; x += 20) {
+        ctx.lineTo(x, pos + Math.sin(x * 0.02 * scale) * (3 + variation * 0.3) + (Math.random() - 0.5) * 2);
+      }
     }
     ctx.stroke();
   }
   
-  // Knots (occasional)
-  for (let i = 0; i < 2; i++) {
+  const knotCount = knotFrequency === 'none' ? 0 : knotFrequency === 'many' ? 5 : 2;
+  for (let i = 0; i < knotCount; i++) {
     const kx = Math.random() * 512;
     const ky = Math.random() * 512;
     const kr = 5 + Math.random() * 12;
-    const kColor = c.clone().multiplyScalar(0.7);
+    const kColor = grainColor.clone().multiplyScalar(0.65);
+    for (let ring = 0; ring < 3; ring++) {
+      ctx.beginPath();
+      ctx.arc(kx, ky, kr - ring * 2, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${Math.round(kColor.r*255)},${Math.round(kColor.g*255)},${Math.round(kColor.b*255)},${0.15 + ring * 0.08})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
     ctx.beginPath();
-    ctx.arc(kx, ky, kr, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(${Math.round(kColor.r*255)},${Math.round(kColor.g*255)},${Math.round(kColor.b*255)},0.3)`;
+    ctx.arc(kx, ky, kr * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${Math.round(kColor.r*255)},${Math.round(kColor.g*255)},${Math.round(kColor.b*255)},0.35)`;
     ctx.fill();
   }
 
@@ -55,6 +90,7 @@ function createWoodTexture(baseColor: string, scale = 1): THREE.CanvasTexture {
 }
 
 function createMetalTexture(baseColor: string): THREE.CanvasTexture {
+  const metalFinish = _currentTextureAnalysis?.metalFinish;
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
@@ -64,16 +100,47 @@ function createMetalTexture(baseColor: string): THREE.CanvasTexture {
   ctx.fillStyle = `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
   ctx.fillRect(0, 0, 256, 256);
   
-  // Brushed metal streaks
-  for (let i = 0; i < 200; i++) {
-    const y = Math.random() * 256;
-    const lighter = c.clone().lerp(new THREE.Color('#ffffff'), 0.1 + Math.random() * 0.15);
-    ctx.strokeStyle = `rgba(${Math.round(lighter.r*255)},${Math.round(lighter.g*255)},${Math.round(lighter.b*255)},${0.05 + Math.random() * 0.1})`;
-    ctx.lineWidth = 0.3 + Math.random() * 0.8;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(256, y + (Math.random() - 0.5) * 3);
-    ctx.stroke();
+  const finishType = metalFinish?.type || 'brushed';
+  const brushDir = metalFinish?.brushDirection || 'horizontal';
+  
+  if (finishType === 'brushed' || finishType === 'anodized') {
+    const streakCount = finishType === 'anodized' ? 100 : 200;
+    for (let i = 0; i < streakCount; i++) {
+      const lighter = c.clone().lerp(new THREE.Color('#ffffff'), 0.1 + Math.random() * 0.15);
+      ctx.strokeStyle = `rgba(${Math.round(lighter.r*255)},${Math.round(lighter.g*255)},${Math.round(lighter.b*255)},${0.05 + Math.random() * 0.1})`;
+      ctx.lineWidth = 0.3 + Math.random() * 0.8;
+      ctx.beginPath();
+      if (brushDir === 'vertical') {
+        const x = Math.random() * 256;
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + (Math.random() - 0.5) * 3, 256);
+      } else if (brushDir === 'circular') {
+        const angle = Math.random() * Math.PI * 2;
+        const r = 40 + Math.random() * 80;
+        ctx.arc(128, 128, r, angle, angle + 0.5 + Math.random() * 0.5);
+      } else {
+        const y = Math.random() * 256;
+        ctx.moveTo(0, y);
+        ctx.lineTo(256, y + (Math.random() - 0.5) * 3);
+      }
+      ctx.stroke();
+    }
+  } else if (finishType === 'chrome' || finishType === 'polished') {
+    const grad = ctx.createRadialGradient(100, 80, 10, 128, 128, 180);
+    const highlight = c.clone().lerp(new THREE.Color('#ffffff'), 0.4);
+    grad.addColorStop(0, `rgba(${Math.round(highlight.r*255)},${Math.round(highlight.g*255)},${Math.round(highlight.b*255)},0.3)`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  } else if (finishType === 'powder-coated' || finishType === 'matte') {
+    for (let x = 0; x < 256; x += 2) {
+      for (let y = 0; y < 256; y += 2) {
+        const noise = (Math.random() - 0.5) * 0.04;
+        const nc = c.clone().multiplyScalar(1 + noise);
+        ctx.fillStyle = `rgba(${Math.round(nc.r*255)},${Math.round(nc.g*255)},${Math.round(nc.b*255)},0.5)`;
+        ctx.fillRect(x, y, 2, 2);
+      }
+    }
   }
 
   const tex = new THREE.CanvasTexture(canvas);
@@ -82,6 +149,7 @@ function createMetalTexture(baseColor: string): THREE.CanvasTexture {
 }
 
 function createFabricTexture(baseColor: string): THREE.CanvasTexture {
+  const fabricInfo = _currentTextureAnalysis?.fabricPattern;
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
@@ -91,41 +159,111 @@ function createFabricTexture(baseColor: string): THREE.CanvasTexture {
   ctx.fillStyle = `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
   ctx.fillRect(0, 0, 256, 256);
   
-  // Weave pattern
-  for (let x = 0; x < 256; x += 3) {
-    for (let y = 0; y < 256; y += 3) {
-      const bright = ((x + y) % 6 < 3) ? 0.97 : 1.03;
-      const wc = c.clone().multiplyScalar(bright);
-      ctx.fillStyle = `rgba(${Math.round(wc.r*255)},${Math.round(wc.g*255)},${Math.round(wc.b*255)},0.4)`;
-      ctx.fillRect(x, y, 2, 2);
+  const fabricType = fabricInfo?.type || 'plain';
+  const weaveScale = fabricInfo?.weaveScale || 1;
+  const step = Math.max(2, Math.round(3 / weaveScale));
+  
+  if (fabricType === 'twill') {
+    for (let x = 0; x < 256; x += step) {
+      for (let y = 0; y < 256; y += step) {
+        const bright = ((x + y) % (step * 4) < step * 2) ? 0.96 : 1.04;
+        const wc = c.clone().multiplyScalar(bright);
+        ctx.fillStyle = `rgba(${Math.round(wc.r*255)},${Math.round(wc.g*255)},${Math.round(wc.b*255)},0.5)`;
+        ctx.fillRect(x, y, step - 1, step - 1);
+      }
+    }
+  } else if (fabricType === 'velvet') {
+    for (let x = 0; x < 256; x += 2) {
+      for (let y = 0; y < 256; y += 2) {
+        const sheen = Math.sin(x * 0.05) * Math.cos(y * 0.05) * 0.06;
+        const vc = c.clone().multiplyScalar(1 + sheen);
+        ctx.fillStyle = `rgba(${Math.round(vc.r*255)},${Math.round(vc.g*255)},${Math.round(vc.b*255)},0.4)`;
+        ctx.fillRect(x, y, 2, 2);
+      }
+    }
+  } else if (fabricType === 'leather-grain') {
+    for (let i = 0; i < 300; i++) {
+      const px = Math.random() * 256;
+      const py = Math.random() * 256;
+      const pr = 1 + Math.random() * 3;
+      const darker = c.clone().multiplyScalar(0.88 + Math.random() * 0.08);
+      ctx.beginPath();
+      ctx.arc(px, py, pr, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${Math.round(darker.r*255)},${Math.round(darker.g*255)},${Math.round(darker.b*255)},0.2)`;
+      ctx.fill();
+    }
+  } else if (fabricType === 'mesh') {
+    for (let x = 0; x < 256; x += step * 2) {
+      for (let y = 0; y < 256; y += step * 2) {
+        const darker = c.clone().multiplyScalar(0.85);
+        ctx.fillStyle = `rgba(${Math.round(darker.r*255)},${Math.round(darker.g*255)},${Math.round(darker.b*255)},0.3)`;
+        ctx.fillRect(x, y, 1, step * 2);
+        ctx.fillRect(x, y, step * 2, 1);
+      }
+    }
+  } else if (fabricType === 'knit') {
+    for (let y = 0; y < 256; y += step * 3) {
+      for (let x = 0; x < 256; x += step * 2) {
+        const darker = c.clone().multiplyScalar(0.93);
+        ctx.strokeStyle = `rgba(${Math.round(darker.r*255)},${Math.round(darker.g*255)},${Math.round(darker.b*255)},0.3)`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + step, y + step * 1.5);
+        ctx.lineTo(x + step * 2, y);
+        ctx.stroke();
+      }
+    }
+  } else {
+    for (let x = 0; x < 256; x += step) {
+      for (let y = 0; y < 256; y += step) {
+        const bright = ((x + y) % (step * 2) < step) ? 0.97 : 1.03;
+        const wc = c.clone().multiplyScalar(bright);
+        ctx.fillStyle = `rgba(${Math.round(wc.r*255)},${Math.round(wc.g*255)},${Math.round(wc.b*255)},0.4)`;
+        ctx.fillRect(x, y, step - 1, step - 1);
+      }
     }
   }
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(3, 3);
+  tex.repeat.set(3 * weaveScale, 3 * weaveScale);
   return tex;
 }
 
 function createWoodNormalMap(): THREE.CanvasTexture {
+  const direction = _currentTextureAnalysis?.woodGrain?.direction;
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
   
-  // Neutral normal (128,128,255)
   ctx.fillStyle = 'rgb(128,128,255)';
   ctx.fillRect(0, 0, 512, 512);
   
-  // Grain bumps
+  const isVertical = direction === 'vertical';
+  const isDiagonal = direction === 'diagonal';
+  
   for (let i = 0; i < 60; i++) {
-    const y = Math.random() * 512;
+    const pos = Math.random() * 512;
     ctx.strokeStyle = `rgba(${120 + Math.random()*16},${125 + Math.random()*8},255,0.3)`;
     ctx.lineWidth = 1 + Math.random() * 2;
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    for (let x = 0; x < 512; x += 15) {
-      ctx.lineTo(x, y + Math.sin(x * 0.03) * 3);
+    if (isVertical) {
+      ctx.moveTo(pos, 0);
+      for (let y = 0; y < 512; y += 15) {
+        ctx.lineTo(pos + Math.sin(y * 0.03) * 3, y);
+      }
+    } else if (isDiagonal) {
+      ctx.moveTo(pos, 0);
+      for (let t = 0; t < 512; t += 15) {
+        ctx.lineTo(pos + t * 0.5 + Math.sin(t * 0.03) * 2, t);
+      }
+    } else {
+      ctx.moveTo(0, pos);
+      for (let x = 0; x < 512; x += 15) {
+        ctx.lineTo(x, pos + Math.sin(x * 0.03) * 3);
+      }
     }
     ctx.stroke();
   }
