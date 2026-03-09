@@ -2576,6 +2576,8 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
           return <AIEnhancedBunkBed {...props} />;
         case 'pet':
           return <AIEnhancedPet {...props} />;
+        case 'podium':
+          return <AIEnhancedDesk {...props} />; // Podium uses enhanced desk model
         default:
           return <AIEnhancedGeneric {...props} />;
       }
