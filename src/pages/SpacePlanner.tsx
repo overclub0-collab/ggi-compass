@@ -120,6 +120,26 @@ const SpacePlanner = () => {
               </Button>
             </div>
           )}
+
+          {/* HDRI Environment Preset — 3D only */}
+          {viewMode === '3d' && (
+            <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2 py-0.5">
+              <Sun className="h-3.5 w-3.5 text-white/70" />
+              <Select value={hdriPreset} onValueChange={(v) => setHdriPreset(v as typeof hdriPreset)}>
+                <SelectTrigger className="h-7 w-[110px] border-0 bg-transparent text-white text-xs px-1.5 focus:ring-0 focus:ring-offset-0 [&>span]:text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="apartment">🏠 Apartment</SelectItem>
+                  <SelectItem value="studio">💡 Studio</SelectItem>
+                  <SelectItem value="warehouse">🏭 Warehouse</SelectItem>
+                  <SelectItem value="city">🌆 City</SelectItem>
+                  <SelectItem value="sunset">🌅 Sunset</SelectItem>
+                  <SelectItem value="forest">🌲 Forest</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </header>
 
