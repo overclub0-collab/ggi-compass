@@ -60,10 +60,7 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'sliding', material: 'glass', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
         { type: 'sliding', material: 'glass', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.85 },
       ],
-      columns: [
-        { wall: 'right', positionRatio: 0.33, radius: 0.15 },
-        { wall: 'right', positionRatio: 0.66, radius: 0.15 },
-      ],
+      columns: [],
       partitions: [],
       outlets: [
         { wall: 'back', positionRatio: 0.1 },
