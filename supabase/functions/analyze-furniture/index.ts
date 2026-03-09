@@ -45,11 +45,18 @@ serve(async (req) => {
     }
 
     // Call Gemini Vision to analyze the furniture image
-    const systemPrompt = `You are a furniture 3D modeling expert. Analyze the furniture product image and extract precise parameters for procedural 3D model generation using Three.js.
+    const systemPrompt = `You are a furniture 3D modeling expert with deep knowledge of Korean educational/office/institutional furniture. Your task is to analyze a product photo and extract PRECISE structural parameters for generating an accurate Three.js procedural 3D model.
+
+CRITICAL INSTRUCTIONS:
+1. Study the image CAREFULLY. Count every compartment, shelf, door, drawer precisely.
+2. Estimate proportions from the image perspective — the ratio of each structural section's height relative to total height.
+3. Identify the EXACT structural layout: how the furniture is divided into sections (top/middle/bottom, left/center/right).
+4. For colors, extract the ACTUAL hex colors visible in the image, not generic approximations.
+5. Pay attention to materials: Korean school furniture often uses melamine-coated particleboard, steel frames, or HPL surfaces.
 
 Return a JSON object with these fields:
 {
-  "furnitureType": "desk" | "chair" | "storage" | "shelf" | "sofa" | "lab" | "dining" | "roundtable" | "blackboard" | "bunkbed" | "pet" | "generic",
+  "furnitureType": one of ["desk", "chair", "storage", "shelf", "sofa", "lab", "dining", "roundtable", "blackboard", "bunkbed", "pet", "podium", "partition", "generic"],
   "shape": "rectangular" | "round" | "L-shaped" | "curved" | "irregular",
   "topShape": "rectangular" | "round" | "oval" | "irregular",
   "legStyle": "4-legs" | "T-frame" | "pedestal" | "sled" | "star-base" | "panel" | "trestle" | "none",
@@ -57,15 +64,15 @@ Return a JSON object with these fields:
   "hasArmrest": boolean,
   "hasBackrest": boolean,
   "hasDrawer": boolean,
-  "drawerCount": number,
+  "drawerCount": number (exact count from image),
   "hasDoor": boolean,
-  "doorCount": number,
+  "doorCount": number (exact count from image),
   "hasShelf": boolean,
-  "shelfCount": number,
+  "shelfCount": number (exact count of visible horizontal shelves),
   "hasCushion": boolean,
-  "primaryMaterial": "wood" | "metal" | "fabric" | "plastic" | "glass" | "leather",
+  "primaryMaterial": "wood" | "metal" | "fabric" | "plastic" | "glass" | "leather" | "melamine" | "hpl",
   "secondaryMaterial": "wood" | "metal" | "fabric" | "plastic" | "glass" | "none",
-  "primaryColor": "#hexcolor",
+  "primaryColor": "#hexcolor" (EXACT color from image),
   "secondaryColor": "#hexcolor",
   "accentColor": "#hexcolor",
   "topThickness": number (ratio 0.01-0.1 relative to height),
@@ -73,35 +80,52 @@ Return a JSON object with these fields:
   "proportions": {
     "widthToDepthRatio": number,
     "heightToWidthRatio": number,
-    "seatHeightRatio": number (for chairs, 0-1 ratio of total height)
+    "seatHeightRatio": number (for chairs)
   },
-  "details": string[] (list of notable visual details like "crossbar", "curved-back", "tapered-legs", "rounded-edges", "metal-frame", "wood-grain", "upholstered", etc),
+  "sections": {
+    "layout": "single" | "top-bottom" | "left-center-right" | "grid" | "complex",
+    "bottomRatio": number (0-1, height ratio of bottom section),
+    "middleRatio": number (0-1, height ratio of middle section),
+    "topRatio": number (0-1, height ratio of top section),
+    "leftSideRatio": number (0-1, width ratio of side sections),
+    "columns": number (number of vertical divisions in main area),
+    "rows": number (number of horizontal divisions/shelves),
+    "compartmentGrid": { "cols": number, "rows": number } (for lockers/cubby storage),
+    "hasOpenFront": boolean,
+    "hasBoardArea": boolean (whiteboard/blackboard in center),
+    "boardPosition": "center" | "top" | "back" (where the board is)
+  },
+  "details": string[] (PRECISE list: "crossbar", "curved-back", "tapered-legs", "rounded-edges", "metal-frame", "wood-grain", "upholstered", "ventilation-holes", "number-labels", "handle-recessed", "handle-knob", "adjustable-feet", "casters", "wire-management", "keyboard-tray", "monitor-arm", "glass-top", "sliding-door", "folding", "stackable", "wall-mounted", "open-back", "closed-back", "edge-banding", "modesty-panel", "cable-tray", "pegboard", "hooks", "marker-tray", "chalk-tray", "upper-shelf", "compartments", "lock", "sink", "basin", "faucet"),
   "texture": {
-    "woodGrain": { ... },
-    "fabricPattern": { ... },
-    "metalFinish": { ... },
+    "woodGrain": { "direction": "horizontal"|"vertical"|"diagonal"|"radial", "intensity": "subtle"|"moderate"|"pronounced", "knotFrequency": "none"|"few"|"many", "grainColor": "#hex" },
+    "fabricPattern": { "type": "plain"|"twill"|"knit"|"velvet"|"leather-grain"|"mesh"|"woven", "weaveScale": number, "patternColor": "#hex" },
+    "metalFinish": { "type": "brushed"|"polished"|"powder-coated"|"anodized"|"chrome"|"matte", "brushDirection": "horizontal"|"vertical"|"circular" },
     "surfaceFinish": "glossy" | "satin" | "matte" | "textured" | "raw",
     "roughnessEstimate": number (0-1),
     "metalnessEstimate": number (0-1)
   },
   "partTextures": {
-    "top": { texture object for the top surface/tabletop - often wood with specific grain },
-    "legs": { texture object for legs/frame - often metal with specific finish },
-    "body": { texture object for main body/cabinet },
-    "seat": { texture for seat cushion - fabric/leather },
-    "back": { texture for backrest },
-    "arms": { texture for armrests },
-    "drawers": { texture for drawer fronts },
-    "doors": { texture for door panels },
-    "shelves": { texture for shelf surfaces },
-    "cushion": { texture for cushions/mattresses },
-    "accent": { texture for accent/trim parts }
+    "top": { ... same as texture },
+    "legs": { ... },
+    "body": { ... },
+    "seat": { ... },
+    "back": { ... },
+    "arms": { ... },
+    "drawers": { ... },
+    "doors": { ... },
+    "shelves": { ... },
+    "cushion": { ... },
+    "accent": { ... }
   }
 }
 
-IMPORTANT: For partTextures, only include parts that are actually present in the furniture. Each part texture object has the same schema as the main "texture" object. Different parts often have very different materials - e.g., a desk may have a wood-grain top (horizontal grain, satin finish) but powder-coated metal legs (matte finish). Analyze each visible part separately.
+EXAMPLES of precise analysis:
+- 칠판보조장 (Blackboard Cabinet): sections.layout="left-center-right", sections.hasBoardArea=true, sections.bottomRatio=0.3, sections.leftSideRatio=0.12, compartmentGrid for upper shelves
+- 사물함 (Locker): sections.layout="grid", sections.compartmentGrid={cols:4,rows:5}, hasDoor=true, doorCount=20
+- 실험대 (Lab Bench): details includes "sink","faucet", sections.layout="single"
+- 교탁/강연대 (Podium): furnitureType="podium", sections.layout="complex"
 
-Be precise about colors - extract the actual colors from the image. For proportions, estimate carefully from the image perspective. For texture, carefully observe grain direction, surface sheen, and material finish quality per part.`;
+IMPORTANT: Count EXACTLY from the image. If a locker has 4 columns × 5 rows = 20 compartments, report doorCount=20, compartmentGrid={cols:4,rows:5}. Do NOT guess — analyze the image precisely.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -110,7 +134,7 @@ Be precise about colors - extract the actual colors from the image. For proporti
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -118,7 +142,16 @@ Be precise about colors - extract the actual colors from the image. For proporti
             content: [
               {
                 type: "text",
-                text: `Analyze this furniture product image. Product name: "${product_name || 'Unknown'}". Extract all 3D modeling parameters as JSON.`,
+                text: `Analyze this furniture product image with EXTREME PRECISION. Product name: "${product_name || 'Unknown'}". 
+                
+Study the image carefully and extract:
+1. Exact number of compartments, doors, shelves, drawers
+2. Precise color hex codes from the image
+3. Structural section proportions (what percentage of height is bottom cabinet vs board area vs upper shelves)
+4. Material identification (melamine, metal, HPL, etc.)
+5. All visible structural details
+
+Return the complete analysis JSON.`,
               },
               {
                 type: "image_url",
@@ -132,11 +165,11 @@ Be precise about colors - extract the actual colors from the image. For proporti
             type: "function",
             function: {
               name: "extract_furniture_params",
-              description: "Extract 3D modeling parameters from a furniture image",
+              description: "Extract precise 3D modeling parameters from a furniture image for Three.js procedural generation",
               parameters: {
                 type: "object",
                 properties: {
-                  furnitureType: { type: "string", enum: ["desk", "chair", "storage", "shelf", "sofa", "lab", "dining", "roundtable", "blackboard", "bunkbed", "pet", "generic"] },
+                  furnitureType: { type: "string", enum: ["desk", "chair", "storage", "shelf", "sofa", "lab", "dining", "roundtable", "blackboard", "bunkbed", "pet", "podium", "partition", "generic"] },
                   shape: { type: "string", enum: ["rectangular", "round", "L-shaped", "curved", "irregular"] },
                   topShape: { type: "string", enum: ["rectangular", "round", "oval", "irregular"] },
                   legStyle: { type: "string", enum: ["4-legs", "T-frame", "pedestal", "sled", "star-base", "panel", "trestle", "none"] },
@@ -150,7 +183,7 @@ Be precise about colors - extract the actual colors from the image. For proporti
                   hasShelf: { type: "boolean" },
                   shelfCount: { type: "number" },
                   hasCushion: { type: "boolean" },
-                  primaryMaterial: { type: "string", enum: ["wood", "metal", "fabric", "plastic", "glass", "leather"] },
+                  primaryMaterial: { type: "string", enum: ["wood", "metal", "fabric", "plastic", "glass", "leather", "melamine", "hpl"] },
                   secondaryMaterial: { type: "string", enum: ["wood", "metal", "fabric", "plastic", "glass", "none"] },
                   primaryColor: { type: "string" },
                   secondaryColor: { type: "string" },
@@ -165,6 +198,29 @@ Be precise about colors - extract the actual colors from the image. For proporti
                       seatHeightRatio: { type: "number" },
                     },
                     required: ["widthToDepthRatio", "heightToWidthRatio"],
+                  },
+                  sections: {
+                    type: "object",
+                    description: "Structural layout of the furniture — how it is divided into sections",
+                    properties: {
+                      layout: { type: "string", enum: ["single", "top-bottom", "left-center-right", "grid", "complex"] },
+                      bottomRatio: { type: "number", description: "Height ratio (0-1) of the bottom section" },
+                      middleRatio: { type: "number", description: "Height ratio (0-1) of the middle section" },
+                      topRatio: { type: "number", description: "Height ratio (0-1) of the top section" },
+                      leftSideRatio: { type: "number", description: "Width ratio (0-1) of each side section" },
+                      columns: { type: "number", description: "Number of vertical column divisions" },
+                      rows: { type: "number", description: "Number of horizontal row divisions" },
+                      compartmentGrid: {
+                        type: "object",
+                        properties: {
+                          cols: { type: "number" },
+                          rows: { type: "number" },
+                        },
+                      },
+                      hasOpenFront: { type: "boolean" },
+                      hasBoardArea: { type: "boolean" },
+                      boardPosition: { type: "string", enum: ["center", "top", "back"] },
+                    },
                   },
                   details: { type: "array", items: { type: "string" } },
                   texture: {
@@ -202,7 +258,7 @@ Be precise about colors - extract the actual colors from the image. For proporti
                   },
                   partTextures: {
                     type: "object",
-                    description: "Per-part texture overrides. Only include parts actually present in the furniture. Each part uses the same texture schema.",
+                    description: "Per-part texture overrides. Only include parts actually present.",
                     properties: Object.fromEntries(
                       ["top", "legs", "body", "seat", "back", "arms", "drawers", "doors", "shelves", "cushion", "accent"].map(part => [
                         part,
@@ -246,7 +302,7 @@ Be precise about colors - extract the actual colors from the image. For proporti
                 required: [
                   "furnitureType", "shape", "legStyle", "legCount",
                   "primaryMaterial", "primaryColor", "secondaryColor",
-                  "topThickness", "legThickness", "proportions", "details", "texture"
+                  "topThickness", "legThickness", "proportions", "details", "texture", "sections"
                 ],
                 additionalProperties: false,
               },
