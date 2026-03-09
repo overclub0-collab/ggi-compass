@@ -35,6 +35,20 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
   const [expandedMainId, setExpandedMainId] = useState<string | null>(null);
   const { data: products, isLoading: prodLoading } = usePlannerProducts(selectedCategoryId);
   const [currentPage, setCurrentPage] = useState(0);
+  const [analyzingCount, setAnalyzingCount] = useState(0);
+
+  // Prefetch AI analysis for products with thumbnails
+  useEffect(() => {
+    if (products && products.length > 0) {
+      const productsWithImages = products.filter(p => p.thumbnail && !getCachedAnalysis(p.id));
+      if (productsWithImages.length > 0) {
+        setAnalyzingCount(productsWithImages.length);
+        prefetchAnalyses(
+          productsWithImages.map(p => ({ id: p.id, thumbnail: p.thumbnail, name: p.name }))
+        ).finally(() => setAnalyzingCount(0));
+      }
+    }
+  }, [products]);
 
   // Auto-expand first main category on load
   useEffect(() => {
