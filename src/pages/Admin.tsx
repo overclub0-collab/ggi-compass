@@ -26,7 +26,8 @@ import {
   ChevronRight,
   FolderOpen,
   Folder,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Sparkles
 } from 'lucide-react';
 import {
   Select,
@@ -65,6 +66,7 @@ import AdminCompanyInfo from '@/components/admin/AdminCompanyInfo';
 import { AdminDashboard } from '@/components/admin/dashboard/AdminDashboard';
 import AdminMegaMenuThumbnails from '@/components/admin/AdminMegaMenuThumbnails';
 import AdminHomepageManager from '@/components/admin/AdminHomepageManager';
+import AdminFurnitureAnalysis from '@/components/admin/AdminFurnitureAnalysis';
 import CategoryFormDialog from '@/components/admin/CategoryFormDialog';
 import type { User } from '@supabase/supabase-js';
 
@@ -133,7 +135,7 @@ const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users' | 'company' | 'mega-menu' | 'homepage'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users' | 'company' | 'mega-menu' | 'homepage' | 'ai-analysis'>('dashboard');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
@@ -760,6 +762,14 @@ const Admin = () => {
             <Building2 className="h-4 w-4 mr-2" />
             기업소개
           </Button>
+          <Button
+            variant={activeTab === 'ai-analysis' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('ai-analysis')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            AI 분석
+          </Button>
         </div>
       </header>
 
@@ -1034,6 +1044,8 @@ const Admin = () => {
             <AdminHomepageManager />
           ) : activeTab === 'company' ? (
             <AdminCompanyInfo />
+          ) : activeTab === 'ai-analysis' ? (
+            <AdminFurnitureAnalysis />
           ) : null}
         </main>
       </div>
