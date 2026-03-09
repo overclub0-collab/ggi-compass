@@ -2383,7 +2383,7 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
   
   // Use AI type if available, fallback to keyword detection
   const furnitureType = useMemo(() => {
-    if (analysis) return getModelFromAnalysis(analysis);
+    if (analysis) return getModelFromAnalysis(analysis, item);
     return detectFurnitureType(item);
   }, [item, analysis]);
   
@@ -2412,13 +2412,17 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
     if (analysis) {
       const props = { w, d, h, color: effectiveColor, isSelected, analysis };
       
-      // Check if this should be a round table based on shape/topShape
+      // Check if this should be a round table based on shape/topShape/name
       const isRound = analysis.topShape === 'round' || analysis.topShape === 'oval' || analysis.shape === 'round';
+      
+      // Route round tables regardless of furnitureType
+      if (isRound && ['desk', 'dining', 'generic', 'roundtable'].includes(furnitureType)) {
+        return <AIEnhancedRoundTable {...props} />;
+      }
       
       switch (furnitureType) {
         case 'desk':
         case 'dining':
-          if (isRound) return <AIEnhancedRoundTable {...props} />;
           return <AIEnhancedDesk {...props} />;
         case 'chair':
           return <AIEnhancedChair {...props} />;
