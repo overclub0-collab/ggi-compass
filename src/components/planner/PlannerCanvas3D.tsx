@@ -807,7 +807,7 @@ function Room({ dimensions, archConfig }: { dimensions: RoomDimensions; archConf
         return (
           <WindowElement key={`win-${idx}`} position={position} rotation={rotation}
             width={win.width} height={win.height} type={win.type}
-            frameColor={win.frameColor || 'white'} curtain={win.curtain || 'none'} curtainColor={win.curtainColor || '#f5f0e8'} />
+            frameColor={win.frameColor || 'white'} curtain={win.curtain || 'none'} curtainColor={win.curtainColor || '#f5f0e8'} curtainOpenRatio={win.curtainOpenRatio ?? 0} />
         );
       })}
 
