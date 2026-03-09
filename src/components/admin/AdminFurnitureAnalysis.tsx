@@ -360,7 +360,7 @@ export default function AdminFurnitureAnalysis() {
       const batch = unanalyzed.slice(i, i + batchSize);
       const results = await Promise.allSettled(
         batch.map(async (r) => {
-          const { error } = await supabase.functions.invoke('analyze-furniture', {
+          const { data, error } = await supabase.functions.invoke('analyze-furniture', {
             body: {
               product_id: r.id,
               image_url: r.thumbnail_url,
@@ -368,10 +368,22 @@ export default function AdminFurnitureAnalysis() {
             },
           });
           if (error) throw error;
+          if (data?.error) throw new Error(data.error);
         })
       );
 
-      failed += results.filter((r) => r.status === 'rejected').length;
+      const batchFailed = results.filter((r) => r.status === 'rejected');
+      failed += batchFailed.length;
+
+      // Stop bulk if we get credit errors
+      if (batchFailed.length > 0) {
+        const firstErr = (batchFailed[0] as PromiseRejectedResult).reason?.message || '';
+        if (firstErr.includes('크레딧') || firstErr.includes('credit') || firstErr.includes('402')) {
+          toast.error('AI 크레딧이 부족하여 전체 분석을 중단합니다.');
+          break;
+        }
+      }
+
       setBulkProgress({
         current: Math.min(i + batchSize, unanalyzed.length),
         total: unanalyzed.length,
@@ -380,7 +392,7 @@ export default function AdminFurnitureAnalysis() {
 
       // Delay between batches to avoid rate limits
       if (i + batchSize < unanalyzed.length && !bulkAbortRef.current) {
-        await new Promise((r) => setTimeout(r, 1500));
+        await new Promise((r) => setTimeout(r, 2000));
       }
     }
 
