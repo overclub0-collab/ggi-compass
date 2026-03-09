@@ -551,13 +551,12 @@ function SnapshotHelper({ onCapture }: { onCapture: (fn: () => void) => void }) 
 }
 
 // ===== Keyboard Camera Controls (WASD + QE + RF) =====
-function KeyboardCameraControls() {
+function KeyboardCameraControls({ fpsMode }: { fpsMode?: boolean }) {
   const { camera } = useThree();
   const keys = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => {
-      // Don't capture if user is typing in an input
       if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
       keys.current.add(e.key.toLowerCase());
     };
@@ -574,10 +573,9 @@ function KeyboardCameraControls() {
 
   useFrame((_, delta) => {
     if (keys.current.size === 0) return;
-    const speed = 4 * delta;
+    const speed = (fpsMode ? 2.5 : 4) * delta;
     const rotSpeed = 1.5 * delta;
 
-    // Forward direction (camera's look direction projected on XZ plane)
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
     forward.y = 0;
@@ -586,20 +584,86 @@ function KeyboardCameraControls() {
     const right = new THREE.Vector3();
     right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
-    // WASD: pan camera position
     if (keys.current.has('w')) { camera.position.addScaledVector(forward, speed); }
     if (keys.current.has('s')) { camera.position.addScaledVector(forward, -speed); }
     if (keys.current.has('a')) { camera.position.addScaledVector(right, -speed); }
     if (keys.current.has('d')) { camera.position.addScaledVector(right, speed); }
 
-    // R/F: move up/down
-    if (keys.current.has('r')) { camera.position.y += speed; }
-    if (keys.current.has('f')) { camera.position.y = Math.max(0.2, camera.position.y - speed); }
-
-    // Q/E: rotate camera around Y axis
-    if (keys.current.has('q')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed); }
-    if (keys.current.has('e')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed); }
+    if (!fpsMode) {
+      if (keys.current.has('r')) { camera.position.y += speed; }
+      if (keys.current.has('f')) { camera.position.y = Math.max(0.2, camera.position.y - speed); }
+      if (keys.current.has('q')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed); }
+      if (keys.current.has('e')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed); }
+    }
   });
+
+  return null;
+}
+
+// ===== FPS Camera Controls (PointerLock-like mouse look) =====
+function FPSCameraControls({ roomDimensions, onExitFps }: { roomDimensions: RoomDimensions; onExitFps?: () => void }) {
+  const { camera, gl } = useThree();
+  const isLocked = useRef(false);
+  const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'));
+  const EYE_HEIGHT = 1.6;
+
+  // Set initial FPS position
+  useEffect(() => {
+    const w = roomDimensions.width / 1000;
+    const d = roomDimensions.height / 1000;
+    camera.position.set(w / 2, EYE_HEIGHT, d - 1);
+    camera.rotation.set(0, Math.PI, 0);
+    euler.current.setFromQuaternion(camera.quaternion, 'YXZ');
+  }, []);
+
+  // Lock height in FPS mode
+  useFrame(() => {
+    camera.position.y = EYE_HEIGHT;
+  });
+
+  // Pointer lock for mouse look
+  useEffect(() => {
+    const canvas = gl.domElement;
+
+    const onClick = () => {
+      canvas.requestPointerLock();
+    };
+
+    const onLockChange = () => {
+      isLocked.current = document.pointerLockElement === canvas;
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isLocked.current) return;
+      const sensitivity = 0.002;
+      euler.current.y -= e.movementX * sensitivity;
+      euler.current.x -= e.movementY * sensitivity;
+      euler.current.x = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, euler.current.x));
+      camera.quaternion.setFromEuler(euler.current);
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isLocked.current) {
+        document.exitPointerLock();
+        onExitFps?.();
+      }
+    };
+
+    canvas.addEventListener('click', onClick);
+    document.addEventListener('pointerlockchange', onLockChange);
+    document.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      canvas.removeEventListener('click', onClick);
+      document.removeEventListener('pointerlockchange', onLockChange);
+      document.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('keydown', onKeyDown);
+      if (document.pointerLockElement === canvas) {
+        document.exitPointerLock();
+      }
+    };
+  }, [gl, camera, onExitFps]);
 
   return null;
 }
