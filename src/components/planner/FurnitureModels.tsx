@@ -226,12 +226,10 @@ function DeskModel({ w, d, h, color, isSelected }: {
 
   return (
     <group>
-      {/* Tabletop */}
-      <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[w, topH, d]} />
+      {/* Tabletop — rounded edges */}
+      <RoundedBox args={[w, topH, d]} radius={0.008} smoothness={4} position={[0, h - topH / 2, 0]} castShadow receiveShadow>
         {woodMat(color, isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
-      </mesh>
+      </RoundedBox>
       {/* Edge banding */}
       <mesh position={[0, h - topH, 0]} castShadow>
         <boxGeometry args={[w + 0.002, 0.003, d + 0.002]} />
