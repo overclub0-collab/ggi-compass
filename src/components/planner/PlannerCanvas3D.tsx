@@ -159,11 +159,15 @@ function SheerCurtain({ width, height, color, openRatio = 0 }: { width: number; 
   );
 }
 
-function BlackoutCurtain({ width, height, color }: { width: number; height: number; color: string }) {
+function BlackoutCurtain({ width, height, color, openRatio = 0 }: { width: number; height: number; color: string; openRatio?: number }) {
   const curtainH = height + 0.2;
-  const panelW = width * 0.55;
-  const leftGeom = useDrapedGeometry(panelW, curtainH, 50, 0.035, 10);
-  const rightGeom = useDrapedGeometry(panelW, curtainH, 50, 0.035, 10);
+  const closedPanelW = width * 0.55;
+  const panelW = closedPanelW * (1 - openRatio * 0.7);
+  const panelOffset = width * 0.28 + openRatio * (width * 0.22);
+  const foldFreq = 10 + openRatio * 18;
+  const foldDepth = 0.035 + openRatio * 0.03;
+  const leftGeom = useDrapedGeometry(panelW, curtainH, 50, foldDepth, foldFreq);
+  const rightGeom = useDrapedGeometry(panelW, curtainH, 50, foldDepth, foldFreq);
   const baseColor = new THREE.Color(color);
   const darkerColor = baseColor.clone().multiplyScalar(0.8);
 
@@ -171,15 +175,13 @@ function BlackoutCurtain({ width, height, color }: { width: number; height: numb
     <group position={[0, 0, 0.07]}>
       {[-1, 1].map((side, idx) => (
         <group key={side}>
-          {/* Outer (visible) layer */}
-          <mesh geometry={idx === 0 ? leftGeom : rightGeom} position={[side * width * 0.28, 0, 0]}>
+          <mesh geometry={idx === 0 ? leftGeom : rightGeom} position={[side * panelOffset, 0, 0]}>
             <meshStandardMaterial
               color={baseColor} roughness={0.88} metalness={0.02}
               side={THREE.DoubleSide}
             />
           </mesh>
-          {/* Inner lining — slightly lighter */}
-          <mesh geometry={idx === 0 ? leftGeom : rightGeom} position={[side * width * 0.28, 0, -0.008]}>
+          <mesh geometry={idx === 0 ? leftGeom : rightGeom} position={[side * panelOffset, 0, -0.008]}>
             <meshStandardMaterial
               color={darkerColor} roughness={0.95} metalness={0.0}
               side={THREE.DoubleSide}
@@ -187,9 +189,8 @@ function BlackoutCurtain({ width, height, color }: { width: number; height: numb
           </mesh>
         </group>
       ))}
-      {/* Weighted hem at bottom */}
       {[-1, 1].map(side => (
-        <mesh key={`hem-${side}`} position={[side * width * 0.28, -curtainH / 2 + 0.01, 0]}>
+        <mesh key={`hem-${side}`} position={[side * panelOffset, -curtainH / 2 + 0.01, 0]}>
           <boxGeometry args={[panelW, 0.025, 0.012]} />
           <meshStandardMaterial color={darkerColor} roughness={0.9} />
         </mesh>
