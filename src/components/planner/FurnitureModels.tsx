@@ -2663,8 +2663,14 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
 
   const baseColor = item.furniture.color || '#c8b89a';
   
-  // Get AI analysis if available
-  const analysis = useMemo(() => getCachedAnalysis(item.furnitureId), [item.furnitureId]);
+  // Get AI analysis if available, inject product name for keyword overrides
+  const analysis = useMemo(() => {
+    const cached = getCachedAnalysis(item.furnitureId);
+    if (cached) {
+      (cached as any)._productName = item.furniture.name || '';
+    }
+    return cached;
+  }, [item.furnitureId, item.furniture.name]);
   
   // Use AI type if available, fallback to keyword detection
   const furnitureType = useMemo(() => {

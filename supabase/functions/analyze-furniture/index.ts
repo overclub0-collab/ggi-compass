@@ -170,13 +170,17 @@ For leg style, look at the ACTUAL leg structure visible in the image, not assump
               {
                 type: "text",
                 text: `Analyze this furniture product image with EXTREME PRECISION. Product name: "${product_name || 'Unknown'}". 
-                
-Study the image carefully and extract:
-1. Exact number of compartments, doors, shelves, drawers
-2. Precise color hex codes from the image
-3. Structural section proportions (what percentage of height is bottom cabinet vs board area vs upper shelves)
-4. Material identification (melamine, metal, HPL, etc.)
-5. All visible structural details
+
+CRITICAL FOCUS AREAS:
+1. LEG STYLE: Look carefully at the legs. Are they thin metal tubes? Thick wood posts? T-shaped frames? Sled runners? Panel sides? Describe the EXACT leg structure.
+   - If "${product_name}" contains "철재" or "스틸": legs are metal (secondaryMaterial="metal")
+   - If "${product_name}" contains "목재" or "원목": legs are wood (secondaryMaterial="wood") 
+   - If "${product_name}" contains "오픈": hasDoor=false, hasOpenFront=true
+2. DOORS vs OPEN: Is the front OPEN (shelves visible) or CLOSED (with door panels)? Set hasDoor accurately.
+3. Exact number of compartments, doors, shelves, drawers
+4. Precise color hex codes from the image
+5. Structural section proportions
+6. Material identification (melamine, metal, HPL, etc.)
 
 Return the complete analysis JSON.`,
               },

@@ -259,7 +259,7 @@ export const FurnitureDetailPanel = ({
                   <Palette className="h-3 w-3" />
                   컬러 변경
                 </label>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-6 gap-1.5">
                   {COLOR_PRESETS.map((preset) => (
                     <button
                       key={preset.name}
