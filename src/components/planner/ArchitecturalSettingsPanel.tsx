@@ -271,6 +271,48 @@ export const ArchitecturalSettingsPanel = ({ config, onChange }: ArchitecturalSe
           <PositionSlider value={win.positionRatio} onChange={(v) => {
             const updated = [...config.windows]; updated[idx] = { ...win, positionRatio: v }; update('windows', updated);
           }} />
+          {/* Frame Color */}
+          <div>
+            <Label className="text-[10px] text-muted-foreground">프레임 컬러</Label>
+            <div className="flex gap-1.5 mt-1">
+              {WINDOW_FRAME_COLORS.map(fc => (
+                <button key={fc.value} onClick={() => {
+                  const updated = [...config.windows]; updated[idx] = { ...win, frameColor: fc.value as WindowConfig['frameColor'] }; update('windows', updated);
+                }}
+                  className={cn("w-7 h-7 rounded-md border-2 transition-all flex items-center justify-center text-[8px]", (win.frameColor || 'white') === fc.value ? 'border-primary ring-1 ring-primary scale-110' : 'border-border')}
+                  style={{ backgroundColor: fc.value === 'white' ? '#fff' : fc.value === 'wood' ? '#a0784c' : fc.value === 'black' ? '#222' : '#c0c0c0' }}
+                  title={fc.label}
+                />
+              ))}
+            </div>
+          </div>
+          {/* Curtain Type */}
+          <div>
+            <Label className="text-[10px] text-muted-foreground">커튼</Label>
+            <Select value={win.curtain || 'none'} onValueChange={(v) => {
+              const updated = [...config.windows]; updated[idx] = { ...win, curtain: v as WindowConfig['curtain'] }; update('windows', updated);
+            }}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>{CURTAIN_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          {/* Curtain Color */}
+          {win.curtain && win.curtain !== 'none' && (
+            <div>
+              <Label className="text-[10px] text-muted-foreground">커튼 컬러</Label>
+              <div className="flex gap-1.5 mt-1">
+                {CURTAIN_COLORS.map(cc => (
+                  <button key={cc.value} onClick={() => {
+                    const updated = [...config.windows]; updated[idx] = { ...win, curtainColor: cc.value }; update('windows', updated);
+                  }}
+                    className={cn("w-7 h-7 rounded-md border-2 transition-all", (win.curtainColor || '#f5f0e8') === cc.value ? 'border-primary ring-1 ring-primary scale-110' : 'border-border')}
+                    style={{ backgroundColor: cc.value }}
+                    title={cc.label}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>

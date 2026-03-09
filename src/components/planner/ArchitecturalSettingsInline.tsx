@@ -295,6 +295,48 @@ function WindowsSection({ config, update }: { config: ArchitecturalConfig; updat
           <PositionSlider value={win.positionRatio} onChange={(v) => {
             const u = [...config.windows]; u[idx] = { ...win, positionRatio: v }; update('windows', u);
           }} />
+          {/* Frame Color */}
+          <div>
+            <Label className="text-[10px] text-[#000]/60">프레임 컬러</Label>
+            <div className="flex gap-1.5 mt-1">
+              {WINDOW_FRAME_COLORS.map(fc => (
+                <button key={fc.value} onClick={() => {
+                  const u = [...config.windows]; u[idx] = { ...win, frameColor: fc.value as WindowConfig['frameColor'] }; update('windows', u);
+                }}
+                  className={cn("w-7 h-7 rounded-md border-2 transition-all", (win.frameColor || 'white') === fc.value ? 'border-primary ring-1 ring-primary scale-110' : 'border-border')}
+                  style={{ backgroundColor: fc.swatch }}
+                  title={fc.label}
+                />
+              ))}
+            </div>
+          </div>
+          {/* Curtain Type */}
+          <div>
+            <Label className="text-[10px] text-[#000]/60">커튼</Label>
+            <Select value={win.curtain || 'none'} onValueChange={(v) => {
+              const u = [...config.windows]; u[idx] = { ...win, curtain: v as WindowConfig['curtain'] }; update('windows', u);
+            }}>
+              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>{CURTAIN_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          {/* Curtain Color — only if curtain is not 'none' */}
+          {win.curtain && win.curtain !== 'none' && (
+            <div>
+              <Label className="text-[10px] text-[#000]/60">커튼 컬러</Label>
+              <div className="flex gap-1.5 mt-1">
+                {CURTAIN_COLORS.map(cc => (
+                  <button key={cc.value} onClick={() => {
+                    const u = [...config.windows]; u[idx] = { ...win, curtainColor: cc.value }; update('windows', u);
+                  }}
+                    className={cn("w-7 h-7 rounded-md border-2 transition-all", (win.curtainColor || '#f5f0e8') === cc.value ? 'border-primary ring-1 ring-primary scale-110' : 'border-border')}
+                    style={{ backgroundColor: cc.swatch }}
+                    title={cc.label}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </ItemCard>
       ))}
     </>
