@@ -548,7 +548,61 @@ function SnapshotHelper({ onCapture }: { onCapture: (fn: () => void) => void }) 
   return null;
 }
 
-function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig, hdriPreset, onCaptureReady }:
+// ===== Keyboard Camera Controls (WASD + QE + RF) =====
+function KeyboardCameraControls() {
+  const { camera } = useThree();
+  const keys = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const onDown = (e: KeyboardEvent) => {
+      // Don't capture if user is typing in an input
+      if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
+      keys.current.add(e.key.toLowerCase());
+    };
+    const onUp = (e: KeyboardEvent) => {
+      keys.current.delete(e.key.toLowerCase());
+    };
+    window.addEventListener('keydown', onDown);
+    window.addEventListener('keyup', onUp);
+    return () => {
+      window.removeEventListener('keydown', onDown);
+      window.removeEventListener('keyup', onUp);
+    };
+  }, []);
+
+  useFrame((_, delta) => {
+    if (keys.current.size === 0) return;
+    const speed = 4 * delta;
+    const rotSpeed = 1.5 * delta;
+
+    // Forward direction (camera's look direction projected on XZ plane)
+    const forward = new THREE.Vector3();
+    camera.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
+
+    const right = new THREE.Vector3();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    // WASD: pan camera position
+    if (keys.current.has('w')) { camera.position.addScaledVector(forward, speed); }
+    if (keys.current.has('s')) { camera.position.addScaledVector(forward, -speed); }
+    if (keys.current.has('a')) { camera.position.addScaledVector(right, -speed); }
+    if (keys.current.has('d')) { camera.position.addScaledVector(right, speed); }
+
+    // R/F: move up/down
+    if (keys.current.has('r')) { camera.position.y += speed; }
+    if (keys.current.has('f')) { camera.position.y = Math.max(0.2, camera.position.y - speed); }
+
+    // Q/E: rotate camera around Y axis
+    if (keys.current.has('q')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed); }
+    if (keys.current.has('e')) { camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed); }
+  });
+
+  return null;
+}
+
+
   Omit<PlannerCanvas3DProps, 'scale' | 'architecturalConfig'> & { archConfig: ArchitecturalConfig; hdriPreset: HdriPresetType; onCaptureReady: (fn: () => void) => void }) {
   const w = roomDimensions.width / 1000;
   const d = roomDimensions.height / 1000;
