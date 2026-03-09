@@ -337,6 +337,20 @@ function WindowsSection({ config, update }: { config: ArchitecturalConfig; updat
               </div>
             </div>
           )}
+          {/* Curtain Open Ratio */}
+          {win.curtain && win.curtain !== 'none' && (
+            <div>
+              <Label className="text-[10px] text-[#000]/60">개폐 정도 ({Math.round((win.curtainOpenRatio ?? 0) * 100)}%)</Label>
+              <input type="range" min={0} max={1} step={0.05} value={win.curtainOpenRatio ?? 0}
+                onChange={(e) => {
+                  const u = [...config.windows]; u[idx] = { ...win, curtainOpenRatio: parseFloat(e.target.value) }; update('windows', u);
+                }}
+                className="w-full h-1.5 accent-primary" />
+              <div className="flex justify-between text-[9px] text-[#000]/40">
+                <span>닫힘</span><span>열림</span>
+              </div>
+            </div>
+          )}
         </ItemCard>
       ))}
     </>

@@ -248,22 +248,26 @@ function RomanShade({ width, height, color, openRatio = 0 }: { width: number; he
   );
 }
 
-function VenetianBlinds({ width, height, color }: { width: number; height: number; color: string }) {
-  const slatCount = Math.floor(height / 0.045);
+function VenetianBlinds({ width, height, color, openRatio = 0 }: { width: number; height: number; color: string; openRatio?: number }) {
+  // When open, slats tilt flat and pull up
+  const visibleHeight = height * (1 - openRatio * 0.8);
+  const slatCount = Math.max(3, Math.floor(visibleHeight / 0.045));
   const slatW = width - 0.04;
   const baseColor = new THREE.Color(color);
+  const tiltAngle = 0.18 * (1 - openRatio); // slats go flat when open
+  const yStart = height / 2 - (height - visibleHeight); // pull up from bottom
 
   return (
-    <group position={[0, 0, 0.045]}>
+    <group position={[0, (height - visibleHeight) / 2, 0.045]}>
       {/* Top headrail */}
-      <mesh position={[0, height / 2 + 0.025, 0]}>
+      <mesh position={[0, yStart + 0.025, 0]}>
         <boxGeometry args={[slatW + 0.03, 0.045, 0.035]} />
         <meshStandardMaterial color="#e0dbd5" roughness={0.4} metalness={0.15} />
       </mesh>
-      {/* Slats with alternating tilt for realism */}
+      {/* Slats */}
       {Array.from({ length: slatCount }, (_, i) => {
-        const yPos = height / 2 - i * (height / slatCount) - 0.02;
-        const tilt = 0.18 + Math.sin(i * 0.5) * 0.04; // slight variation
+        const yPos = yStart - i * (visibleHeight / slatCount) - 0.02;
+        const tilt = tiltAngle + Math.sin(i * 0.5) * 0.04 * (1 - openRatio);
         return (
           <mesh key={i} position={[0, yPos, 0]} rotation={[tilt, 0, 0]}>
             <boxGeometry args={[slatW, 0.002, 0.024]} />
@@ -276,13 +280,13 @@ function VenetianBlinds({ width, height, color }: { width: number; height: numbe
       })}
       {/* Lift cords */}
       {[-0.35, 0, 0.35].map((xRatio, i) => (
-        <mesh key={i} position={[xRatio * slatW, 0, 0.002]}>
-          <cylinderGeometry args={[0.001, 0.001, height, 4]} />
+        <mesh key={i} position={[xRatio * slatW, (yStart - visibleHeight / 2), 0.002]}>
+          <cylinderGeometry args={[0.001, 0.001, visibleHeight, 4]} />
           <meshStandardMaterial color="#d5d0c5" roughness={0.9} transparent opacity={0.5} />
         </mesh>
       ))}
       {/* Bottom rail */}
-      <mesh position={[0, -height / 2 + 0.01, 0]}>
+      <mesh position={[0, yStart - visibleHeight + 0.01, 0]}>
         <boxGeometry args={[slatW, 0.015, 0.025]} />
         <meshStandardMaterial color="#d8d2c8" roughness={0.4} metalness={0.2} />
       </mesh>

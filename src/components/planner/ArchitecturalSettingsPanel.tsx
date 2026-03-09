@@ -314,6 +314,20 @@ export const ArchitecturalSettingsPanel = ({ config, onChange }: ArchitecturalSe
               </div>
             </div>
           )}
+          {/* Curtain Open Ratio */}
+          {win.curtain && win.curtain !== 'none' && (
+            <div>
+              <Label className="text-[10px] text-muted-foreground">개폐 정도 ({Math.round((win.curtainOpenRatio ?? 0) * 100)}%)</Label>
+              <input type="range" min={0} max={1} step={0.05} value={win.curtainOpenRatio ?? 0}
+                onChange={(e) => {
+                  const updated = [...config.windows]; updated[idx] = { ...win, curtainOpenRatio: parseFloat(e.target.value) }; update('windows', updated);
+                }}
+                className="w-full h-1.5 accent-primary" />
+              <div className="flex justify-between text-[9px] text-muted-foreground">
+                <span>닫힘</span><span>열림</span>
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>
