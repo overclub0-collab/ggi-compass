@@ -202,20 +202,45 @@ Be precise about colors - extract the actual colors from the image. For proporti
                   },
                   partTextures: {
                     type: "object",
-                    description: "Per-part texture overrides. Only include parts present in the furniture.",
-                    properties: {
-                      top: { $ref: "#/properties/texture" },
-                      legs: { $ref: "#/properties/texture" },
-                      body: { $ref: "#/properties/texture" },
-                      seat: { $ref: "#/properties/texture" },
-                      back: { $ref: "#/properties/texture" },
-                      arms: { $ref: "#/properties/texture" },
-                      drawers: { $ref: "#/properties/texture" },
-                      doors: { $ref: "#/properties/texture" },
-                      shelves: { $ref: "#/properties/texture" },
-                      cushion: { $ref: "#/properties/texture" },
-                      accent: { $ref: "#/properties/texture" },
-                    },
+                    description: "Per-part texture overrides. Only include parts actually present in the furniture. Each part uses the same texture schema.",
+                    properties: Object.fromEntries(
+                      ["top", "legs", "body", "seat", "back", "arms", "drawers", "doors", "shelves", "cushion", "accent"].map(part => [
+                        part,
+                        {
+                          type: "object",
+                          properties: {
+                            woodGrain: {
+                              type: "object",
+                              properties: {
+                                direction: { type: "string", enum: ["horizontal", "vertical", "diagonal", "radial"] },
+                                intensity: { type: "string", enum: ["subtle", "moderate", "pronounced"] },
+                                knotFrequency: { type: "string", enum: ["none", "few", "many"] },
+                                grainColor: { type: "string" },
+                              },
+                            },
+                            fabricPattern: {
+                              type: "object",
+                              properties: {
+                                type: { type: "string", enum: ["plain", "twill", "knit", "velvet", "leather-grain", "mesh", "woven"] },
+                                weaveScale: { type: "number" },
+                                patternColor: { type: "string" },
+                              },
+                            },
+                            metalFinish: {
+                              type: "object",
+                              properties: {
+                                type: { type: "string", enum: ["brushed", "polished", "powder-coated", "anodized", "chrome", "matte"] },
+                                brushDirection: { type: "string", enum: ["horizontal", "vertical", "circular"] },
+                              },
+                            },
+                            surfaceFinish: { type: "string", enum: ["glossy", "satin", "matte", "textured", "raw"] },
+                            roughnessEstimate: { type: "number" },
+                            metalnessEstimate: { type: "number" },
+                          },
+                          required: ["surfaceFinish", "roughnessEstimate", "metalnessEstimate"],
+                        },
+                      ])
+                    ),
                   },
                 },
                 required: [
