@@ -349,6 +349,8 @@ Return the complete analysis JSON.`,
       }),
     });
 
+    clearTimeout(timeout);
+
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
