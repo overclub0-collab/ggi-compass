@@ -307,11 +307,9 @@ function ChairModel({ w, d, h, color, isSelected }: {
       </RoundedBox>
 
       {/* Backrest */}
-      <mesh position={[0, seatY + backH * 0.5, -(d / 2 - backThick / 2)]} castShadow>
-        <boxGeometry args={[w * 0.85, backH * 0.8, backThick]} />
+      <RoundedBox args={[w * 0.85, backH * 0.8, backThick]} radius={0.008} smoothness={4} position={[0, seatY + backH * 0.5, -(d / 2 - backThick / 2)]} castShadow>
         {fabricMat(lighten(color, 0.04), isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={1} />
-      </mesh>
+      </RoundedBox>
       {/* Backrest top rail */}
       <mesh position={[0, seatY + backH * 0.92, -(d / 2 - backThick / 2)]} castShadow>
         <boxGeometry args={[w * 0.9, 0.028, backThick + 0.008]} />
