@@ -95,12 +95,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'double', material: 'glass', width: 1.8, height: 2.1, wall: 'front', positionRatio: 0.5 },
         { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'right', positionRatio: 0.85 },
       ],
-      columns: [
-        { wall: 'back', positionRatio: 0.5, radius: 0.2 },
-      ],
-      partitions: [
-        { wall: 'right', positionRatio: 0.35, width: 1.5, height: 1.2 },
-      ],
+      columns: [],
+      partitions: [],
       outlets: [
         { wall: 'left', positionRatio: 0.3 },
         { wall: 'left', positionRatio: 0.7 },
