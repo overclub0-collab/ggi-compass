@@ -1478,29 +1478,31 @@ function AIEnhancedChair({ w, d, h, color, isSelected, analysis }: {
   const hasCushion = analysis.hasCushion ?? true;
   const isStar = analysis.legStyle === 'star-base';
   const is4Legs = analysis.legStyle === '4-legs';
-  const seatMat = analysis.primaryMaterial === 'leather' || analysis.primaryMaterial === 'fabric' ? fabricMat : plasticMat;
+  const seatMatFn = analysis.primaryMaterial === 'leather' || analysis.primaryMaterial === 'fabric' ? fabricMat : plasticMat;
 
   return (
     <group>
       {/* Seat */}
+      {(() => { usePartTexture('seat'); return null; })()}
       <RoundedBox args={[w * 0.92, seatH, d * 0.85]} radius={0.012} smoothness={4} position={[0, seatY, d * 0.04]} castShadow receiveShadow>
-        {seatMat(colors.primary, isSelected)}
+        {seatMatFn(colors.primary, isSelected)}
       </RoundedBox>
       {hasCushion && (
         <RoundedBox args={[w * 0.84, 0.006, d * 0.76]} radius={0.003} smoothness={2} position={[0, seatY + seatH / 2 + 0.003, d * 0.04]}>
-          {seatMat(lighten(colors.primary, 0.08), isSelected)}
+          {(() => { usePartTexture('cushion'); return seatMatFn(lighten(colors.primary, 0.08), isSelected); })()}
         </RoundedBox>
       )}
 
       {/* Backrest */}
       {analysis.hasBackrest !== false && (
         <>
+          {(() => { usePartTexture('back'); return null; })()}
           <RoundedBox args={[w * 0.85, backH * 0.8, 0.025]} radius={0.008} smoothness={4} position={[0, seatY + backH * 0.5, -(d / 2 - 0.013)]} castShadow>
-            {seatMat(lighten(colors.primary, 0.04), isSelected)}
+            {seatMatFn(lighten(colors.primary, 0.04), isSelected)}
           </RoundedBox>
           <mesh position={[0, seatY + backH * 0.92, -(d / 2 - 0.013)]} castShadow>
             <boxGeometry args={[w * 0.9, 0.028, 0.033]} />
-            {plasticMat(colors.secondary, isSelected)}
+            {(() => { usePartTexture('accent'); return plasticMat(colors.secondary, isSelected); })()}
           </mesh>
         </>
       )}
@@ -1508,6 +1510,7 @@ function AIEnhancedChair({ w, d, h, color, isSelected, analysis }: {
       {/* Armrests */}
       {hasArms && [-1, 1].map(side => (
         <group key={`arm-${side}`}>
+          {(() => { usePartTexture('arms'); return null; })()}
           <mesh position={[side * (w * 0.42), seatY + 0.08, 0]}>
             <boxGeometry args={[0.03, 0.02, d * 0.5]} />
             {plasticMat(colors.secondary, isSelected)}
@@ -1520,6 +1523,7 @@ function AIEnhancedChair({ w, d, h, color, isSelected, analysis }: {
       ))}
 
       {/* Legs */}
+      {(() => { usePartTexture('legs'); return null; })()}
       {isStar ? (
         <>
           <mesh position={[0, seatY / 2, 0]} castShadow>
@@ -1560,7 +1564,6 @@ function AIEnhancedChair({ w, d, h, color, isSelected, analysis }: {
           </mesh>
         ))
       ) : (
-        // Default star base
         <>
           <mesh position={[0, seatY / 2, 0]} castShadow>
             <cylinderGeometry args={[0.025, 0.025, seatY * 0.6, 12]} />
@@ -1578,6 +1581,7 @@ function AIEnhancedChair({ w, d, h, color, isSelected, analysis }: {
           })}
         </>
       )}
+      {(() => { useDefaultTexture(); return null; })()}
     </group>
   );
 }
