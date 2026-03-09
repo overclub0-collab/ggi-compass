@@ -75,10 +75,30 @@ Return a JSON object with these fields:
     "heightToWidthRatio": number,
     "seatHeightRatio": number (for chairs, 0-1 ratio of total height)
   },
-  "details": string[] (list of notable visual details like "crossbar", "curved-back", "tapered-legs", "rounded-edges", "metal-frame", "wood-grain", "upholstered", etc)
+  "details": string[] (list of notable visual details like "crossbar", "curved-back", "tapered-legs", "rounded-edges", "metal-frame", "wood-grain", "upholstered", etc),
+  "texture": {
+    "woodGrain": {
+      "direction": "horizontal" | "vertical" | "diagonal" | "radial",
+      "intensity": "subtle" | "moderate" | "pronounced",
+      "knotFrequency": "none" | "few" | "many",
+      "grainColor": "#hexcolor (darker grain line color)"
+    },
+    "fabricPattern": {
+      "type": "plain" | "twill" | "knit" | "velvet" | "leather-grain" | "mesh" | "woven",
+      "weaveScale": number (0.5-5, how tight the weave is),
+      "patternColor": "#hexcolor (secondary pattern color if visible)"
+    },
+    "metalFinish": {
+      "type": "brushed" | "polished" | "powder-coated" | "anodized" | "chrome" | "matte",
+      "brushDirection": "horizontal" | "vertical" | "circular"
+    },
+    "surfaceFinish": "glossy" | "satin" | "matte" | "textured" | "raw",
+    "roughnessEstimate": number (0-1, PBR roughness),
+    "metalnessEstimate": number (0-1, PBR metalness)
+  }
 }
 
-Be precise about colors - extract the actual colors from the image. For proportions, estimate carefully from the image perspective.`;
+Be precise about colors - extract the actual colors from the image. For proportions, estimate carefully from the image perspective. For texture, carefully observe grain direction, surface sheen, and material finish quality.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -144,11 +164,44 @@ Be precise about colors - extract the actual colors from the image. For proporti
                     required: ["widthToDepthRatio", "heightToWidthRatio"],
                   },
                   details: { type: "array", items: { type: "string" } },
+                  texture: {
+                    type: "object",
+                    properties: {
+                      woodGrain: {
+                        type: "object",
+                        properties: {
+                          direction: { type: "string", enum: ["horizontal", "vertical", "diagonal", "radial"] },
+                          intensity: { type: "string", enum: ["subtle", "moderate", "pronounced"] },
+                          knotFrequency: { type: "string", enum: ["none", "few", "many"] },
+                          grainColor: { type: "string" },
+                        },
+                      },
+                      fabricPattern: {
+                        type: "object",
+                        properties: {
+                          type: { type: "string", enum: ["plain", "twill", "knit", "velvet", "leather-grain", "mesh", "woven"] },
+                          weaveScale: { type: "number" },
+                          patternColor: { type: "string" },
+                        },
+                      },
+                      metalFinish: {
+                        type: "object",
+                        properties: {
+                          type: { type: "string", enum: ["brushed", "polished", "powder-coated", "anodized", "chrome", "matte"] },
+                          brushDirection: { type: "string", enum: ["horizontal", "vertical", "circular"] },
+                        },
+                      },
+                      surfaceFinish: { type: "string", enum: ["glossy", "satin", "matte", "textured", "raw"] },
+                      roughnessEstimate: { type: "number" },
+                      metalnessEstimate: { type: "number" },
+                    },
+                    required: ["surfaceFinish", "roughnessEstimate", "metalnessEstimate"],
+                  },
                 },
                 required: [
                   "furnitureType", "shape", "legStyle", "legCount",
                   "primaryMaterial", "primaryColor", "secondaryColor",
-                  "topThickness", "legThickness", "proportions", "details"
+                  "topThickness", "legThickness", "proportions", "details", "texture"
                 ],
                 additionalProperties: false,
               },
