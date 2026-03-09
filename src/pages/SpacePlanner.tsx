@@ -28,6 +28,7 @@ const SpacePlanner = () => {
   const [started, setStarted] = useState(false);
   const [consultationOpen, setConsultationOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [fpsMode, setFpsMode] = useState(false);
   const [, setDraggingFurniture] = useState<FurnitureItem | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [archConfig, setArchConfig] = useState<ArchitecturalConfig>(DEFAULT_ARCHITECTURAL_CONFIG);
