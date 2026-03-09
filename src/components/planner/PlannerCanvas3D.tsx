@@ -393,17 +393,20 @@ function CeilingLightElement({ position, lightType = 'panel' }: {
 }) {
   const isPendant = lightType === 'pendant';
   const isSpot = lightType === 'spot';
+  const isChandelier = lightType === 'chandelier';
+  const isTrack = lightType === 'track';
+  const isRecessed = lightType === 'recessed';
+  const isWallSconce = lightType === 'wall-sconce';
+  const isLinear = lightType === 'linear';
 
   return (
     <group position={position}>
       {isPendant ? (
         <>
-          {/* Cord */}
           <mesh position={[0, -0.3, 0]}>
             <cylinderGeometry args={[0.003, 0.003, 0.6, 6]} />
             <meshStandardMaterial color="#333" roughness={0.5} metalness={0.5} />
           </mesh>
-          {/* Shade */}
           <mesh position={[0, -0.65, 0]}>
             <cylinderGeometry args={[0.15, 0.25, 0.2, 16, 1, true]} />
             <meshStandardMaterial color="#e8e4db" roughness={0.6} metalness={0.05} side={THREE.DoubleSide} />
@@ -412,12 +415,97 @@ function CeilingLightElement({ position, lightType = 'panel' }: {
         </>
       ) : isSpot ? (
         <>
-          {/* Housing */}
           <mesh position={[0, -0.05, 0]}>
             <cylinderGeometry args={[0.04, 0.06, 0.1, 12]} />
             <meshStandardMaterial color="#ccc" roughness={0.3} metalness={0.7} />
           </mesh>
           <spotLight position={[0, -0.1, 0]} angle={0.5} penumbra={0.5} intensity={1} color="#fff8ee" distance={5} castShadow />
+        </>
+      ) : isChandelier ? (
+        <>
+          {/* Central hub */}
+          <mesh position={[0, -0.15, 0]}>
+            <sphereGeometry args={[0.06, 16, 16]} />
+            <meshStandardMaterial color="#c8a870" roughness={0.2} metalness={0.85} />
+          </mesh>
+          <mesh position={[0, -0.05, 0]}>
+            <cylinderGeometry args={[0.003, 0.003, 0.1, 6]} />
+            <meshStandardMaterial color="#c8a870" roughness={0.3} metalness={0.8} />
+          </mesh>
+          {/* Arms with bulbs */}
+          {[0, 1, 2, 3, 4, 5].map(i => {
+            const angle = (i * Math.PI * 2) / 6;
+            const armLen = 0.2;
+            return (
+              <group key={i}>
+                <mesh position={[Math.cos(angle) * armLen / 2, -0.15, Math.sin(angle) * armLen / 2]} rotation={[0, -angle, Math.PI / 12]}>
+                  <cylinderGeometry args={[0.004, 0.004, armLen, 6]} />
+                  <meshStandardMaterial color="#c8a870" roughness={0.25} metalness={0.8} />
+                </mesh>
+                <mesh position={[Math.cos(angle) * armLen, -0.12, Math.sin(angle) * armLen]}>
+                  <sphereGeometry args={[0.025, 8, 8]} />
+                  <meshStandardMaterial color="#fff8e0" emissive="#fff8e0" emissiveIntensity={0.6} transparent opacity={0.9} />
+                </mesh>
+              </group>
+            );
+          })}
+          <pointLight position={[0, -0.2, 0]} intensity={1.2} color="#fff0d0" distance={8} castShadow />
+        </>
+      ) : isTrack ? (
+        <>
+          {/* Track bar */}
+          <mesh position={[0, -0.02, 0]}>
+            <boxGeometry args={[1.2, 0.02, 0.03]} />
+            <meshStandardMaterial color="#222" roughness={0.3} metalness={0.8} />
+          </mesh>
+          {/* 3 spot heads on track */}
+          {[-0.35, 0, 0.35].map((x, i) => (
+            <group key={i}>
+              <mesh position={[x, -0.06, 0]} rotation={[0.2, 0, 0]}>
+                <cylinderGeometry args={[0.03, 0.04, 0.06, 10]} />
+                <meshStandardMaterial color="#333" roughness={0.3} metalness={0.7} />
+              </mesh>
+              <spotLight position={[x, -0.1, 0]} angle={0.4} penumbra={0.6} intensity={0.5} color="#fff8ee" distance={4} />
+            </group>
+          ))}
+        </>
+      ) : isRecessed ? (
+        <>
+          <mesh position={[0, -0.005, 0]}>
+            <cylinderGeometry args={[0.08, 0.08, 0.01, 16]} />
+            <meshStandardMaterial color="#f0ede5" roughness={0.3} metalness={0.1} />
+          </mesh>
+          <mesh position={[0, -0.015, 0]}>
+            <cylinderGeometry args={[0.06, 0.06, 0.005, 16]} />
+            <meshStandardMaterial color="#fffef5" emissive="#fffef5" emissiveIntensity={0.6} />
+          </mesh>
+          <spotLight position={[0, -0.02, 0]} angle={0.7} penumbra={0.4} intensity={0.6} color="#fff8ee" distance={4} />
+        </>
+      ) : isLinear ? (
+        <>
+          <mesh position={[0, -0.015, 0]}>
+            <boxGeometry args={[1.0, 0.02, 0.06]} />
+            <meshStandardMaterial color="#e8e5e0" roughness={0.3} metalness={0.1} />
+          </mesh>
+          <mesh position={[0, -0.028, 0]}>
+            <planeGeometry args={[0.96, 0.04]} />
+            <meshStandardMaterial color="#fffef5" emissive="#fffef5" emissiveIntensity={0.5} transparent opacity={0.9} />
+          </mesh>
+          <pointLight position={[0, -0.05, 0]} intensity={0.5} color="#fff8ee" distance={4} />
+        </>
+      ) : isWallSconce ? (
+        <>
+          {/* Wall mount plate */}
+          <mesh position={[0, -0.05, 0]}>
+            <boxGeometry args={[0.08, 0.12, 0.03]} />
+            <meshStandardMaterial color="#c8a870" roughness={0.3} metalness={0.7} />
+          </mesh>
+          {/* Shade */}
+          <mesh position={[0, 0, 0.04]}>
+            <cylinderGeometry args={[0.06, 0.08, 0.1, 12, 1, true]} />
+            <meshStandardMaterial color="#f0e8d8" roughness={0.7} metalness={0.02} side={THREE.DoubleSide} />
+          </mesh>
+          <pointLight position={[0, 0, 0.06]} intensity={0.4} color="#fff5e0" distance={3} />
         </>
       ) : (
         <>
@@ -426,7 +514,6 @@ function CeilingLightElement({ position, lightType = 'panel' }: {
             <boxGeometry args={[0.6, 0.03, 0.6]} />
             <meshStandardMaterial color="#f5f3ee" roughness={0.2} metalness={0.1} />
           </mesh>
-          {/* Glow surface */}
           <mesh position={[0, -0.032, 0]}>
             <planeGeometry args={[0.56, 0.56]} />
             <meshStandardMaterial color="#fffef5" emissive="#fffef5" emissiveIntensity={0.5} transparent opacity={0.9} />
