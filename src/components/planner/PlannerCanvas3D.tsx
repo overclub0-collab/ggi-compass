@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import * as THREE from 'three';
 import { ArchitecturalConfig, DEFAULT_ARCHITECTURAL_CONFIG, FloorMaterialType, WallMaterialType } from './ArchitecturalSettingsPanel';
 
+export type HdriPresetType = 'apartment' | 'studio' | 'warehouse' | 'city' | 'sunset' | 'forest';
+
 interface PlannerCanvas3DProps {
   roomDimensions: RoomDimensions;
   placedFurniture: PlacedFurniture[];
@@ -19,6 +21,7 @@ interface PlannerCanvas3DProps {
   onSelect: (id: string | null) => void;
   onRightClickSelect?: (id: string) => void;
   architecturalConfig?: ArchitecturalConfig;
+  hdriPreset?: HdriPresetType;
 }
 
 const EDGE_COLOR = '#2a2a2a';
@@ -545,8 +548,8 @@ function SnapshotHelper({ onCapture }: { onCapture: (fn: () => void) => void }) 
   return null;
 }
 
-function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig, onCaptureReady }:
-  Omit<PlannerCanvas3DProps, 'scale' | 'architecturalConfig'> & { archConfig: ArchitecturalConfig; onCaptureReady: (fn: () => void) => void }) {
+function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig, hdriPreset, onCaptureReady }:
+  Omit<PlannerCanvas3DProps, 'scale' | 'architecturalConfig'> & { archConfig: ArchitecturalConfig; hdriPreset: HdriPresetType; onCaptureReady: (fn: () => void) => void }) {
   const w = roomDimensions.width / 1000;
   const d = roomDimensions.height / 1000;
 
@@ -563,7 +566,7 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
       <SoftShadows size={30} samples={20} focus={0.4} />
 
       {/* HDRI Environment Map for realistic reflections */}
-      <Environment preset="apartment" background={false} environmentIntensity={0.5} />
+      <Environment preset={hdriPreset} background={false} environmentIntensity={0.5} />
 
       {/* Soft ambient fill */}
       <ambientLight intensity={0.15} />
@@ -667,7 +670,7 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
 export const PlannerCanvas3D = ({
   roomDimensions, placedFurniture, selectedId,
-  onSelect, onRightClickSelect, architecturalConfig,
+  onSelect, onRightClickSelect, architecturalConfig, hdriPreset = 'apartment',
 }: PlannerCanvas3DProps) => {
   const captureRef = useRef<(() => void) | null>(null);
   const archConfig = architecturalConfig || DEFAULT_ARCHITECTURAL_CONFIG;
@@ -718,6 +721,7 @@ export const PlannerCanvas3D = ({
           onSelect={onSelect}
           onRightClickSelect={onRightClickSelect}
           archConfig={archConfig}
+          hdriPreset={hdriPreset}
           onCaptureReady={handleCaptureReady}
         />
       </Canvas>

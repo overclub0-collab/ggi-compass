@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers } from 'lucide-react';
+import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers, Sun } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { PlannerLeftPanel } from '@/components/planner/PlannerLeftPanel';
 import { PlannerCanvas } from '@/components/planner/PlannerCanvas';
@@ -30,6 +31,7 @@ const SpacePlanner = () => {
   const [, setDraggingFurniture] = useState<FurnitureItem | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [archConfig, setArchConfig] = useState<ArchitecturalConfig>(DEFAULT_ARCHITECTURAL_CONFIG);
+  const [hdriPreset, setHdriPreset] = useState<'apartment' | 'studio' | 'warehouse' | 'city' | 'sunset' | 'forest'>('apartment');
 
   const pinnedFurniture = pinnedId ? placedFurniture.find(f => f.id === pinnedId) : undefined;
 
@@ -118,6 +120,26 @@ const SpacePlanner = () => {
               </Button>
             </div>
           )}
+
+          {/* HDRI Environment Preset — 3D only */}
+          {viewMode === '3d' && (
+            <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2 py-0.5">
+              <Sun className="h-3.5 w-3.5 text-white/70" />
+              <Select value={hdriPreset} onValueChange={(v) => setHdriPreset(v as typeof hdriPreset)}>
+                <SelectTrigger className="h-7 w-[110px] border-0 bg-transparent text-white text-xs px-1.5 focus:ring-0 focus:ring-offset-0 [&>span]:text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="apartment">🏠 Apartment</SelectItem>
+                  <SelectItem value="studio">💡 Studio</SelectItem>
+                  <SelectItem value="warehouse">🏭 Warehouse</SelectItem>
+                  <SelectItem value="city">🌆 City</SelectItem>
+                  <SelectItem value="sunset">🌅 Sunset</SelectItem>
+                  <SelectItem value="forest">🌲 Forest</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </header>
 
@@ -153,6 +175,7 @@ const SpacePlanner = () => {
             onSelect={handleSelect}
             onRightClickSelect={handleRightClickSelect}
             architecturalConfig={archConfig}
+            hdriPreset={hdriPreset}
           />
         )}
 
