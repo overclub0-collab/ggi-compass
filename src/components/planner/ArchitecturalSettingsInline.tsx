@@ -109,6 +109,23 @@ export const ArchitecturalSettingsInline = ({ config, onChange }: Props) => {
     <div className="p-3 space-y-1">
       <h3 className="text-sm font-bold text-[#000] px-1 pb-2">🏗️ 건축 요소</h3>
 
+      {/* Finishes Section — always at top */}
+      <div className="border border-border rounded-lg overflow-hidden mb-2">
+        <button
+          onClick={() => toggle('finishes')}
+          className="w-full flex items-center gap-2 px-3 py-2.5 text-[#000] bg-amber-50"
+        >
+          <span className="text-sm">🎨</span>
+          <span className="text-xs font-bold text-[#000] flex-1 text-left">마감재</span>
+          <ChevronDown className={cn("h-3.5 w-3.5 text-[#000] transition-transform", openSection === 'finishes' && "rotate-180")} />
+        </button>
+        {openSection === 'finishes' && (
+          <div className="p-3 space-y-3 border-t border-border">
+            <FinishesSection config={config} onChange={onChange} />
+          </div>
+        )}
+      </div>
+
       {ARCH_CATEGORIES.map(cat => {
         const Icon = cat.icon;
         const count = cat.count(config);
@@ -116,7 +133,6 @@ export const ArchitecturalSettingsInline = ({ config, onChange }: Props) => {
 
         return (
           <div key={cat.key} className="border border-border rounded-lg overflow-hidden">
-            {/* Section header - no hover effect */}
             <button
               onClick={() => toggle(cat.key)}
               className="w-full flex items-center gap-2 px-3 py-2.5 text-[#000] bg-muted/30"
@@ -130,8 +146,6 @@ export const ArchitecturalSettingsInline = ({ config, onChange }: Props) => {
               )}
               <ChevronDown className={cn("h-3.5 w-3.5 text-[#000] transition-transform", isOpen && "rotate-180")} />
             </button>
-
-            {/* Section content */}
             {isOpen && (
               <div className="p-3 space-y-3 border-t border-border">
                 {cat.key === 'windows' && <WindowsSection config={config} update={update} />}
