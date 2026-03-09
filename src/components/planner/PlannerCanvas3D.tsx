@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import * as THREE from 'three';
 import { ArchitecturalConfig, DEFAULT_ARCHITECTURAL_CONFIG, FloorMaterialType, WallMaterialType } from './ArchitecturalSettingsPanel';
 
+export type HdriPresetType = 'apartment' | 'studio' | 'warehouse' | 'city' | 'sunset' | 'forest';
+
 interface PlannerCanvas3DProps {
   roomDimensions: RoomDimensions;
   placedFurniture: PlacedFurniture[];
@@ -19,6 +21,7 @@ interface PlannerCanvas3DProps {
   onSelect: (id: string | null) => void;
   onRightClickSelect?: (id: string) => void;
   architecturalConfig?: ArchitecturalConfig;
+  hdriPreset?: HdriPresetType;
 }
 
 const EDGE_COLOR = '#2a2a2a';
