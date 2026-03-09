@@ -21,9 +21,34 @@ interface PlannerCanvas3DProps {
   architecturalConfig?: ArchitecturalConfig;
 }
 
-const WALL_COLOR = '#f5f2ec';
-const FLOOR_COLOR = '#c8b89a';
 const EDGE_COLOR = '#2a2a2a';
+
+// ===== Material Configs =====
+const FLOOR_MATERIALS: Record<FloorMaterialType, { color: string; roughness: number; metalness: number; pattern: 'plank' | 'tile' | 'none' }> = {
+  'wood-light': { color: '#c8b89a', roughness: 0.75, metalness: 0.02, pattern: 'plank' },
+  'wood-dark': { color: '#6b5340', roughness: 0.7, metalness: 0.02, pattern: 'plank' },
+  'wood-walnut': { color: '#8b6f55', roughness: 0.65, metalness: 0.03, pattern: 'plank' },
+  'marble-white': { color: '#eae8e3', roughness: 0.15, metalness: 0.05, pattern: 'tile' },
+  'marble-gray': { color: '#b5b0a8', roughness: 0.18, metalness: 0.05, pattern: 'tile' },
+  'tile-white': { color: '#f0ede8', roughness: 0.4, metalness: 0.02, pattern: 'tile' },
+  'tile-gray': { color: '#a8a5a0', roughness: 0.45, metalness: 0.02, pattern: 'tile' },
+  'concrete': { color: '#b8b5b0', roughness: 0.9, metalness: 0.01, pattern: 'none' },
+  'carpet-gray': { color: '#9a9590', roughness: 0.95, metalness: 0.0, pattern: 'none' },
+  'carpet-blue': { color: '#6878a0', roughness: 0.95, metalness: 0.0, pattern: 'none' },
+};
+
+const WALL_MATERIALS: Record<WallMaterialType, { color: string; roughness: number; metalness: number; pattern: 'none' | 'stripe' | 'texture' | 'brick' | 'plank' }> = {
+  'paint-white': { color: '#f5f2ec', roughness: 0.9, metalness: 0.01, pattern: 'none' },
+  'paint-cream': { color: '#f0e8d8', roughness: 0.9, metalness: 0.01, pattern: 'none' },
+  'paint-gray': { color: '#d0cdc8', roughness: 0.88, metalness: 0.01, pattern: 'none' },
+  'paint-sage': { color: '#c5cfbe', roughness: 0.88, metalness: 0.01, pattern: 'none' },
+  'wallpaper-stripe': { color: '#e8e4db', roughness: 0.85, metalness: 0.01, pattern: 'stripe' },
+  'wallpaper-texture': { color: '#e5e0d5', roughness: 0.82, metalness: 0.01, pattern: 'texture' },
+  'brick-white': { color: '#e8e0d5', roughness: 0.92, metalness: 0.02, pattern: 'brick' },
+  'brick-red': { color: '#a05030', roughness: 0.92, metalness: 0.02, pattern: 'brick' },
+  'concrete': { color: '#c0bdb8', roughness: 0.95, metalness: 0.01, pattern: 'texture' },
+  'wood-panel': { color: '#b09878', roughness: 0.7, metalness: 0.03, pattern: 'plank' },
+};
 
 // ===== Architectural Elements =====
 
