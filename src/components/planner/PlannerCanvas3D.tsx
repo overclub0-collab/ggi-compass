@@ -851,7 +851,7 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
         />
       </EffectComposer>
 
-      <KeyboardCameraControls fpsMode={fpsMode} />
+      <KeyboardCameraControls fpsMode={fpsMode} roomDimensions={roomDimensions} placedFurniture={placedFurniture} />
       {fpsMode ? (
         <FPSCameraControls roomDimensions={roomDimensions} onExitFps={onExitFps} />
       ) : (
