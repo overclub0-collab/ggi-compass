@@ -204,6 +204,12 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
             <>
               <p className="text-[10px] text-muted-foreground mb-1">
                 총 {products!.length}개 · {currentPage + 1}/{totalPages} 페이지
+                {analyzingCount > 0 && (
+                  <span className="ml-2 text-primary inline-flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 animate-pulse" />
+                    AI 분석 중 ({analyzingCount})
+                  </span>
+                )}
               </p>
 
               {pagedProducts.map((furniture) => (
