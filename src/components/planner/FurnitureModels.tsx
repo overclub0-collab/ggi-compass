@@ -1272,7 +1272,7 @@ function detectFurnitureType(item: PlacedFurniture): string {
   const cat = (item.furniture.category || '').toLowerCase();
 
   // Round table detection
-  if (name.includes('원형') || name.includes('라운드') || name.includes('둥근') || name.includes('원탁') || name.includes('round')) return 'roundtable';
+  if (name.includes('원형') || name.includes('라운드') || name.includes('둥근') || name.includes('원탁') || name.includes('round') || name.includes('원형탁자') || name.includes('원형식탁')) return 'roundtable';
 
   // Blackboard / whiteboard cabinet
   if (name.includes('칠판') || name.includes('보조장') || name.includes('blackboard') || name.includes('화이트보드')) return 'blackboard';
