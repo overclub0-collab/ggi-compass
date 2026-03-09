@@ -2126,6 +2126,9 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
 
   // If AI analysis is available, use enhanced models
   const renderModel = () => {
+    // Set texture context for material functions to consume
+    _currentTextureAnalysis = analysis?.texture;
+    
     if (analysis) {
       const props = { w, d, h, color: effectiveColor, isSelected, analysis };
       switch (furnitureType) {
