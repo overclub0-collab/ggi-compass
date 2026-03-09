@@ -275,65 +275,80 @@ function createWoodNormalMap(): THREE.CanvasTexture {
 
 // ===== PBR Material helpers with procedural textures =====
 function woodMat(color: string, isSelected = false) {
+  const tex = _currentTextureAnalysis;
   const map = useMemo(() => createWoodTexture(color), [color]);
   const normalMap = useMemo(() => createWoodNormalMap(), []);
+  const roughness = tex?.roughnessEstimate ?? 0.72;
+  const metalness = tex?.metalnessEstimate ?? 0.02;
+  const normalStrength = tex?.woodGrain?.intensity === 'pronounced' ? 0.5 : tex?.woodGrain?.intensity === 'subtle' ? 0.15 : 0.3;
   
   return (
     <meshStandardMaterial
       map={map}
       normalMap={normalMap}
-      normalScale={new THREE.Vector2(0.3, 0.3)}
+      normalScale={new THREE.Vector2(normalStrength, normalStrength)}
       color={color}
-      roughness={0.72}
-      metalness={0.02}
+      roughness={roughness}
+      metalness={metalness}
       emissive={isSelected ? '#001133' : '#000000'}
       emissiveIntensity={isSelected ? 0.15 : 0}
-      envMapIntensity={0.6}
+      envMapIntensity={tex?.surfaceFinish === 'glossy' ? 1.0 : tex?.surfaceFinish === 'matte' ? 0.3 : 0.6}
     />
   );
 }
 
 function metalMat(color: string, isSelected = false) {
+  const tex = _currentTextureAnalysis;
   const map = useMemo(() => createMetalTexture(color), [color]);
+  const roughness = tex?.metalnessEstimate !== undefined ? (1 - tex.metalnessEstimate) * 0.4 : 0.28;
+  const metalness = tex?.metalnessEstimate ?? 0.9;
+  const envIntensity = tex?.metalFinish?.type === 'chrome' || tex?.metalFinish?.type === 'polished' ? 2.0 :
+    tex?.metalFinish?.type === 'matte' || tex?.metalFinish?.type === 'powder-coated' ? 0.6 : 1.2;
   
   return (
     <meshStandardMaterial
       map={map}
       color={color}
-      roughness={0.28}
-      metalness={0.9}
+      roughness={roughness}
+      metalness={metalness}
       emissive={isSelected ? '#001133' : '#000000'}
       emissiveIntensity={isSelected ? 0.15 : 0}
-      envMapIntensity={1.2}
+      envMapIntensity={envIntensity}
     />
   );
 }
 
 function plasticMat(color: string, isSelected = false) {
+  const tex = _currentTextureAnalysis;
+  const roughness = tex?.roughnessEstimate ?? 0.5;
   return (
     <meshStandardMaterial
       color={color}
-      roughness={0.5}
+      roughness={roughness}
       metalness={0.04}
       emissive={isSelected ? '#001133' : '#000000'}
       emissiveIntensity={isSelected ? 0.15 : 0}
-      envMapIntensity={0.4}
+      envMapIntensity={tex?.surfaceFinish === 'glossy' ? 0.8 : 0.4}
     />
   );
 }
 
 function fabricMat(color: string, isSelected = false) {
+  const tex = _currentTextureAnalysis;
   const map = useMemo(() => createFabricTexture(color), [color]);
+  const roughness = tex?.roughnessEstimate ?? 0.92;
+  const envIntensity = tex?.fabricPattern?.type === 'velvet' ? 0.15 :
+    tex?.fabricPattern?.type === 'leather-grain' ? 0.4 : 0.2;
   
   return (
     <meshStandardMaterial
       map={map}
       color={color}
-      roughness={0.92}
+      roughness={roughness}
       metalness={0.0}
       emissive={isSelected ? '#001133' : '#000000'}
       emissiveIntensity={isSelected ? 0.12 : 0}
-      envMapIntensity={0.2}
+      envMapIntensity={envIntensity}
     />
   );
 }
