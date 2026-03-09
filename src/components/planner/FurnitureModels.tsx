@@ -1394,9 +1394,108 @@ function AIEnhancedDesk({ w, d, h, color, isSelected, analysis }: {
       </mesh>
 
       {/* Legs based on style */}
-      {isTFrame ? (
-        <>
-          {[-1, 1].map((side) => {
+      {(() => {
+        const legStyle = analysis.legStyle || '4-legs';
+        const isSled = legStyle === 'sled';
+        const isTrestle = legStyle === 'trestle';
+        const isPedestal = legStyle === 'pedestal';
+        const isStarBase = legStyle === 'star-base';
+        const isWoodMaterial = analysis.primaryMaterial === 'wood' || analysis.secondaryMaterial === 'wood';
+        const isTapered = details.includes('tapered-legs');
+        const isRoundLeg = analysis.legCount === 4 && (details.includes('round-legs') || details.includes('cylindrical'));
+
+        if (isSled) {
+          // U-shaped sled base (metal runners)
+          return [-1, 1].map((side) => {
+            const xOff = side * (w / 2 - legW - 0.02);
+            return (
+              <group key={`sled-${side}`}>
+                {/* Vertical front */}
+                <mesh position={[xOff, legH * 0.5, d / 2 - legW / 2 - 0.01]} castShadow>
+                  <boxGeometry args={[legW, legH, legW]} />
+                  {legMaterial(colors.secondary, isSelected)}
+                </mesh>
+                {/* Vertical back */}
+                <mesh position={[xOff, legH * 0.5, -(d / 2 - legW / 2 - 0.01)]} castShadow>
+                  <boxGeometry args={[legW, legH, legW]} />
+                  {legMaterial(colors.secondary, isSelected)}
+                </mesh>
+                {/* Bottom horizontal runner connecting front to back */}
+                <mesh position={[xOff, legW / 2, 0]} castShadow>
+                  <boxGeometry args={[legW, legW, d - legW - 0.02]} />
+                  {legMaterial(colors.secondary, isSelected)}
+                </mesh>
+              </group>
+            );
+          });
+        }
+        if (isTrestle) {
+          // A-frame / trestle legs
+          return [-1, 1].map((side) => {
+            const xOff = side * (w / 2 - w * 0.15);
+            return (
+              <group key={`trestle-${side}`}>
+                {/* Central post */}
+                <mesh position={[xOff, legH / 2, 0]} castShadow>
+                  <boxGeometry args={[0.05, legH, 0.05]} />
+                  {legMaterial(colors.secondary, isSelected)}
+                  <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
+                </mesh>
+                {/* Base bar (horizontal spread) */}
+                <mesh position={[xOff, 0.015, 0]}>
+                  <boxGeometry args={[0.04, 0.03, d * 0.7]} />
+                  {legMaterial(colors.secondary, isSelected)}
+                </mesh>
+                {/* Foot pads */}
+                {[-1, 1].map((z) => (
+                  <mesh key={`pad-${z}`} position={[xOff, 0.005, z * d * 0.35]}>
+                    <cylinderGeometry args={[0.02, 0.025, 0.01, 8]} />
+                    <meshStandardMaterial color="#333" roughness={0.6} metalness={0.5} />
+                  </mesh>
+                ))}
+              </group>
+            );
+          });
+        }
+        if (isPedestal) {
+          // Center pedestal column
+          return (
+            <group>
+              <mesh position={[0, legH * 0.5, 0]} castShadow>
+                <cylinderGeometry args={[0.04, 0.06, legH, 12]} />
+                {legMaterial(colors.secondary, isSelected)}
+              </mesh>
+              <mesh position={[0, 0.01, 0]}>
+                <cylinderGeometry args={[Math.min(w, d) * 0.3, Math.min(w, d) * 0.35, 0.02, 16]} />
+                {legMaterial(darken(colors.secondary, 0.1), isSelected)}
+              </mesh>
+            </group>
+          );
+        }
+        if (isStarBase) {
+          // 5-leg star base (like office chair but for desk)
+          return (
+            <group>
+              <mesh position={[0, legH * 0.5, 0]} castShadow>
+                <cylinderGeometry args={[0.03, 0.04, legH, 12]} />
+                {legMaterial(colors.secondary, isSelected)}
+              </mesh>
+              {[0, 1, 2, 3, 4].map(i => {
+                const angle = (i * Math.PI * 2) / 5;
+                const length = Math.max(w, d) * 0.4;
+                return (
+                  <mesh key={i} position={[Math.sin(angle) * length / 2, 0.015, Math.cos(angle) * length / 2]} rotation={[0, -angle, 0]} castShadow>
+                    <boxGeometry args={[0.025, 0.02, length]} />
+                    {legMaterial(colors.secondary, isSelected)}
+                  </mesh>
+                );
+              })}
+            </group>
+          );
+        }
+        if (isTFrame) {
+          // T-frame: vertical post with horizontal base
+          return [-1, 1].map((side) => {
             const xOff = side * (w / 2 - 0.06);
             return (
               <group key={`tleg-${side}`}>
@@ -1410,34 +1509,66 @@ function AIEnhancedDesk({ w, d, h, color, isSelected, analysis }: {
                 </mesh>
               </group>
             );
-          })}
-        </>
-      ) : isPanel ? (
-        <>
-          {[-1, 1].map((side) => (
+          });
+        }
+        if (isPanel) {
+          // Panel-style solid side panels (wood desk)
+          return [-1, 1].map((side) => (
             <mesh key={`panel-${side}`} position={[side * (w / 2 - 0.015), legH / 2, 0]} castShadow>
               <boxGeometry args={[0.03, legH, d * 0.85]} />
               {(() => { usePartTexture('legs'); return primaryMatFn(darken(colors.primary, 0.1), isSelected); })()}
               <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
             </mesh>
-          ))}
-        </>
-      ) : (
-        <>
-          {[
+          ));
+        }
+        if (isTapered && isWoodMaterial) {
+          // Tapered wood legs — narrower at bottom
+          const positions = [
             [-(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
             [(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
             [-(w / 2 - legW / 2 - 0.01), 0, (d / 2 - legD / 2 - 0.01)],
             [(w / 2 - legW / 2 - 0.01), 0, (d / 2 - legD / 2 - 0.01)],
-          ].map(([lx, , lz], i) => (
+          ];
+          return positions.map(([lx, , lz], i) => (
             <mesh key={i} position={[lx, legH / 2, lz]} castShadow>
-              <boxGeometry args={[legW, legH, legD]} />
-              {legMaterial(colors.secondary, isSelected)}
-              <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
+              <cylinderGeometry args={[legW * 0.4, legW * 0.7, legH, 8]} />
+              {(() => { usePartTexture('legs'); return woodMat(colors.secondary, isSelected); })()}
             </mesh>
-          ))}
-        </>
-      )}
+          ));
+        }
+        if (isRoundLeg || (isWoodMaterial && legStyle === '4-legs')) {
+          // Round cylindrical legs (wood or metal)
+          const positions = [
+            [-(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
+            [(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
+            [-(w / 2 - legW / 2 - 0.01), 0, (d / 2 - legD / 2 - 0.01)],
+            [(w / 2 - legW / 2 - 0.01), 0, (d / 2 - legD / 2 - 0.01)],
+          ];
+          const radius = legW * 0.5;
+          return positions.map(([lx, , lz], i) => (
+            <mesh key={i} position={[lx, legH / 2, lz]} castShadow>
+              <cylinderGeometry args={[radius, radius, legH, 12]} />
+              {isWoodMaterial
+                ? (() => { usePartTexture('legs'); return woodMat(colors.secondary, isSelected); })()
+                : legMaterial(colors.secondary, isSelected)
+              }
+            </mesh>
+          ));
+        }
+        // Default: box 4-legs (metal)
+        return [
+          [-(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
+          [(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
+          [-(w / 2 - legW / 2 - 0.01), 0, (d / 2 - legD / 2 - 0.01)],
+          [(w / 2 - legW / 2 - 0.01), 0, (d / 2 - legD / 2 - 0.01)],
+        ].map(([lx, , lz], i) => (
+          <mesh key={i} position={[lx, legH / 2, lz]} castShadow>
+            <boxGeometry args={[legW, legH, legD]} />
+            {legMaterial(colors.secondary, isSelected)}
+            <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
+          </mesh>
+        ));
+      })()}
 
       {/* Front/back aprons */}
       {(() => { usePartTexture('body'); return null; })()}
@@ -1694,7 +1825,10 @@ function AIEnhancedStorage({ w, d, h, color, isSelected, analysis }: {
 }) {
   const colors = getColorsFromAnalysis(analysis, color);
   const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
-  const hasDoor = analysis.hasDoor ?? true;
+  const sections = analysis.sections;
+  const isOpenFront = sections?.hasOpenFront === true;
+  // CRITICAL: Respect AI analysis — if hasOpenFront is true OR hasDoor is explicitly false, no doors
+  const hasDoor = isOpenFront ? false : (analysis.hasDoor ?? false);
   const doorCount = analysis.doorCount || 2;
   const hasShelf = analysis.hasShelf ?? true;
   const shelfCount = analysis.shelfCount || 3;
@@ -1702,7 +1836,6 @@ function AIEnhancedStorage({ w, d, h, color, isSelected, analysis }: {
   const drawerCount = analysis.drawerCount || 0;
   const primaryMatFn = analysis.primaryMaterial === 'wood' || analysis.primaryMaterial === 'melamine' || analysis.primaryMaterial === 'hpl' ? woodMat : metalMat;
   const panelThick = 0.018;
-  const sections = analysis.sections;
   const grid = sections?.compartmentGrid;
   const isGridLayout = sections?.layout === 'grid' && grid;
 
