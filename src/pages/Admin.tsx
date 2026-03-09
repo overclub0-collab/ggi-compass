@@ -65,6 +65,7 @@ import AdminCompanyInfo from '@/components/admin/AdminCompanyInfo';
 import { AdminDashboard } from '@/components/admin/dashboard/AdminDashboard';
 import AdminMegaMenuThumbnails from '@/components/admin/AdminMegaMenuThumbnails';
 import AdminHomepageManager from '@/components/admin/AdminHomepageManager';
+import AdminFurnitureAnalysis from '@/components/admin/AdminFurnitureAnalysis';
 import CategoryFormDialog from '@/components/admin/CategoryFormDialog';
 import type { User } from '@supabase/supabase-js';
 
