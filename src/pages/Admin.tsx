@@ -26,7 +26,8 @@ import {
   ChevronRight,
   FolderOpen,
   Folder,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Sparkles
 } from 'lucide-react';
 import {
   Select,
