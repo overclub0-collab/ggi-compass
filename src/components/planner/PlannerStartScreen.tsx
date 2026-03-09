@@ -45,6 +45,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'panel', xRatio: 0.3, zRatio: 0.7 },
         { type: 'panel', xRatio: 0.7, zRatio: 0.7 },
       ],
+      floorMaterial: 'carpet-gray',
+      wallMaterial: 'paint-cream',
     },
   },
   {
