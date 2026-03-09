@@ -65,6 +65,230 @@ const WALL_MATERIALS: Record<WallMaterialType, { color: string; roughness: numbe
   'plaster-venetian': { color: '#e8e2d8', roughness: 0.4, metalness: 0.06, pattern: 'venetian' },
 };
 
+// ===== Curtain Components =====
+
+/** Procedural draped geometry: displaces vertices with sine waves to simulate fabric folds */
+function useDrapedGeometry(width: number, height: number, segments: number = 40, foldDepth: number = 0.025, foldFreq: number = 12) {
+  const geom = new THREE.PlaneGeometry(width, height, segments, segments);
+  const pos = geom.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    // Vertical drape folds — stronger toward the bottom
+    const bottomFactor = 1 - (y / (height / 2) + 1) * 0.3; // stronger at bottom
+    const fold = Math.sin(x * foldFreq * Math.PI) * foldDepth * bottomFactor;
+    // Slight random variation for realism
+    const micro = Math.sin(x * 37 + y * 19) * 0.002;
+    pos.setZ(i, fold + micro);
+    // Slight Y displacement for gravity sag at the bottom
+    const sag = Math.max(0, -y - height * 0.3) * 0.015 * Math.sin(x * foldFreq * Math.PI);
+    pos.setY(i, y + sag);
+  }
+  geom.computeVertexNormals();
+  return geom;
+}
+
+function CurtainRod({ width, yPos }: { width: number; yPos: number }) {
+  return (
+    <group position={[0, yPos, 0]}>
+      {/* Rod */}
+      <mesh rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.01, 0.01, width + 0.25, 12]} />
+        <meshStandardMaterial color="#8a8580" roughness={0.2} metalness={0.85} />
+      </mesh>
+      {/* Finials */}
+      {[-1, 1].map(side => (
+        <mesh key={side} position={[side * (width / 2 + 0.14), 0, 0]}>
+          <sphereGeometry args={[0.018, 12, 12]} />
+          <meshStandardMaterial color="#8a8580" roughness={0.2} metalness={0.85} />
+        </mesh>
+      ))}
+      {/* Rings */}
+      {Array.from({ length: Math.floor(width / 0.08) }, (_, i) => {
+        const xPos = -width / 2 + 0.06 + i * (width / Math.floor(width / 0.08));
+        return (
+          <mesh key={i} position={[xPos, -0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.012, 0.002, 6, 12]} />
+            <meshStandardMaterial color="#999" roughness={0.25} metalness={0.8} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+function SheerCurtain({ width, height, color }: { width: number; height: number; color: string }) {
+  const curtainH = height + 0.15;
+  const panelW = width * 0.5;
+  const leftGeom = useDrapedGeometry(panelW, curtainH, 48, 0.018, 14);
+  const rightGeom = useDrapedGeometry(panelW, curtainH, 48, 0.018, 14);
+  const baseColor = new THREE.Color(color);
+
+  return (
+    <group position={[0, 0, 0.07]}>
+      {/* Left panel */}
+      <mesh geometry={leftGeom} position={[-width * 0.27, 0, 0]}>
+        <meshPhysicalMaterial
+          color={baseColor} transparent opacity={0.28}
+          roughness={0.98} metalness={0.0} side={THREE.DoubleSide}
+          transmission={0.4} thickness={0.5}
+          sheen={0.3} sheenColor={baseColor.clone().multiplyScalar(1.2)}
+        />
+      </mesh>
+      {/* Right panel */}
+      <mesh geometry={rightGeom} position={[width * 0.27, 0, 0]}>
+        <meshPhysicalMaterial
+          color={baseColor} transparent opacity={0.28}
+          roughness={0.98} metalness={0.0} side={THREE.DoubleSide}
+          transmission={0.4} thickness={0.5}
+          sheen={0.3} sheenColor={baseColor.clone().multiplyScalar(1.2)}
+        />
+      </mesh>
+      {/* Tiebacks */}
+      {[-1, 1].map(side => (
+        <mesh key={side} position={[side * width * 0.42, -height * 0.15, 0.015]} rotation={[0, 0, side * 0.15]}>
+          <torusGeometry args={[0.03, 0.004, 6, 16, Math.PI]} />
+          <meshStandardMaterial color={baseColor.clone().multiplyScalar(0.7)} roughness={0.8} />
+        </mesh>
+      ))}
+      <CurtainRod width={width} yPos={height / 2 + 0.08} />
+    </group>
+  );
+}
+
+function BlackoutCurtain({ width, height, color }: { width: number; height: number; color: string }) {
+  const curtainH = height + 0.2;
+  const panelW = width * 0.55;
+  const leftGeom = useDrapedGeometry(panelW, curtainH, 50, 0.035, 10);
+  const rightGeom = useDrapedGeometry(panelW, curtainH, 50, 0.035, 10);
+  const baseColor = new THREE.Color(color);
+  const darkerColor = baseColor.clone().multiplyScalar(0.8);
+
+  return (
+    <group position={[0, 0, 0.07]}>
+      {[-1, 1].map((side, idx) => (
+        <group key={side}>
+          {/* Outer (visible) layer */}
+          <mesh geometry={idx === 0 ? leftGeom : rightGeom} position={[side * width * 0.28, 0, 0]}>
+            <meshStandardMaterial
+              color={baseColor} roughness={0.88} metalness={0.02}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+          {/* Inner lining — slightly lighter */}
+          <mesh geometry={idx === 0 ? leftGeom : rightGeom} position={[side * width * 0.28, 0, -0.008]}>
+            <meshStandardMaterial
+              color={darkerColor} roughness={0.95} metalness={0.0}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        </group>
+      ))}
+      {/* Weighted hem at bottom */}
+      {[-1, 1].map(side => (
+        <mesh key={`hem-${side}`} position={[side * width * 0.28, -curtainH / 2 + 0.01, 0]}>
+          <boxGeometry args={[panelW, 0.025, 0.012]} />
+          <meshStandardMaterial color={darkerColor} roughness={0.9} />
+        </mesh>
+      ))}
+      <CurtainRod width={width} yPos={height / 2 + 0.1} />
+    </group>
+  );
+}
+
+function RomanShade({ width, height, color }: { width: number; height: number; color: string }) {
+  const shadeW = width - 0.04;
+  const shadeH = height * 0.4;
+  const foldCount = 4;
+  const foldH = shadeH / foldCount;
+  const baseColor = new THREE.Color(color);
+  const shadowColor = baseColor.clone().multiplyScalar(0.78);
+
+  return (
+    <group position={[0, height * 0.1, 0.055]}>
+      {/* Layered folds — each fold is a curved panel */}
+      {Array.from({ length: foldCount }, (_, i) => {
+        const yPos = shadeH / 2 - i * foldH - foldH / 2;
+        const depth = 0.008 + (i / foldCount) * 0.018; // deeper folds at bottom
+        return (
+          <group key={i} position={[0, yPos, 0]}>
+            {/* Main fold fabric */}
+            <mesh>
+              <boxGeometry args={[shadeW, foldH - 0.004, 0.004]} />
+              <meshStandardMaterial
+                color={i % 2 === 0 ? baseColor : baseColor.clone().multiplyScalar(0.92)}
+                roughness={0.85} metalness={0.01} side={THREE.DoubleSide}
+              />
+            </mesh>
+            {/* Fold shadow crease */}
+            <mesh position={[0, -foldH / 2 + 0.002, depth]}>
+              <boxGeometry args={[shadeW - 0.01, 0.006, 0.006]} />
+              <meshStandardMaterial color={shadowColor} roughness={0.9} />
+            </mesh>
+          </group>
+        );
+      })}
+      {/* Top mounting bar */}
+      <mesh position={[0, shadeH / 2 + 0.015, 0]}>
+        <boxGeometry args={[shadeW + 0.02, 0.03, 0.025]} />
+        <meshStandardMaterial color="#e0dbd5" roughness={0.5} metalness={0.05} />
+      </mesh>
+      {/* Pull cord */}
+      <mesh position={[shadeW / 2 - 0.03, -shadeH / 2 - 0.06, 0.01]}>
+        <cylinderGeometry args={[0.002, 0.002, 0.12, 4]} />
+        <meshStandardMaterial color="#d0c8b8" roughness={0.9} />
+      </mesh>
+      {/* Cord handle */}
+      <mesh position={[shadeW / 2 - 0.03, -shadeH / 2 - 0.13, 0.01]}>
+        <sphereGeometry args={[0.008, 8, 8]} />
+        <meshStandardMaterial color="#c0b8a8" roughness={0.6} metalness={0.1} />
+      </mesh>
+    </group>
+  );
+}
+
+function VenetianBlinds({ width, height, color }: { width: number; height: number; color: string }) {
+  const slatCount = Math.floor(height / 0.045);
+  const slatW = width - 0.04;
+  const baseColor = new THREE.Color(color);
+
+  return (
+    <group position={[0, 0, 0.045]}>
+      {/* Top headrail */}
+      <mesh position={[0, height / 2 + 0.025, 0]}>
+        <boxGeometry args={[slatW + 0.03, 0.045, 0.035]} />
+        <meshStandardMaterial color="#e0dbd5" roughness={0.4} metalness={0.15} />
+      </mesh>
+      {/* Slats with alternating tilt for realism */}
+      {Array.from({ length: slatCount }, (_, i) => {
+        const yPos = height / 2 - i * (height / slatCount) - 0.02;
+        const tilt = 0.18 + Math.sin(i * 0.5) * 0.04; // slight variation
+        return (
+          <mesh key={i} position={[0, yPos, 0]} rotation={[tilt, 0, 0]}>
+            <boxGeometry args={[slatW, 0.002, 0.024]} />
+            <meshPhysicalMaterial
+              color={baseColor} roughness={0.35} metalness={0.35}
+              side={THREE.DoubleSide} clearcoat={0.3} clearcoatRoughness={0.4}
+            />
+          </mesh>
+        );
+      })}
+      {/* Lift cords */}
+      {[-0.35, 0, 0.35].map((xRatio, i) => (
+        <mesh key={i} position={[xRatio * slatW, 0, 0.002]}>
+          <cylinderGeometry args={[0.001, 0.001, height, 4]} />
+          <meshStandardMaterial color="#d5d0c5" roughness={0.9} transparent opacity={0.5} />
+        </mesh>
+      ))}
+      {/* Bottom rail */}
+      <mesh position={[0, -height / 2 + 0.01, 0]}>
+        <boxGeometry args={[slatW, 0.015, 0.025]} />
+        <meshStandardMaterial color="#d8d2c8" roughness={0.4} metalness={0.2} />
+      </mesh>
+    </group>
+  );
+}
+
 // ===== Architectural Elements =====
 
 function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = 'double', frameColor = 'white', curtain = 'none', curtainColor = '#f5f0e8' }: {
