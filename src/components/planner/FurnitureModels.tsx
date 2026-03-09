@@ -2378,6 +2378,10 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
           return <AIEnhancedRoundTable {...props} />;
         case 'blackboard':
           return <AIEnhancedBlackboard {...props} />;
+        case 'bunkbed':
+          return <AIEnhancedBunkBed {...props} />;
+        case 'pet':
+          return <AIEnhancedPet {...props} />;
         default:
           return <AIEnhancedGeneric {...props} />;
       }
