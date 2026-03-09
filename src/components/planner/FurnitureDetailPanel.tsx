@@ -1,7 +1,11 @@
-import { useRef, useEffect } from 'react';
-import { RotateCw, Trash2, X, Palette, Pin } from 'lucide-react';
+import { useRef, useEffect, useState, useMemo, Suspense } from 'react';
+import { RotateCw, Trash2, X, Palette, Pin, SplitSquareHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlacedFurniture } from '@/types/planner';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Environment } from '@react-three/drei';
+import { FurnitureObject } from './FurnitureModels';
+import * as THREE from 'three';
 
 const COLOR_PRESETS = [
   { name: '내추럴 우드', color: 'hsl(30, 40%, 65%)' },
@@ -22,6 +26,66 @@ interface FurnitureDetailPanelProps {
   onClose: () => void;
   onUnpin?: () => void;
   onColorChange?: (id: string, color: string) => void;
+  viewMode?: '2d' | '3d';
+}
+
+// Mini 3D preview of the selected furniture for comparison
+function Mini3DPreview({ item }: { item: PlacedFurniture }) {
+  const w = item.furniture.width / 1000;
+  const d = item.furniture.height / 1000;
+  const h = (item.furniture.depth || 750) / 1000;
+  const maxDim = Math.max(w, d, h);
+  const camDist = maxDim * 2.2;
+
+  // Create a centered version of the item for the preview
+  const centeredItem = useMemo(() => ({
+    ...item,
+    x: 0,
+    y: 0,
+    rotation: 0,
+  }), [item]);
+
+  return (
+    <Canvas
+      camera={{ position: [camDist * 0.8, camDist * 0.6, camDist * 0.8], fov: 40 }}
+      style={{ width: '100%', height: '100%', borderRadius: '0.75rem' }}
+      gl={{ antialias: true }}
+      dpr={[1, 1.5]}
+      onCreated={({ gl }) => {
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = 1.1;
+      }}
+    >
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[3, 5, 3]} intensity={0.8} />
+      <directionalLight position={[-2, 3, -1]} intensity={0.3} color="#c8d8f0" />
+      <Environment preset="apartment" background={false} environmentIntensity={0.4} />
+      <color attach="background" args={['#f5f3ef']} />
+      
+      <group position={[-w / 2, 0, -d / 2]}>
+        <FurnitureObject
+          item={centeredItem}
+          isSelected={false}
+          onSelect={() => {}}
+        />
+      </group>
+
+      {/* Simple ground plane */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
+        <planeGeometry args={[maxDim * 3, maxDim * 3]} />
+        <meshStandardMaterial color="#eae8e3" roughness={0.9} />
+      </mesh>
+
+      <OrbitControls
+        enablePan={false}
+        minDistance={camDist * 0.5}
+        maxDistance={camDist * 3}
+        target={[0, h * 0.4, 0]}
+        autoRotate
+        autoRotateSpeed={1.5}
+      />
+    </Canvas>
+  );
 }
 
 export const FurnitureDetailPanel = ({
@@ -32,26 +96,28 @@ export const FurnitureDetailPanel = ({
   onClose,
   onUnpin,
   onColorChange,
+  viewMode = '2d',
 }: FurnitureDetailPanelProps) => {
-  // Pinned takes absolute priority and persists until explicitly closed
   const displayFurniture = pinnedFurniture || selectedFurniture;
   const isPinned = !!pinnedFurniture;
+  const [compareMode, setCompareMode] = useState(false);
 
-  // Stable ref to prevent flickering - track the last displayed furniture
   const lastDisplayRef = useRef<PlacedFurniture | undefined>(undefined);
   
-  // Only update displayed content when there's actually new furniture to show
-  // This prevents the flash-to-empty-and-back cycle
   useEffect(() => {
     if (displayFurniture) {
       lastDisplayRef.current = displayFurniture;
     }
   }, [displayFurniture]);
 
-  // Use the stable reference: if we currently have something to show, use it.
-  // If not and nothing is pinned/selected, show empty state.
+  // Reset compare mode when furniture changes
+  useEffect(() => {
+    setCompareMode(false);
+  }, [displayFurniture?.id]);
+
   const stableDisplay = displayFurniture || (isPinned ? lastDisplayRef.current : undefined);
   const showContent = !!stableDisplay;
+  const hasImage = !!stableDisplay?.furniture.thumbnail;
 
   return (
     <div className="w-64 bg-background/60 backdrop-blur-xl border-l border-border/40 flex flex-col shadow-lg">
@@ -73,39 +139,90 @@ export const FurnitureDetailPanel = ({
                 {isPinned ? '고정됨' : '가구 정보'}
               </h3>
             </div>
-            <button
-              onClick={isPinned ? onUnpin : onClose}
-              className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-              title={isPinned ? '고정 해제' : '닫기'}
-            >
-              <X className="h-4 w-4 text-muted-foreground" />
-            </button>
+            <div className="flex items-center gap-1">
+              {/* Compare toggle — only when image exists */}
+              {hasImage && (
+                <button
+                  onClick={() => setCompareMode(prev => !prev)}
+                  className={`p-1.5 rounded-lg transition-colors ${compareMode ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground'}`}
+                  title="실제 사진 vs 3D 비교"
+                >
+                  <SplitSquareHorizontal className="h-4 w-4" />
+                </button>
+              )}
+              <button
+                onClick={isPinned ? onUnpin : onClose}
+                className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                title={isPinned ? '고정 해제' : '닫기'}
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
           </div>
 
-          {/* Furniture Preview */}
+          {/* Furniture Preview — comparison or standard */}
           <div className="p-4 border-b border-border/30">
-            {stableDisplay!.furniture.thumbnail ? (
-              <img
-                src={stableDisplay!.furniture.thumbnail}
-                alt={stableDisplay!.furniture.name}
-                className="w-full aspect-square rounded-xl object-cover mb-3 bg-muted shadow-sm"
-              />
-            ) : (
-              <div
-                className="w-full aspect-square rounded-xl flex items-center justify-center mb-3"
-                style={{ backgroundColor: stableDisplay!.furniture.color || 'hsl(var(--muted))' }}
-              >
-                <div
-                  className="w-3/4 h-3/4 border-2 border-foreground/20 rounded transition-transform"
-                  style={{
-                    transform: `rotate(${stableDisplay!.rotation}deg)`,
-                    backgroundColor: stableDisplay!.furniture.color,
-                    boxShadow: 'inset 0 0 15px rgba(0,0,0,0.15)',
-                  }}
-                />
+            {compareMode && hasImage ? (
+              /* Side-by-side comparison */
+              <div className="space-y-2">
+                <div className="flex items-center gap-1 mb-2">
+                  <SplitSquareHorizontal className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider">실제 vs 3D 비교</span>
+                </div>
+                {/* Real photo */}
+                <div className="relative">
+                  <div className="absolute top-1.5 left-1.5 bg-foreground/70 text-background text-[9px] font-bold px-1.5 py-0.5 rounded-md z-10">
+                    실제 사진
+                  </div>
+                  <img
+                    src={stableDisplay!.furniture.thumbnail}
+                    alt={stableDisplay!.furniture.name}
+                    className="w-full aspect-[4/3] rounded-xl object-cover bg-muted shadow-sm"
+                  />
+                </div>
+                {/* 3D model preview */}
+                <div className="relative">
+                  <div className="absolute top-1.5 left-1.5 bg-primary/80 text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-md z-10">
+                    3D 모델
+                  </div>
+                  <div className="w-full aspect-[4/3] rounded-xl overflow-hidden bg-muted shadow-sm">
+                    <Suspense fallback={
+                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                        <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
+                      </div>
+                    }>
+                      <Mini3DPreview item={stableDisplay!} />
+                    </Suspense>
+                  </div>
+                </div>
               </div>
+            ) : (
+              /* Standard single preview */
+              <>
+                {stableDisplay!.furniture.thumbnail ? (
+                  <img
+                    src={stableDisplay!.furniture.thumbnail}
+                    alt={stableDisplay!.furniture.name}
+                    className="w-full aspect-square rounded-xl object-cover mb-3 bg-muted shadow-sm"
+                  />
+                ) : (
+                  <div
+                    className="w-full aspect-square rounded-xl flex items-center justify-center mb-3"
+                    style={{ backgroundColor: stableDisplay!.furniture.color || 'hsl(var(--muted))' }}
+                  >
+                    <div
+                      className="w-3/4 h-3/4 border-2 border-foreground/20 rounded transition-transform"
+                      style={{
+                        transform: `rotate(${stableDisplay!.rotation}deg)`,
+                        backgroundColor: stableDisplay!.furniture.color,
+                        boxShadow: 'inset 0 0 15px rgba(0,0,0,0.15)',
+                      }}
+                    />
+                  </div>
+                )}
+              </>
             )}
-            <h4 className="font-bold text-foreground">{stableDisplay!.furniture.name}</h4>
+            <h4 className="font-bold text-foreground mt-2">{stableDisplay!.furniture.name}</h4>
           </div>
 
           {/* Details */}
