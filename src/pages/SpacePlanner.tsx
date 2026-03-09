@@ -30,6 +30,7 @@ const SpacePlanner = () => {
   const [, setDraggingFurniture] = useState<FurnitureItem | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [archConfig, setArchConfig] = useState<ArchitecturalConfig>(DEFAULT_ARCHITECTURAL_CONFIG);
+  const [hdriPreset, setHdriPreset] = useState<'apartment' | 'studio' | 'warehouse' | 'city' | 'sunset' | 'forest'>('apartment');
 
   const pinnedFurniture = pinnedId ? placedFurniture.find(f => f.id === pinnedId) : undefined;
 
