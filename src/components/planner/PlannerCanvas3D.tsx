@@ -164,84 +164,10 @@ function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = '
       <pointLight position={[0, 0, -0.5]} intensity={0.4} color="#fffbe6" distance={5} />
 
       {/* Curtains */}
-      {curtain === 'sheer' && (
-        <group position={[0, 0, 0.06]}>
-          {[-1, 1].map((side) => (
-            <mesh key={`sheer-${side}`} position={[side * width * 0.28, 0, 0]}>
-              <planeGeometry args={[width * 0.48, height + 0.1]} />
-              <meshStandardMaterial
-                color={curtainColor} transparent opacity={0.35}
-                roughness={0.95} metalness={0.0} side={THREE.DoubleSide}
-              />
-            </mesh>
-          ))}
-          {/* Curtain rod */}
-          <mesh position={[0, height / 2 + 0.06, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.008, 0.008, width + 0.2, 8]} />
-            <meshStandardMaterial color="#888" roughness={0.2} metalness={0.85} />
-          </mesh>
-          {/* Rod finials */}
-          {[-1, 1].map(side => (
-            <mesh key={`finial-${side}`} position={[side * (width / 2 + 0.12), height / 2 + 0.06, 0]}>
-              <sphereGeometry args={[0.015, 8, 8]} />
-              <meshStandardMaterial color="#888" roughness={0.2} metalness={0.85} />
-            </mesh>
-          ))}
-        </group>
-      )}
-      {curtain === 'blackout' && (
-        <group position={[0, 0, 0.06]}>
-          {[-1, 1].map((side) => (
-            <mesh key={`blackout-${side}`} position={[side * width * 0.28, 0, 0]}>
-              <planeGeometry args={[width * 0.52, height + 0.15]} />
-              <meshStandardMaterial
-                color={curtainColor} roughness={0.92} metalness={0.0} side={THREE.DoubleSide}
-              />
-            </mesh>
-          ))}
-          <mesh position={[0, height / 2 + 0.08, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.01, 0.01, width + 0.25, 8]} />
-            <meshStandardMaterial color="#666" roughness={0.3} metalness={0.7} />
-          </mesh>
-        </group>
-      )}
-      {curtain === 'roman' && (
-        <group position={[0, height * 0.1, 0.05]}>
-          {/* Roman shade fabric */}
-          <mesh>
-            <planeGeometry args={[width - 0.04, height * 0.35]} />
-            <meshStandardMaterial color={curtainColor} roughness={0.85} metalness={0.0} side={THREE.DoubleSide} />
-          </mesh>
-          {/* Fold lines */}
-          {[0, 1, 2].map(i => (
-            <mesh key={`fold-${i}`} position={[0, -(height * 0.35 / 2) + i * (height * 0.35 / 3), 0.002]}>
-              <boxGeometry args={[width - 0.06, 0.003, 0.003]} />
-              <meshStandardMaterial color={new THREE.Color(curtainColor).multiplyScalar(0.85).getStyle()} roughness={0.8} />
-            </mesh>
-          ))}
-          {/* Top bar */}
-          <mesh position={[0, height * 0.175, 0]}>
-            <boxGeometry args={[width - 0.02, 0.03, 0.02]} />
-            <meshStandardMaterial color="#e0dbd5" roughness={0.5} metalness={0.05} />
-          </mesh>
-        </group>
-      )}
-      {curtain === 'venetian' && (
-        <group position={[0, 0, 0.04]}>
-          {/* Slats */}
-          {Array.from({ length: Math.floor(height / 0.05) }, (_, i) => (
-            <mesh key={`slat-${i}`} position={[0, height / 2 - i * 0.05 - 0.025, 0]} rotation={[0.15, 0, 0]}>
-              <boxGeometry args={[width - 0.04, 0.002, 0.025]} />
-              <meshStandardMaterial color={curtainColor} roughness={0.4} metalness={0.3} side={THREE.DoubleSide} />
-            </mesh>
-          ))}
-          {/* Top rail */}
-          <mesh position={[0, height / 2 + 0.02, 0]}>
-            <boxGeometry args={[width - 0.02, 0.04, 0.03]} />
-            <meshStandardMaterial color="#e0dbd5" roughness={0.5} metalness={0.1} />
-          </mesh>
-        </group>
-      )}
+      {curtain === 'sheer' && <SheerCurtain width={width} height={height} color={curtainColor} />}
+      {curtain === 'blackout' && <BlackoutCurtain width={width} height={height} color={curtainColor} />}
+      {curtain === 'roman' && <RomanShade width={width} height={height} color={curtainColor} />}
+      {curtain === 'venetian' && <VenetianBlinds width={width} height={height} color={curtainColor} />}
     </group>
   );
 }
