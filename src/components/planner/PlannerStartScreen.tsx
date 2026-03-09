@@ -30,9 +30,7 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'left', positionRatio: 0.85 },
       ],
       columns: [],
-      partitions: [
-        { wall: 'right', positionRatio: 0.5, width: 2.0, height: 1.5 },
-      ],
+      partitions: [],
       outlets: [
         { wall: 'back', positionRatio: 0.15 },
         { wall: 'back', positionRatio: 0.85 },
@@ -62,10 +60,7 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'sliding', material: 'glass', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
         { type: 'sliding', material: 'glass', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.85 },
       ],
-      columns: [
-        { wall: 'right', positionRatio: 0.33, radius: 0.15 },
-        { wall: 'right', positionRatio: 0.66, radius: 0.15 },
-      ],
+      columns: [],
       partitions: [],
       outlets: [
         { wall: 'back', positionRatio: 0.1 },
@@ -100,12 +95,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'double', material: 'glass', width: 1.8, height: 2.1, wall: 'front', positionRatio: 0.5 },
         { type: 'swing', material: 'wood', width: 0.9, height: 2.1, wall: 'right', positionRatio: 0.85 },
       ],
-      columns: [
-        { wall: 'back', positionRatio: 0.5, radius: 0.2 },
-      ],
-      partitions: [
-        { wall: 'right', positionRatio: 0.35, width: 1.5, height: 1.2 },
-      ],
+      columns: [],
+      partitions: [],
       outlets: [
         { wall: 'left', positionRatio: 0.3 },
         { wall: 'left', positionRatio: 0.7 },
@@ -136,9 +127,7 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'sliding', material: 'metal', width: 1.2, height: 2.1, wall: 'front', positionRatio: 0.15 },
       ],
       columns: [],
-      partitions: [
-        { wall: 'left', positionRatio: 0.6, width: 2.0, height: 1.8 },
-      ],
+      partitions: [],
       outlets: [
         { wall: 'back', positionRatio: 0.1 },
         { wall: 'back', positionRatio: 0.35 },
