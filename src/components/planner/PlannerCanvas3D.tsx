@@ -721,6 +721,7 @@ export const PlannerCanvas3D = ({
           onSelect={onSelect}
           onRightClickSelect={onRightClickSelect}
           archConfig={archConfig}
+          hdriPreset={hdriPreset}
           onCaptureReady={handleCaptureReady}
         />
       </Canvas>
