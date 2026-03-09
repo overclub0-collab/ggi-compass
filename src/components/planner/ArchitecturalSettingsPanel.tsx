@@ -617,4 +617,6 @@ export const DEFAULT_ARCHITECTURAL_CONFIG: ArchitecturalConfig = {
   ceilingLights: [
     { type: 'panel', xRatio: 0.5, zRatio: 0.5 },
   ],
+  floorMaterial: 'wood-light',
+  wallMaterial: 'paint-white',
 };
