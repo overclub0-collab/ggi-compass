@@ -67,54 +67,82 @@ const WALL_MATERIALS: Record<WallMaterialType, { color: string; roughness: numbe
 
 // ===== Architectural Elements =====
 
-function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = 'double' }: {
+function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = 'double', frameColor = 'white', curtain = 'none', curtainColor = '#f5f0e8' }: {
   position: [number, number, number]; rotation: [number, number, number];
   width?: number; height?: number; type?: string;
+  frameColor?: string; curtain?: string; curtainColor?: string;
 }) {
-  const frameColor = '#e8e4db';
+  const FRAME_COLORS: Record<string, { color: string; roughness: number; metalness: number }> = {
+    'white': { color: '#e8e4db', roughness: 0.5, metalness: 0.05 },
+    'wood': { color: '#a08060', roughness: 0.7, metalness: 0.03 },
+    'black': { color: '#2a2a2a', roughness: 0.4, metalness: 0.15 },
+    'silver': { color: '#c0c0c0', roughness: 0.25, metalness: 0.8 },
+  };
+  const frame = FRAME_COLORS[frameColor] || FRAME_COLORS['white'];
   const frameThick = 0.04;
   const hasDivider = type === 'double' || type === 'single';
   const hasHorizontalDivider = type === 'double';
 
   return (
     <group position={position} rotation={rotation}>
+      {/* Glass pane with proper PBR */}
       <mesh>
         <planeGeometry args={[width, height]} />
         <meshPhysicalMaterial
           color="#b8d4e8"
-          transparent opacity={0.3}
-          roughness={0.05} metalness={0.1}
-          transmission={0.6} thickness={0.01}
+          transparent opacity={0.25}
+          roughness={0.02} metalness={0.1}
+          transmission={0.85} thickness={0.006}
+          ior={1.52}
+          envMapIntensity={1.5}
+          clearcoat={1.0}
+          clearcoatRoughness={0.05}
         />
       </mesh>
+      {/* Glass reflection layer */}
+      <mesh position={[0, 0, 0.001]}>
+        <planeGeometry args={[width - 0.02, height - 0.02]} />
+        <meshPhysicalMaterial
+          color="#e0f0ff" transparent opacity={0.08}
+          roughness={0.0} metalness={0.3}
+          envMapIntensity={2.0}
+        />
+      </mesh>
+      {/* Frame - top */}
       <mesh position={[0, height / 2, 0.01]}>
-        <boxGeometry args={[width + frameThick * 2, frameThick, 0.03]} />
-        <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.05} />
+        <boxGeometry args={[width + frameThick * 2, frameThick, 0.04]} />
+        <meshStandardMaterial color={frame.color} roughness={frame.roughness} metalness={frame.metalness} />
       </mesh>
+      {/* Frame - bottom */}
       <mesh position={[0, -height / 2, 0.01]}>
-        <boxGeometry args={[width + frameThick * 2, frameThick, 0.03]} />
-        <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.05} />
+        <boxGeometry args={[width + frameThick * 2, frameThick, 0.04]} />
+        <meshStandardMaterial color={frame.color} roughness={frame.roughness} metalness={frame.metalness} />
       </mesh>
+      {/* Frame - left */}
       <mesh position={[-width / 2, 0, 0.01]}>
-        <boxGeometry args={[frameThick, height, 0.03]} />
-        <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.05} />
+        <boxGeometry args={[frameThick, height, 0.04]} />
+        <meshStandardMaterial color={frame.color} roughness={frame.roughness} metalness={frame.metalness} />
       </mesh>
+      {/* Frame - right */}
       <mesh position={[width / 2, 0, 0.01]}>
-        <boxGeometry args={[frameThick, height, 0.03]} />
-        <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.05} />
+        <boxGeometry args={[frameThick, height, 0.04]} />
+        <meshStandardMaterial color={frame.color} roughness={frame.roughness} metalness={frame.metalness} />
       </mesh>
+      {/* Center divider */}
       {hasDivider && (
         <mesh position={[0, 0, 0.01]}>
-          <boxGeometry args={[0.02, height, 0.025]} />
-          <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.05} />
+          <boxGeometry args={[0.02, height, 0.03]} />
+          <meshStandardMaterial color={frame.color} roughness={frame.roughness} metalness={frame.metalness} />
         </mesh>
       )}
+      {/* Horizontal divider */}
       {hasHorizontalDivider && (
         <mesh position={[0, 0.05, 0.01]}>
-          <boxGeometry args={[width, 0.02, 0.025]} />
-          <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.05} />
+          <boxGeometry args={[width, 0.02, 0.03]} />
+          <meshStandardMaterial color={frame.color} roughness={frame.roughness} metalness={frame.metalness} />
         </mesh>
       )}
+      {/* Sliding rails */}
       {type === 'sliding' && (
         <>
           <mesh position={[0, height / 2 + 0.03, 0.01]}>
@@ -127,11 +155,93 @@ function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = '
           </mesh>
         </>
       )}
+      {/* Window sill */}
       <mesh position={[0, -height / 2 - 0.02, 0.04]}>
-        <boxGeometry args={[width + 0.08, 0.03, 0.08]} />
-        <meshStandardMaterial color="#d5d0c5" roughness={0.6} metalness={0.05} />
+        <boxGeometry args={[width + 0.08, 0.03, 0.1]} />
+        <meshStandardMaterial color={frame.color} roughness={frame.roughness + 0.1} metalness={frame.metalness} />
       </mesh>
+      {/* Window light */}
       <pointLight position={[0, 0, -0.5]} intensity={0.4} color="#fffbe6" distance={5} />
+
+      {/* Curtains */}
+      {curtain === 'sheer' && (
+        <group position={[0, 0, 0.06]}>
+          {[-1, 1].map((side) => (
+            <mesh key={`sheer-${side}`} position={[side * width * 0.28, 0, 0]}>
+              <planeGeometry args={[width * 0.48, height + 0.1]} />
+              <meshStandardMaterial
+                color={curtainColor} transparent opacity={0.35}
+                roughness={0.95} metalness={0.0} side={THREE.DoubleSide}
+              />
+            </mesh>
+          ))}
+          {/* Curtain rod */}
+          <mesh position={[0, height / 2 + 0.06, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.008, 0.008, width + 0.2, 8]} />
+            <meshStandardMaterial color="#888" roughness={0.2} metalness={0.85} />
+          </mesh>
+          {/* Rod finials */}
+          {[-1, 1].map(side => (
+            <mesh key={`finial-${side}`} position={[side * (width / 2 + 0.12), height / 2 + 0.06, 0]}>
+              <sphereGeometry args={[0.015, 8, 8]} />
+              <meshStandardMaterial color="#888" roughness={0.2} metalness={0.85} />
+            </mesh>
+          ))}
+        </group>
+      )}
+      {curtain === 'blackout' && (
+        <group position={[0, 0, 0.06]}>
+          {[-1, 1].map((side) => (
+            <mesh key={`blackout-${side}`} position={[side * width * 0.28, 0, 0]}>
+              <planeGeometry args={[width * 0.52, height + 0.15]} />
+              <meshStandardMaterial
+                color={curtainColor} roughness={0.92} metalness={0.0} side={THREE.DoubleSide}
+              />
+            </mesh>
+          ))}
+          <mesh position={[0, height / 2 + 0.08, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.01, 0.01, width + 0.25, 8]} />
+            <meshStandardMaterial color="#666" roughness={0.3} metalness={0.7} />
+          </mesh>
+        </group>
+      )}
+      {curtain === 'roman' && (
+        <group position={[0, height * 0.1, 0.05]}>
+          {/* Roman shade fabric */}
+          <mesh>
+            <planeGeometry args={[width - 0.04, height * 0.35]} />
+            <meshStandardMaterial color={curtainColor} roughness={0.85} metalness={0.0} side={THREE.DoubleSide} />
+          </mesh>
+          {/* Fold lines */}
+          {[0, 1, 2].map(i => (
+            <mesh key={`fold-${i}`} position={[0, -(height * 0.35 / 2) + i * (height * 0.35 / 3), 0.002]}>
+              <boxGeometry args={[width - 0.06, 0.003, 0.003]} />
+              <meshStandardMaterial color={new THREE.Color(curtainColor).multiplyScalar(0.85).getStyle()} roughness={0.8} />
+            </mesh>
+          ))}
+          {/* Top bar */}
+          <mesh position={[0, height * 0.175, 0]}>
+            <boxGeometry args={[width - 0.02, 0.03, 0.02]} />
+            <meshStandardMaterial color="#e0dbd5" roughness={0.5} metalness={0.05} />
+          </mesh>
+        </group>
+      )}
+      {curtain === 'venetian' && (
+        <group position={[0, 0, 0.04]}>
+          {/* Slats */}
+          {Array.from({ length: Math.floor(height / 0.05) }, (_, i) => (
+            <mesh key={`slat-${i}`} position={[0, height / 2 - i * 0.05 - 0.025, 0]} rotation={[0.15, 0, 0]}>
+              <boxGeometry args={[width - 0.04, 0.002, 0.025]} />
+              <meshStandardMaterial color={curtainColor} roughness={0.4} metalness={0.3} side={THREE.DoubleSide} />
+            </mesh>
+          ))}
+          {/* Top rail */}
+          <mesh position={[0, height / 2 + 0.02, 0]}>
+            <boxGeometry args={[width - 0.02, 0.04, 0.03]} />
+            <meshStandardMaterial color="#e0dbd5" roughness={0.5} metalness={0.1} />
+          </mesh>
+        </group>
+      )}
     </group>
   );
 }
