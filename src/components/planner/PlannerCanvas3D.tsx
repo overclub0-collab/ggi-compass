@@ -660,9 +660,13 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
       <OrbitControls
         target={[w / 2, 0.5, d / 2]}
-        maxPolarAngle={Math.PI / 2.1}
-        minDistance={2} maxDistance={20}
-        enableDamping dampingFactor={0.08}
+        minPolarAngle={0.05}
+        maxPolarAngle={Math.PI * 0.95}
+        minDistance={0.5} maxDistance={30}
+        enableDamping dampingFactor={0.06}
+        enablePan panSpeed={0.8}
+        rotateSpeed={0.7}
+        zoomSpeed={1.2}
       />
     </>
   );
