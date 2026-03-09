@@ -164,219 +164,176 @@ These products vary DRAMATICALLY. Analyze the ACTUAL image carefully:
 IMPORTANT: Count EXACTLY from the image. If a locker has 4 columns × 5 rows = 20 compartments, report doorCount=20, compartmentGrid={cols:4,rows:5}. Do NOT guess — analyze the image precisely.
 For leg style, look at the ACTUAL leg structure visible in the image, not assumptions.`;
 
-    // Use faster model to avoid timeouts
+    // Try multiple models with failover
+    const modelsToTry = [
+      "google/gemini-3-flash-preview",
+      "google/gemini-2.5-flash-lite",
+      "google/gemini-2.5-flash",
+    ];
+
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
+    const timeout = setTimeout(() => controller.abort(), 50000);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Analyze this furniture product image with EXTREME PRECISION. Product name: "${product_name || 'Unknown'}". 
+    let response: Response | null = null;
+    let lastStatus = 0;
+    let lastErrorMsg = "";
 
-CRITICAL FOCUS AREAS:
-1. LEG STYLE: Look carefully at the legs. Are they thin metal tubes? Thick wood posts? T-shaped frames? Sled runners? Panel sides? Describe the EXACT leg structure.
-   - If "${product_name}" contains "철재" or "스틸": legs are metal (secondaryMaterial="metal")
-   - If "${product_name}" contains "목재" or "원목": legs are wood (secondaryMaterial="wood") 
-   - If "${product_name}" contains "오픈": hasDoor=false, hasOpenFront=true
-2. DOORS vs OPEN: Is the front OPEN (shelves visible) or CLOSED (with door panels)? Set hasDoor accurately.
-3. Exact number of compartments, doors, shelves, drawers
-4. Precise color hex codes from the image
-5. Structural section proportions
-6. Material identification (melamine, metal, HPL, etc.)
-
-Return the complete analysis JSON.`,
-              },
-              {
-                type: "image_url",
-                image_url: { url: image_url },
-              },
-            ],
-          },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "extract_furniture_params",
-              description: "Extract precise 3D modeling parameters from a furniture image for Three.js procedural generation",
-              parameters: {
-                type: "object",
-                properties: {
-                  furnitureType: { type: "string", enum: ["desk", "chair", "storage", "shelf", "sofa", "lab", "dining", "roundtable", "blackboard", "bunkbed", "pet", "podium", "partition", "generic"] },
-                  shape: { type: "string", enum: ["rectangular", "round", "L-shaped", "curved", "irregular"] },
-                  topShape: { type: "string", enum: ["rectangular", "round", "oval", "irregular"] },
-                  legStyle: { type: "string", enum: ["4-legs", "T-frame", "pedestal", "sled", "star-base", "panel", "trestle", "none"] },
-                  legCount: { type: "number" },
-                  hasArmrest: { type: "boolean" },
-                  hasBackrest: { type: "boolean" },
-                  hasDrawer: { type: "boolean" },
-                  drawerCount: { type: "number" },
-                  hasDoor: { type: "boolean" },
-                  doorCount: { type: "number" },
-                  hasShelf: { type: "boolean" },
-                  shelfCount: { type: "number" },
-                  hasCushion: { type: "boolean" },
-                  primaryMaterial: { type: "string", enum: ["wood", "metal", "fabric", "plastic", "glass", "leather", "melamine", "hpl"] },
-                  secondaryMaterial: { type: "string", enum: ["wood", "metal", "fabric", "plastic", "glass", "none"] },
-                  primaryColor: { type: "string" },
-                  secondaryColor: { type: "string" },
-                  accentColor: { type: "string" },
-                  topThickness: { type: "number" },
-                  legThickness: { type: "number" },
-                  proportions: {
-                    type: "object",
-                    properties: {
-                      widthToDepthRatio: { type: "number" },
-                      heightToWidthRatio: { type: "number" },
-                      seatHeightRatio: { type: "number" },
-                    },
-                    required: ["widthToDepthRatio", "heightToWidthRatio"],
+    const requestBody = {
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `Analyze this furniture product image. Product name: "${product_name || 'Unknown'}". Return the complete analysis JSON.`,
+            },
+            {
+              type: "image_url",
+              image_url: { url: image_url },
+            },
+          ],
+        },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "extract_furniture_params",
+            description: "Extract precise 3D modeling parameters from a furniture image",
+            parameters: {
+              type: "object",
+              properties: {
+                furnitureType: { type: "string", enum: ["desk", "chair", "storage", "shelf", "sofa", "lab", "dining", "roundtable", "blackboard", "bunkbed", "pet", "podium", "partition", "generic"] },
+                shape: { type: "string", enum: ["rectangular", "round", "L-shaped", "curved", "irregular"] },
+                topShape: { type: "string", enum: ["rectangular", "round", "oval", "irregular"] },
+                legStyle: { type: "string", enum: ["4-legs", "T-frame", "pedestal", "sled", "star-base", "panel", "trestle", "none"] },
+                legCount: { type: "number" },
+                hasArmrest: { type: "boolean" },
+                hasBackrest: { type: "boolean" },
+                hasDrawer: { type: "boolean" },
+                drawerCount: { type: "number" },
+                hasDoor: { type: "boolean" },
+                doorCount: { type: "number" },
+                hasShelf: { type: "boolean" },
+                shelfCount: { type: "number" },
+                hasCushion: { type: "boolean" },
+                primaryMaterial: { type: "string", enum: ["wood", "metal", "fabric", "plastic", "glass", "leather", "melamine", "hpl"] },
+                secondaryMaterial: { type: "string", enum: ["wood", "metal", "fabric", "plastic", "glass", "none"] },
+                primaryColor: { type: "string" },
+                secondaryColor: { type: "string" },
+                accentColor: { type: "string" },
+                topThickness: { type: "number" },
+                legThickness: { type: "number" },
+                proportions: {
+                  type: "object",
+                  properties: {
+                    widthToDepthRatio: { type: "number" },
+                    heightToWidthRatio: { type: "number" },
+                    seatHeightRatio: { type: "number" },
                   },
-                  sections: {
-                    type: "object",
-                    description: "Structural layout of the furniture — how it is divided into sections",
-                    properties: {
-                      layout: { type: "string", enum: ["single", "top-bottom", "left-center-right", "grid", "complex"] },
-                      bottomRatio: { type: "number", description: "Height ratio (0-1) of the bottom section" },
-                      middleRatio: { type: "number", description: "Height ratio (0-1) of the middle section" },
-                      topRatio: { type: "number", description: "Height ratio (0-1) of the top section" },
-                      leftSideRatio: { type: "number", description: "Width ratio (0-1) of each side section" },
-                      columns: { type: "number", description: "Number of vertical column divisions" },
-                      rows: { type: "number", description: "Number of horizontal row divisions" },
-                      compartmentGrid: {
-                        type: "object",
-                        properties: {
-                          cols: { type: "number" },
-                          rows: { type: "number" },
-                        },
-                      },
-                      hasOpenFront: { type: "boolean" },
-                      hasBoardArea: { type: "boolean" },
-                      boardPosition: { type: "string", enum: ["center", "top", "back"] },
+                  required: ["widthToDepthRatio", "heightToWidthRatio"],
+                },
+                sections: {
+                  type: "object",
+                  properties: {
+                    layout: { type: "string", enum: ["single", "top-bottom", "left-center-right", "grid", "complex"] },
+                    bottomRatio: { type: "number" },
+                    middleRatio: { type: "number" },
+                    topRatio: { type: "number" },
+                    leftSideRatio: { type: "number" },
+                    columns: { type: "number" },
+                    rows: { type: "number" },
+                    compartmentGrid: {
+                      type: "object",
+                      properties: { cols: { type: "number" }, rows: { type: "number" } },
                     },
-                  },
-                  details: { type: "array", items: { type: "string" } },
-                  texture: {
-                    type: "object",
-                    properties: {
-                      woodGrain: {
-                        type: "object",
-                        properties: {
-                          direction: { type: "string", enum: ["horizontal", "vertical", "diagonal", "radial"] },
-                          intensity: { type: "string", enum: ["subtle", "moderate", "pronounced"] },
-                          knotFrequency: { type: "string", enum: ["none", "few", "many"] },
-                          grainColor: { type: "string" },
-                        },
-                      },
-                      fabricPattern: {
-                        type: "object",
-                        properties: {
-                          type: { type: "string", enum: ["plain", "twill", "knit", "velvet", "leather-grain", "mesh", "woven"] },
-                          weaveScale: { type: "number" },
-                          patternColor: { type: "string" },
-                        },
-                      },
-                      metalFinish: {
-                        type: "object",
-                        properties: {
-                          type: { type: "string", enum: ["brushed", "polished", "powder-coated", "anodized", "chrome", "matte"] },
-                          brushDirection: { type: "string", enum: ["horizontal", "vertical", "circular"] },
-                        },
-                      },
-                      surfaceFinish: { type: "string", enum: ["glossy", "satin", "matte", "textured", "raw"] },
-                      roughnessEstimate: { type: "number" },
-                      metalnessEstimate: { type: "number" },
-                    },
-                    required: ["surfaceFinish", "roughnessEstimate", "metalnessEstimate"],
-                  },
-                  partTextures: {
-                    type: "object",
-                    description: "Per-part texture overrides. Only include parts actually present.",
-                    properties: Object.fromEntries(
-                      ["top", "legs", "body", "seat", "back", "arms", "drawers", "doors", "shelves", "cushion", "accent"].map(part => [
-                        part,
-                        {
-                          type: "object",
-                          properties: {
-                            woodGrain: {
-                              type: "object",
-                              properties: {
-                                direction: { type: "string", enum: ["horizontal", "vertical", "diagonal", "radial"] },
-                                intensity: { type: "string", enum: ["subtle", "moderate", "pronounced"] },
-                                knotFrequency: { type: "string", enum: ["none", "few", "many"] },
-                                grainColor: { type: "string" },
-                              },
-                            },
-                            fabricPattern: {
-                              type: "object",
-                              properties: {
-                                type: { type: "string", enum: ["plain", "twill", "knit", "velvet", "leather-grain", "mesh", "woven"] },
-                                weaveScale: { type: "number" },
-                                patternColor: { type: "string" },
-                              },
-                            },
-                            metalFinish: {
-                              type: "object",
-                              properties: {
-                                type: { type: "string", enum: ["brushed", "polished", "powder-coated", "anodized", "chrome", "matte"] },
-                                brushDirection: { type: "string", enum: ["horizontal", "vertical", "circular"] },
-                              },
-                            },
-                            surfaceFinish: { type: "string", enum: ["glossy", "satin", "matte", "textured", "raw"] },
-                            roughnessEstimate: { type: "number" },
-                            metalnessEstimate: { type: "number" },
-                          },
-                          required: ["surfaceFinish", "roughnessEstimate", "metalnessEstimate"],
-                        },
-                      ])
-                    ),
+                    hasOpenFront: { type: "boolean" },
+                    hasBoardArea: { type: "boolean" },
+                    boardPosition: { type: "string", enum: ["center", "top", "back"] },
                   },
                 },
-                required: [
-                  "furnitureType", "shape", "legStyle", "legCount",
-                  "primaryMaterial", "primaryColor", "secondaryColor",
-                  "topThickness", "legThickness", "proportions", "details", "texture", "sections"
-                ],
-                additionalProperties: false,
+                details: { type: "array", items: { type: "string" } },
+                texture: {
+                  type: "object",
+                  properties: {
+                    surfaceFinish: { type: "string", enum: ["glossy", "satin", "matte", "textured", "raw"] },
+                    roughnessEstimate: { type: "number" },
+                    metalnessEstimate: { type: "number" },
+                  },
+                  required: ["surfaceFinish", "roughnessEstimate", "metalnessEstimate"],
+                },
               },
+              required: [
+                "furnitureType", "shape", "legStyle", "legCount",
+                "primaryMaterial", "primaryColor", "secondaryColor",
+                "topThickness", "legThickness", "proportions", "details", "texture", "sections"
+              ],
             },
           },
-        ],
-        tool_choice: { type: "function", function: { name: "extract_furniture_params" } },
-      }),
-    });
+        },
+      ],
+      tool_choice: { type: "function", function: { name: "extract_furniture_params" } },
+    };
+
+    for (const model of modelsToTry) {
+      console.log(`Trying model: ${model}`);
+      try {
+        const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ model, ...requestBody }),
+        });
+
+        lastStatus = res.status;
+
+        if (res.ok) {
+          response = res;
+          break;
+        }
+
+        // On 402/429, try next model
+        if (res.status === 402 || res.status === 429) {
+          const errBody = await res.text();
+          lastErrorMsg = errBody;
+          console.log(`Model ${model} returned ${res.status}, trying next...`);
+          continue;
+        }
+
+        // Other errors - also try next
+        const errText = await res.text();
+        lastErrorMsg = errText;
+        console.error(`Model ${model} error: ${res.status} ${errText}`);
+        continue;
+      } catch (fetchErr) {
+        if (fetchErr instanceof DOMException && fetchErr.name === 'AbortError') throw fetchErr;
+        console.error(`Model ${model} fetch error:`, fetchErr);
+        continue;
+      }
+    }
 
     clearTimeout(timeout);
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits depleted. Please add credits." }), {
+    if (!response) {
+      // All models failed
+      if (lastStatus === 402) {
+        return new Response(JSON.stringify({ error: "AI 크레딧이 부족합니다. Settings → Workspace → Usage에서 크레딧을 추가해주세요." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
-      throw new Error(`AI gateway error: ${response.status}`);
+      if (lastStatus === 429) {
+        return new Response(JSON.stringify({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.error("All models failed. Last error:", lastErrorMsg);
+      throw new Error(`All AI models failed (last status: ${lastStatus})`);
     }
 
     const aiData = await response.json();

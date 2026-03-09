@@ -193,13 +193,36 @@ export default function AdminFurnitureAnalysis() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Try to extract error details from the response
+        const errorBody = data?.error || error.message || '알 수 없는 오류';
+        if (errorBody.includes('크레딧') || errorBody.includes('credit') || errorBody.includes('402')) {
+          toast.error('AI 크레딧이 부족합니다. Settings → Workspace → Usage에서 크레딧을 추가해주세요.', { duration: 8000 });
+        } else if (errorBody.includes('rate') || errorBody.includes('429') || errorBody.includes('많습니다')) {
+          toast.error('요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+        } else if (errorBody.includes('timeout') || errorBody.includes('시간')) {
+          toast.error('분석 시간이 초과되었습니다. 다시 시도해주세요.');
+        } else {
+          toast.error(`"${record.title}" 분석 실패: ${errorBody}`);
+        }
+        return;
+      }
+
+      if (data?.error) {
+        const errMsg = data.error;
+        if (errMsg.includes('크레딧') || errMsg.includes('credit')) {
+          toast.error('AI 크레딧이 부족합니다. Settings → Workspace → Usage에서 크레딧을 추가해주세요.', { duration: 8000 });
+        } else {
+          toast.error(`"${record.title}" 분석 실패: ${errMsg}`);
+        }
+        return;
+      }
 
       toast.success(`"${record.title}" 분석 완료`);
       fetchRecords();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Analyze failed:', e);
-      toast.error(`"${record.title}" 분석 실패`);
+      toast.error(`"${record.title}" 분석 실패: ${e?.message || '알 수 없는 오류'}`);
     } finally {
       setReanalyzing((prev) => {
         const next = new Set(prev);
