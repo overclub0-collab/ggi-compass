@@ -515,23 +515,28 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
   return (
     <>
       <SoftShadows size={25} samples={16} focus={0.5} />
-      <ambientLight intensity={0.35} />
+
+      {/* HDRI Environment Map for realistic reflections */}
+      <Environment preset="apartment" background={false} environmentIntensity={0.5} />
+
+      <ambientLight intensity={0.25} />
       <directionalLight
-        position={[w + 4, 12, d + 4]} intensity={1.0} castShadow
+        position={[w + 4, 12, d + 4]} intensity={1.2} castShadow
         shadow-mapSize-width={2048} shadow-mapSize-height={2048}
         shadow-bias={-0.0001}
         shadow-camera-near={0.5} shadow-camera-far={50}
         shadow-camera-left={-10} shadow-camera-right={10}
         shadow-camera-top={10} shadow-camera-bottom={-10}
       />
-      <directionalLight position={[-4, 8, -2]} intensity={0.3} />
-      <directionalLight position={[0, 5, d + 5]} intensity={0.2} />
-      <hemisphereLight args={['#c4d4e8', '#8b7355', 0.4]} />
+      <directionalLight position={[-4, 8, -2]} intensity={0.25} />
+      <directionalLight position={[0, 5, d + 5]} intensity={0.15} />
+      <hemisphereLight args={['#c4d4e8', '#8b7355', 0.3]} />
       <color attach="background" args={['#f0eee8']} />
 
       <ContactShadows
-        position={[w / 2, 0, d / 2]} opacity={0.4}
-        scale={Math.max(w, d) * 1.5} blur={2} far={4}
+        position={[w / 2, 0, d / 2]} opacity={0.5}
+        scale={Math.max(w, d) * 1.5} blur={2.5} far={4}
+        color="#2a1f14"
       />
 
       <Room dimensions={roomDimensions} archConfig={archConfig} />
@@ -544,6 +549,27 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
       ))}
 
       <SnapshotHelper onCapture={onCaptureReady} />
+
+      {/* Post-processing: SSAO + subtle Bloom */}
+      <EffectComposer multisampling={4}>
+        <SSAO
+          blendFunction={BlendFunction.MULTIPLY}
+          samples={21}
+          radius={0.12}
+          intensity={18}
+          luminanceInfluence={0.6}
+          worldDistanceThreshold={1.2}
+          worldDistanceFalloff={0.5}
+          worldProximityThreshold={0.4}
+          worldProximityFalloff={0.3}
+        />
+        <Bloom
+          intensity={0.08}
+          luminanceThreshold={0.9}
+          luminanceSmoothing={0.6}
+          mipmapBlur
+        />
+      </EffectComposer>
 
       <OrbitControls
         target={[w / 2, 0.5, d / 2]}
