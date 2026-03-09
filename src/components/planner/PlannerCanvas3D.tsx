@@ -750,7 +750,7 @@ export const PlannerCanvas3D = ({
     <div className="flex-1 bg-muted/30 relative" onContextMenu={(e) => e.preventDefault()}>
       {/* Tooltip — static, no animation */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
-        좌클릭: 선택 | 우클릭: 정보 고정 | 드래그: 회전/확대
+        WASD: 이동 | QE: 회전 | RF: 상하 | 마우스 드래그: 궤도 회전 | 좌클릭: 선택 | 우클릭: 정보 고정
       </div>
 
       <Button
