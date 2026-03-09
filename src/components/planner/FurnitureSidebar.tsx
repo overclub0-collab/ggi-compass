@@ -223,8 +223,15 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
                     "hover:border-primary/40 hover:shadow-lg hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-200"
                   )}
                 >
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-40 transition-opacity">
-                    <GripVertical className="h-3.5 w-3.5" />
+                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                    {getCachedAnalysis(furniture.id) && (
+                      <span className="bg-primary/10 text-primary text-[9px] px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+                        <Sparkles className="h-2.5 w-2.5" />AI
+                      </span>
+                    )}
+                    <span className="opacity-0 group-hover:opacity-40 transition-opacity">
+                      <GripVertical className="h-3.5 w-3.5" />
+                    </span>
                   </div>
 
                   {furniture.thumbnail ? (
