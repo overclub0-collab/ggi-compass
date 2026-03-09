@@ -14,6 +14,9 @@ export interface WindowConfig {
   height: number;
   wall: 'back' | 'left' | 'right' | 'front';
   positionRatio: number;
+  frameColor?: 'white' | 'wood' | 'black' | 'silver';
+  curtain?: 'none' | 'sheer' | 'blackout' | 'roman' | 'venetian';
+  curtainColor?: string;
 }
 
 export interface DoorConfig {
@@ -44,13 +47,13 @@ export interface OutletConfig {
 }
 
 export interface CeilingLightConfig {
-  type: 'panel' | 'pendant' | 'spot';
+  type: 'panel' | 'pendant' | 'spot' | 'chandelier' | 'track' | 'recessed' | 'wall-sconce' | 'linear';
   xRatio: number;
   zRatio: number;
 }
 
-export type FloorMaterialType = 'wood-light' | 'wood-dark' | 'wood-walnut' | 'marble-white' | 'marble-gray' | 'tile-white' | 'tile-gray' | 'concrete' | 'carpet-gray' | 'carpet-blue';
-export type WallMaterialType = 'paint-white' | 'paint-cream' | 'paint-gray' | 'paint-sage' | 'wallpaper-stripe' | 'wallpaper-texture' | 'brick-white' | 'brick-red' | 'concrete' | 'wood-panel';
+export type FloorMaterialType = 'wood-light' | 'wood-dark' | 'wood-walnut' | 'wood-herringbone' | 'marble-white' | 'marble-gray' | 'marble-calacatta' | 'tile-white' | 'tile-gray' | 'tile-hex' | 'concrete' | 'carpet-gray' | 'carpet-blue' | 'carpet-beige';
+export type WallMaterialType = 'paint-white' | 'paint-cream' | 'paint-gray' | 'paint-sage' | 'paint-navy' | 'paint-terracotta' | 'wallpaper-stripe' | 'wallpaper-texture' | 'wallpaper-damask' | 'wallpaper-grasscloth' | 'brick-white' | 'brick-red' | 'concrete' | 'wood-panel' | 'stone-natural' | 'plaster-venetian';
 
 export interface ArchitecturalConfig {
   windows: WindowConfig[];
@@ -99,6 +102,35 @@ const LIGHT_TYPES = [
   { value: 'panel', label: '패널등' },
   { value: 'pendant', label: '펜던트등' },
   { value: 'spot', label: '스팟등' },
+  { value: 'chandelier', label: '샹들리에' },
+  { value: 'track', label: '트랙등' },
+  { value: 'recessed', label: '매입등' },
+  { value: 'wall-sconce', label: '벽등' },
+  { value: 'linear', label: '라인조명' },
+];
+
+const CURTAIN_TYPES = [
+  { value: 'none', label: '없음' },
+  { value: 'sheer', label: '쉬어 커튼' },
+  { value: 'blackout', label: '암막 커튼' },
+  { value: 'roman', label: '로만 셰이드' },
+  { value: 'venetian', label: '베네시안 블라인드' },
+];
+
+const CURTAIN_COLORS = [
+  { value: '#f5f0e8', label: '아이보리' },
+  { value: '#e8e4db', label: '베이지' },
+  { value: '#d0cdc8', label: '그레이' },
+  { value: '#c5cfbe', label: '세이지' },
+  { value: '#2c3e50', label: '네이비' },
+  { value: '#8b4513', label: '브라운' },
+];
+
+const WINDOW_FRAME_COLORS = [
+  { value: 'white', label: '화이트' },
+  { value: 'wood', label: '우드' },
+  { value: 'black', label: '블랙' },
+  { value: 'silver', label: '실버' },
 ];
 
 const WALL_OPTIONS = [

@@ -8,14 +8,18 @@ import { FurnitureObject } from './FurnitureModels';
 import * as THREE from 'three';
 
 const COLOR_PRESETS = [
+  { name: '화이트', color: 'hsl(0, 0%, 95%)' },
+  { name: '라이트그레이', color: 'hsl(0, 0%, 85%)' },
+  { name: '망밀비치(망비)', color: 'hsl(28, 55%, 68%)' },
+  { name: '아카시아', color: 'hsl(22, 40%, 48%)' },
+  { name: '메탈그레이', color: 'hsl(215, 8%, 58%)' },
+  { name: '메이플', color: 'hsl(42, 35%, 82%)' },
   { name: '내추럴 우드', color: 'hsl(30, 40%, 65%)' },
   { name: '다크 우드', color: 'hsl(25, 35%, 35%)' },
-  { name: '화이트', color: 'hsl(0, 0%, 92%)' },
-  { name: '라이트 그레이', color: 'hsl(210, 10%, 80%)' },
-  { name: '파스텔 블루', color: 'hsl(210, 40%, 75%)' },
-  { name: '파스텔 핑크', color: 'hsl(350, 40%, 80%)' },
-  { name: '민트', color: 'hsl(160, 35%, 70%)' },
   { name: '차콜', color: 'hsl(0, 0%, 28%)' },
+  { name: '파스텔 블루', color: 'hsl(210, 40%, 75%)' },
+  { name: '민트', color: 'hsl(160, 35%, 70%)' },
+  { name: '파스텔 핑크', color: 'hsl(350, 40%, 80%)' },
 ];
 
 interface FurnitureDetailPanelProps {
@@ -255,7 +259,7 @@ export const FurnitureDetailPanel = ({
                   <Palette className="h-3 w-3" />
                   컬러 변경
                 </label>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-6 gap-1.5">
                   {COLOR_PRESETS.map((preset) => (
                     <button
                       key={preset.name}
