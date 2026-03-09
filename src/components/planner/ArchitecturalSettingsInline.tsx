@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import {
-  ArchitecturalConfig,
+  ArchitecturalConfig, FloorMaterialType, WallMaterialType,
   WindowConfig, DoorConfig, ColumnConfig, PartitionConfig, OutletConfig, CeilingLightConfig,
 } from './ArchitecturalSettingsPanel';
 
