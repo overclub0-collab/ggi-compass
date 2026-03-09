@@ -2386,9 +2386,14 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
     
     if (analysis) {
       const props = { w, d, h, color: effectiveColor, isSelected, analysis };
+      
+      // Check if this should be a round table based on shape/topShape
+      const isRound = analysis.topShape === 'round' || analysis.topShape === 'oval' || analysis.shape === 'round';
+      
       switch (furnitureType) {
         case 'desk':
         case 'dining':
+          if (isRound) return <AIEnhancedRoundTable {...props} />;
           return <AIEnhancedDesk {...props} />;
         case 'chair':
           return <AIEnhancedChair {...props} />;
