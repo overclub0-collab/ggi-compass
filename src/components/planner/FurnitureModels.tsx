@@ -1694,7 +1694,10 @@ function AIEnhancedStorage({ w, d, h, color, isSelected, analysis }: {
 }) {
   const colors = getColorsFromAnalysis(analysis, color);
   const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
-  const hasDoor = analysis.hasDoor ?? true;
+  const sections = analysis.sections;
+  const isOpenFront = sections?.hasOpenFront === true;
+  // CRITICAL: Respect AI analysis — if hasOpenFront is true OR hasDoor is explicitly false, no doors
+  const hasDoor = isOpenFront ? false : (analysis.hasDoor ?? false);
   const doorCount = analysis.doorCount || 2;
   const hasShelf = analysis.hasShelf ?? true;
   const shelfCount = analysis.shelfCount || 3;
@@ -1702,7 +1705,6 @@ function AIEnhancedStorage({ w, d, h, color, isSelected, analysis }: {
   const drawerCount = analysis.drawerCount || 0;
   const primaryMatFn = analysis.primaryMaterial === 'wood' || analysis.primaryMaterial === 'melamine' || analysis.primaryMaterial === 'hpl' ? woodMat : metalMat;
   const panelThick = 0.018;
-  const sections = analysis.sections;
   const grid = sections?.compartmentGrid;
   const isGridLayout = sections?.layout === 'grid' && grid;
 
