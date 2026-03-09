@@ -855,6 +855,8 @@ export const PlannerCanvas3D = ({
           archConfig={archConfig}
           hdriPreset={hdriPreset}
           onCaptureReady={handleCaptureReady}
+          fpsMode={fpsMode}
+          onExitFps={onExitFps}
         />
       </Canvas>
     </div>
