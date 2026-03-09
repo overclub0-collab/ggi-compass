@@ -3,7 +3,7 @@ import { Edges, Text, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { PlacedFurniture } from '@/types/planner';
 import { ThreeEvent } from '@react-three/fiber';
-import { getCachedAnalysis, FurnitureAnalysis, TextureAnalysis, PartTextures } from '@/hooks/useFurnitureAnalysis';
+import { getCachedAnalysis, FurnitureAnalysis, TextureAnalysis, PartTextures, SectionLayout } from '@/hooks/useFurnitureAnalysis';
 
 const EDGE_COLOR = '#1a1a1a';
 const SELECTED_EDGE = '#0066cc';
