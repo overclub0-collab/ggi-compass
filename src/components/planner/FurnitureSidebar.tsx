@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Monitor, Armchair, Archive, Square, BookOpen, Sofa, Loader2, FlaskConical, UtensilsCrossed, Shield, ChevronLeft, ChevronRight, ChevronDown, GripVertical, Dog } from 'lucide-react';
+import { Monitor, Armchair, Archive, Square, BookOpen, Sofa, Loader2, FlaskConical, UtensilsCrossed, Shield, ChevronLeft, ChevronRight, ChevronDown, GripVertical, Dog, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FurnitureItem } from '@/types/planner';
 import { usePlannerCategories, usePlannerProducts } from '@/hooks/usePlannerProducts';
+import { prefetchAnalyses, getCachedAnalysis } from '@/hooks/useFurnitureAnalysis';
 
 interface FurnitureSidebarProps {
   onDragStart: (furniture: FurnitureItem) => void;
