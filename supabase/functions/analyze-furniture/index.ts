@@ -148,8 +148,18 @@ EXAMPLES of precise analysis:
 - 목재다리 책상: legStyle="4-legs", secondaryMaterial="wood", details=["tapered-legs" or "round-legs"]
 - 오픈형 신발장: hasDoor=false, sections.hasOpenFront=true, furnitureType="storage"
 - 도어형 사물함: hasDoor=true, sections.compartmentGrid={cols:N,rows:M}
-- 칠판보조장: sections.layout="left-center-right", sections.hasBoardArea=true
 - 실험대: details includes "sink","faucet", sections.layout="single"
+
+★★★ 칠판보조장 (Blackboard Cabinet) — CRITICAL DIFFERENTIATION ★★★
+These products vary DRAMATICALLY. Analyze the ACTUAL image carefully:
+- Type A: Classic left-center-right with board — layout="left-center-right", hasBoardArea=true, leftSideRatio=width ratio of side columns
+- Type B: Upper/Lower split — layout="top-bottom", hasBoardArea=false, bottomRatio=lower cab height ratio, topRatio=upper shelf height ratio. Lower has doors/drawers, upper has open shelves
+- Type C: Full grid shelving — layout="grid", hasBoardArea=false, compartmentGrid={cols:N, rows:M}. No board, just open compartments
+- Type D: Left-center-right WITHOUT board — layout="left-center-right", hasBoardArea=false, all sections are shelving
+- CRITICAL: Set hasBoardArea=true ONLY if you see a WHITEBOARD or BLACKBOARD surface in the center. If it's all shelving/storage, set hasBoardArea=false
+- Count exact drawer/door/shelf numbers from the image
+- Set hasDrawer=true and drawerCount=N if you see pull-out drawers (with horizontal handles)
+- Set sections.columns and sections.rows precisely for the visible compartment layout
 
 IMPORTANT: Count EXACTLY from the image. If a locker has 4 columns × 5 rows = 20 compartments, report doorCount=20, compartmentGrid={cols:4,rows:5}. Do NOT guess — analyze the image precisely.
 For leg style, look at the ACTUAL leg structure visible in the image, not assumptions.`;
