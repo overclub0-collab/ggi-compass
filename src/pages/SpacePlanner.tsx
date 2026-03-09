@@ -189,6 +189,8 @@ const SpacePlanner = () => {
             onRightClickSelect={handleRightClickSelect}
             architecturalConfig={archConfig}
             hdriPreset={hdriPreset}
+            fpsMode={fpsMode}
+            onExitFps={() => setFpsMode(false)}
           />
         )}
 
