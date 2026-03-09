@@ -219,6 +219,33 @@ export type Database = {
         }
         Relationships: []
       }
+      furniture_analysis_cache: {
+        Row: {
+          analysis: Json
+          created_at: string
+          id: string
+          image_url: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          analysis?: Json
+          created_at?: string
+          id?: string
+          image_url: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          analysis?: Json
+          created_at?: string
+          id?: string
+          image_url?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inquiries: {
         Row: {
           admin_reply: string | null

@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Monitor, Armchair, Archive, Square, BookOpen, Sofa, Loader2, FlaskConical, UtensilsCrossed, Shield, ChevronLeft, ChevronRight, ChevronDown, GripVertical, Dog } from 'lucide-react';
+import { Monitor, Armchair, Archive, Square, BookOpen, Sofa, Loader2, FlaskConical, UtensilsCrossed, Shield, ChevronLeft, ChevronRight, ChevronDown, GripVertical, Dog, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FurnitureItem } from '@/types/planner';
 import { usePlannerCategories, usePlannerProducts } from '@/hooks/usePlannerProducts';
+import { prefetchAnalyses, getCachedAnalysis } from '@/hooks/useFurnitureAnalysis';
 
 interface FurnitureSidebarProps {
   onDragStart: (furniture: FurnitureItem) => void;
@@ -34,6 +35,20 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
   const [expandedMainId, setExpandedMainId] = useState<string | null>(null);
   const { data: products, isLoading: prodLoading } = usePlannerProducts(selectedCategoryId);
   const [currentPage, setCurrentPage] = useState(0);
+  const [analyzingCount, setAnalyzingCount] = useState(0);
+
+  // Prefetch AI analysis for products with thumbnails
+  useEffect(() => {
+    if (products && products.length > 0) {
+      const productsWithImages = products.filter(p => p.thumbnail && !getCachedAnalysis(p.id));
+      if (productsWithImages.length > 0) {
+        setAnalyzingCount(productsWithImages.length);
+        prefetchAnalyses(
+          productsWithImages.map(p => ({ id: p.id, thumbnail: p.thumbnail, name: p.name }))
+        ).finally(() => setAnalyzingCount(0));
+      }
+    }
+  }, [products]);
 
   // Auto-expand first main category on load
   useEffect(() => {
@@ -189,6 +204,12 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
             <>
               <p className="text-[10px] text-muted-foreground mb-1">
                 총 {products!.length}개 · {currentPage + 1}/{totalPages} 페이지
+                {analyzingCount > 0 && (
+                  <span className="ml-2 text-primary inline-flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 animate-pulse" />
+                    AI 분석 중 ({analyzingCount})
+                  </span>
+                )}
               </p>
 
               {pagedProducts.map((furniture) => (
@@ -202,8 +223,15 @@ export const FurnitureSidebar = ({ onDragStart }: FurnitureSidebarProps) => {
                     "hover:border-primary/40 hover:shadow-lg hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-200"
                   )}
                 >
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-40 transition-opacity">
-                    <GripVertical className="h-3.5 w-3.5" />
+                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                    {getCachedAnalysis(furniture.id) && (
+                      <span className="bg-primary/10 text-primary text-[9px] px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+                        <Sparkles className="h-2.5 w-2.5" />AI
+                      </span>
+                    )}
+                    <span className="opacity-0 group-hover:opacity-40 transition-opacity">
+                      <GripVertical className="h-3.5 w-3.5" />
+                    </span>
                   </div>
 
                   {furniture.thumbnail ? (

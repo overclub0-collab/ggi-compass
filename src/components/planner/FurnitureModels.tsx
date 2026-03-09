@@ -3,6 +3,7 @@ import { Edges, Text, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { PlacedFurniture } from '@/types/planner';
 import { ThreeEvent } from '@react-three/fiber';
+import { getCachedAnalysis, FurnitureAnalysis } from '@/hooks/useFurnitureAnalysis';
 
 const EDGE_COLOR = '#1a1a1a';
 const SELECTED_EDGE = '#0066cc';
@@ -1086,6 +1087,277 @@ function detectFurnitureType(item: PlacedFurniture): string {
   return 'generic';
 }
 
+// ========== AI-enhanced model selection ==========
+function getModelFromAnalysis(analysis: FurnitureAnalysis): string {
+  return analysis.furnitureType || 'generic';
+}
+
+function getColorsFromAnalysis(analysis: FurnitureAnalysis, fallbackColor: string) {
+  return {
+    primary: analysis.primaryColor || fallbackColor,
+    secondary: analysis.secondaryColor || darken(fallbackColor, 0.3),
+    accent: analysis.accentColor || darken(fallbackColor, 0.15),
+  };
+}
+
+// ========== AI-enhanced Desk with analysis params ==========
+function AIEnhancedDesk({ w, d, h, color, isSelected, analysis }: {
+  w: number; d: number; h: number; color: string; isSelected: boolean; analysis: FurnitureAnalysis;
+}) {
+  const colors = getColorsFromAnalysis(analysis, color);
+  const topH = Math.max(0.015, h * (analysis.topThickness || 0.04));
+  const legW = Math.max(0.02, w * (analysis.legThickness || 0.04));
+  const legD = legW;
+  const legH = h - topH;
+  const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
+  const hasDrawers = analysis.hasDrawer || false;
+  const drawerCount = analysis.drawerCount || 0;
+  const details = analysis.details || [];
+  const hasCrossbar = details.includes('crossbar') || details.includes('stretcher');
+  const hasRoundedEdges = details.includes('rounded-edges');
+  const isTFrame = analysis.legStyle === 'T-frame';
+  const isPanel = analysis.legStyle === 'panel';
+  const primaryMatFn = analysis.primaryMaterial === 'metal' ? metalMat : woodMat;
+  const legMatFn = analysis.secondaryMaterial === 'wood' ? woodMat : metalMat;
+
+  return (
+    <group>
+      {/* Tabletop */}
+      {hasRoundedEdges ? (
+        <RoundedBox args={[w, topH, d]} radius={0.01} smoothness={4} position={[0, h - topH / 2, 0]} castShadow receiveShadow>
+          {primaryMatFn(colors.primary, isSelected)}
+        </RoundedBox>
+      ) : (
+        <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[w, topH, d]} />
+          {primaryMatFn(colors.primary, isSelected)}
+          <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
+        </mesh>
+      )}
+      {/* Edge banding */}
+      <mesh position={[0, h - topH, 0]}>
+        <boxGeometry args={[w + 0.002, 0.003, d + 0.002]} />
+        {primaryMatFn(darken(colors.primary, 0.08), isSelected)}
+      </mesh>
+
+      {/* Legs based on style */}
+      {isTFrame ? (
+        // T-frame legs
+        <>
+          {[-1, 1].map((side) => {
+            const xOff = side * (w / 2 - 0.06);
+            return (
+              <group key={`tleg-${side}`}>
+                <mesh position={[xOff, legH / 2, 0]} castShadow>
+                  <boxGeometry args={[legW, legH, legW]} />
+                  {legMatFn(colors.secondary, isSelected)}
+                </mesh>
+                <mesh position={[xOff, 0.015, 0]}>
+                  <boxGeometry args={[legW, 0.03, d * 0.7]} />
+                  {legMatFn(colors.secondary, isSelected)}
+                </mesh>
+              </group>
+            );
+          })}
+        </>
+      ) : isPanel ? (
+        // Panel legs
+        <>
+          {[-1, 1].map((side) => (
+            <mesh key={`panel-${side}`} position={[side * (w / 2 - 0.015), legH / 2, 0]} castShadow>
+              <boxGeometry args={[0.03, legH, d * 0.85]} />
+              {primaryMatFn(darken(colors.primary, 0.1), isSelected)}
+              <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
+            </mesh>
+          ))}
+        </>
+      ) : (
+        // Standard 4 legs
+        <>
+          {[
+            [-(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
+            [(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
+            [-(w / 2 - legW / 2 - 0.01), 0, (d / 2 - legD / 2 - 0.01)],
+            [(w / 2 - legW / 2 - 0.01), 0, (d / 2 - legD / 2 - 0.01)],
+          ].map(([lx, , lz], i) => (
+            <mesh key={i} position={[lx, legH / 2, lz]} castShadow>
+              <boxGeometry args={[legW, legH, legD]} />
+              {legMatFn(colors.secondary, isSelected)}
+              <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
+            </mesh>
+          ))}
+        </>
+      )}
+
+      {/* Front/back aprons */}
+      <mesh position={[0, h - topH - 0.032, d / 2 - 0.01]} castShadow>
+        <boxGeometry args={[w - legW * 2 - 0.04, 0.06, 0.02]} />
+        {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
+      </mesh>
+      <mesh position={[0, h - topH - 0.032, -(d / 2 - 0.01)]} castShadow>
+        <boxGeometry args={[w - legW * 2 - 0.04, 0.06, 0.02]} />
+        {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
+      </mesh>
+
+      {/* Crossbar if detected */}
+      {hasCrossbar && (
+        <mesh position={[0, legH * 0.12, 0]}>
+          <boxGeometry args={[w * 0.6, 0.018, 0.018]} />
+          {legMatFn(colors.secondary, isSelected)}
+        </mesh>
+      )}
+
+      {/* Drawers if detected */}
+      {hasDrawers && Array.from({ length: Math.min(drawerCount || 1, 3) }, (_, i) => {
+        const drawerH = Math.min(0.08, (legH - 0.06) / (drawerCount || 1));
+        const yOff = h - topH - 0.07 - i * (drawerH + 0.01);
+        return (
+          <group key={`drawer-${i}`}>
+            <mesh position={[w * 0.25, yOff, d / 2 - 0.005]}>
+              <boxGeometry args={[w * 0.45, drawerH, 0.01]} />
+              {primaryMatFn(darken(colors.primary, 0.03), isSelected)}
+            </mesh>
+            <mesh position={[w * 0.25, yOff, d / 2 + 0.008]}>
+              <boxGeometry args={[0.04, 0.01, 0.01]} />
+              <meshStandardMaterial color="#888" roughness={0.2} metalness={0.9} />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* Foot caps */}
+      {!isPanel && [
+        [-(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
+        [(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
+        [-(w / 2 - legW / 2 - 0.01), 0, (d / 2 - legD / 2 - 0.01)],
+        [(w / 2 - legW / 2 - 0.01), 0, (d / 2 - legD / 2 - 0.01)],
+      ].map(([lx, , lz], i) => (
+        <mesh key={`cap-${i}`} position={[lx, 0.005, lz]}>
+          <cylinderGeometry args={[0.015, 0.018, 0.01, 8]} />
+          <meshStandardMaterial color="#333" roughness={0.8} metalness={0.3} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// ========== AI-enhanced Chair ==========
+function AIEnhancedChair({ w, d, h, color, isSelected, analysis }: {
+  w: number; d: number; h: number; color: string; isSelected: boolean; analysis: FurnitureAnalysis;
+}) {
+  const colors = getColorsFromAnalysis(analysis, color);
+  const seatH = 0.05;
+  const seatRatio = analysis.proportions?.seatHeightRatio || 0.5;
+  const seatY = h * seatRatio;
+  const backH = h - seatY - seatH / 2;
+  const hasArms = analysis.hasArmrest ?? false;
+  const hasCushion = analysis.hasCushion ?? true;
+  const isStar = analysis.legStyle === 'star-base';
+  const is4Legs = analysis.legStyle === '4-legs';
+  const seatMat = analysis.primaryMaterial === 'leather' || analysis.primaryMaterial === 'fabric' ? fabricMat : plasticMat;
+
+  return (
+    <group>
+      {/* Seat */}
+      <RoundedBox args={[w * 0.92, seatH, d * 0.85]} radius={0.012} smoothness={4} position={[0, seatY, d * 0.04]} castShadow receiveShadow>
+        {seatMat(colors.primary, isSelected)}
+      </RoundedBox>
+      {hasCushion && (
+        <RoundedBox args={[w * 0.84, 0.006, d * 0.76]} radius={0.003} smoothness={2} position={[0, seatY + seatH / 2 + 0.003, d * 0.04]}>
+          {seatMat(lighten(colors.primary, 0.08), isSelected)}
+        </RoundedBox>
+      )}
+
+      {/* Backrest */}
+      {analysis.hasBackrest !== false && (
+        <>
+          <RoundedBox args={[w * 0.85, backH * 0.8, 0.025]} radius={0.008} smoothness={4} position={[0, seatY + backH * 0.5, -(d / 2 - 0.013)]} castShadow>
+            {seatMat(lighten(colors.primary, 0.04), isSelected)}
+          </RoundedBox>
+          <mesh position={[0, seatY + backH * 0.92, -(d / 2 - 0.013)]} castShadow>
+            <boxGeometry args={[w * 0.9, 0.028, 0.033]} />
+            {plasticMat(colors.secondary, isSelected)}
+          </mesh>
+        </>
+      )}
+
+      {/* Armrests */}
+      {hasArms && [-1, 1].map(side => (
+        <group key={`arm-${side}`}>
+          <mesh position={[side * (w * 0.42), seatY + 0.08, 0]}>
+            <boxGeometry args={[0.03, 0.02, d * 0.5]} />
+            {plasticMat(colors.secondary, isSelected)}
+          </mesh>
+          <mesh position={[side * (w * 0.42), seatY + 0.04, -d * 0.15]}>
+            <boxGeometry args={[0.025, 0.08, 0.025]} />
+            {plasticMat(colors.secondary, isSelected)}
+          </mesh>
+        </group>
+      ))}
+
+      {/* Legs */}
+      {isStar ? (
+        <>
+          <mesh position={[0, seatY / 2, 0]} castShadow>
+            <cylinderGeometry args={[0.025, 0.025, seatY * 0.6, 12]} />
+            {metalMat('#444', isSelected)}
+          </mesh>
+          <mesh position={[0, seatY - seatH / 2 - 0.01, 0]}>
+            <cylinderGeometry args={[0.04, 0.025, 0.06, 12]} />
+            {plasticMat('#333', isSelected)}
+          </mesh>
+          {[0, 1, 2, 3, 4].map((i) => {
+            const angle = (i * Math.PI * 2) / 5;
+            const length = Math.max(w, d) * 0.42;
+            return (
+              <group key={i}>
+                <mesh position={[Math.sin(angle) * length / 2, 0.02, Math.cos(angle) * length / 2]} rotation={[0, -angle, 0]} castShadow>
+                  <boxGeometry args={[0.025, 0.02, length]} />
+                  {metalMat('#555', isSelected)}
+                </mesh>
+                <mesh position={[Math.sin(angle) * length, 0.012, Math.cos(angle) * length]}>
+                  <sphereGeometry args={[0.012, 8, 8]} />
+                  <meshStandardMaterial color="#222" roughness={0.3} metalness={0.8} />
+                </mesh>
+              </group>
+            );
+          })}
+        </>
+      ) : is4Legs ? (
+        [
+          [-(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
+          [(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
+          [-(w / 2 - 0.03), 0, (d / 2 - 0.03)],
+          [(w / 2 - 0.03), 0, (d / 2 - 0.03)],
+        ].map(([lx, , lz], i) => (
+          <mesh key={i} position={[lx, seatY / 2, lz]} castShadow>
+            <boxGeometry args={[0.03, seatY, 0.03]} />
+            {analysis.secondaryMaterial === 'wood' ? woodMat(colors.secondary, isSelected) : metalMat(colors.secondary, isSelected)}
+          </mesh>
+        ))
+      ) : (
+        // Default star base
+        <>
+          <mesh position={[0, seatY / 2, 0]} castShadow>
+            <cylinderGeometry args={[0.025, 0.025, seatY * 0.6, 12]} />
+            {metalMat('#444', isSelected)}
+          </mesh>
+          {[0, 1, 2, 3, 4].map((i) => {
+            const angle = (i * Math.PI * 2) / 5;
+            const length = Math.max(w, d) * 0.42;
+            return (
+              <mesh key={i} position={[Math.sin(angle) * length / 2, 0.02, Math.cos(angle) * length / 2]} rotation={[0, -angle, 0]} castShadow>
+                <boxGeometry args={[0.025, 0.02, length]} />
+                {metalMat('#555', isSelected)}
+              </mesh>
+            );
+          })}
+        </>
+      )}
+    </group>
+  );
+}
+
 // ========== Main exported component ==========
 export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }: {
   item: PlacedFurniture;
@@ -1105,24 +1377,21 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
   const posZ = (item.y / roomScale) / 1000 + d / 2;
 
   const baseColor = item.furniture.color || '#c8b89a';
-  const furnitureType = useMemo(() => detectFurnitureType(item), [item]);
-
-  const ModelComponent = useMemo(() => {
-    switch (furnitureType) {
-      case 'desk': return DeskModel;
-      case 'chair': return ChairModel;
-      case 'storage': return StorageModel;
-      case 'blackboard': return BlackboardCabinetModel;
-      case 'sofa': return SofaModel;
-      case 'shelf': return ShelfModel;
-      case 'lab': return LabBenchModel;
-      case 'dining': return DiningTableModel;
-      case 'pet': return PetFurnitureModel;
-      case 'bunkbed': return BunkBedModel;
-      case 'roundtable': return RoundTableModel;
-      default: return GenericModel;
-    }
-  }, [furnitureType]);
+  
+  // Get AI analysis if available
+  const analysis = useMemo(() => getCachedAnalysis(item.furnitureId), [item.furnitureId]);
+  
+  // Use AI type if available, fallback to keyword detection
+  const furnitureType = useMemo(() => {
+    if (analysis) return getModelFromAnalysis(analysis);
+    return detectFurnitureType(item);
+  }, [item, analysis]);
+  
+  // Use AI colors if available
+  const effectiveColor = useMemo(() => {
+    if (analysis?.primaryColor) return analysis.primaryColor;
+    return baseColor;
+  }, [analysis, baseColor]);
 
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
@@ -1133,6 +1402,28 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
     }
   };
 
+  // If AI analysis is available, use enhanced models
+  const renderModel = () => {
+    if (analysis) {
+      switch (furnitureType) {
+        case 'desk':
+        case 'dining':
+          return <AIEnhancedDesk w={w} d={d} h={h} color={effectiveColor} isSelected={isSelected} analysis={analysis} />;
+        case 'chair':
+          return <AIEnhancedChair w={w} d={d} h={h} color={effectiveColor} isSelected={isSelected} analysis={analysis} />;
+        // For other types, use existing models with AI colors
+        default: {
+          const ModelComponent = getModelComponent(furnitureType);
+          return <ModelComponent w={w} d={d} h={h} color={effectiveColor} isSelected={isSelected} />;
+        }
+      }
+    }
+    
+    // Fallback: use original keyword-based detection
+    const ModelComponent = getModelComponent(furnitureType);
+    return <ModelComponent w={w} d={d} h={h} color={effectiveColor} isSelected={isSelected} />;
+  };
+
   return (
     <group
       ref={groupRef}
@@ -1140,7 +1431,7 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
       rotation={[0, -(item.rotation * Math.PI) / 180, 0]}
       onPointerDown={handlePointerDown}
     >
-      <ModelComponent w={w} d={d} h={h} color={baseColor} isSelected={isSelected} />
+      {renderModel()}
 
       {/* Name label */}
       <Text
@@ -1169,4 +1460,21 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
       </Text>
     </group>
   );
+}
+
+function getModelComponent(furnitureType: string) {
+  switch (furnitureType) {
+    case 'desk': return DeskModel;
+    case 'chair': return ChairModel;
+    case 'storage': return StorageModel;
+    case 'blackboard': return BlackboardCabinetModel;
+    case 'sofa': return SofaModel;
+    case 'shelf': return ShelfModel;
+    case 'lab': return LabBenchModel;
+    case 'dining': return DiningTableModel;
+    case 'pet': return PetFurnitureModel;
+    case 'bunkbed': return BunkBedModel;
+    case 'roundtable': return RoundTableModel;
+    default: return GenericModel;
+  }
 }
