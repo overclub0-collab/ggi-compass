@@ -775,11 +775,9 @@ function DiningTableModel({ w, d, h, color, isSelected }: {
   return (
     <group>
       {/* Thick tabletop with rounded look */}
-      <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[w, topH, d]} />
+      <RoundedBox args={[w, topH, d]} radius={0.01} smoothness={4} position={[0, h - topH / 2, 0]} castShadow receiveShadow>
         {woodMat(color, isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
-      </mesh>
+      </RoundedBox>
       {/* Edge rounding strip */}
       <mesh position={[0, h - topH - 0.002, 0]}>
         <boxGeometry args={[w - 0.01, 0.004, d - 0.01]} />
