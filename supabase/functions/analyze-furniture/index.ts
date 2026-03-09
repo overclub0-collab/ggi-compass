@@ -418,6 +418,13 @@ Return the complete analysis JSON.`,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      console.error("analyze-furniture timeout");
+      return new Response(
+        JSON.stringify({ error: "Analysis timed out. Please try again." }),
+        { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     console.error("analyze-furniture error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
