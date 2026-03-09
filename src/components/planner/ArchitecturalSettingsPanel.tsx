@@ -17,6 +17,7 @@ export interface WindowConfig {
   frameColor?: 'white' | 'wood' | 'black' | 'silver';
   curtain?: 'none' | 'sheer' | 'blackout' | 'roman' | 'venetian';
   curtainColor?: string;
+  curtainOpenRatio?: number; // 0 = fully closed, 1 = fully open
 }
 
 export interface DoorConfig {
