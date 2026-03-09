@@ -1861,6 +1861,8 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
           return <AIEnhancedLab {...props} />;
         case 'roundtable':
           return <AIEnhancedRoundTable {...props} />;
+        case 'blackboard':
+          return <AIEnhancedBlackboard {...props} />;
         default:
           return <AIEnhancedGeneric {...props} />;
       }
