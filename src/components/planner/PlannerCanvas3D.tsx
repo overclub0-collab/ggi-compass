@@ -356,42 +356,63 @@ function Room({ dimensions, archConfig }: { dimensions: RoomDimensions; archConf
     }
   };
 
+  const floorMat = FLOOR_MATERIALS[archConfig.floorMaterial || 'wood-light'];
+  const wallMat = WALL_MATERIALS[archConfig.wallMaterial || 'paint-white'];
+  const floorLineColor = new THREE.Color(floorMat.color).offsetHSL(0, 0, -0.08).getStyle();
+
   return (
     <group>
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[w / 2, 0, d / 2]} receiveShadow>
         <planeGeometry args={[w, d]} />
-        <meshStandardMaterial color={FLOOR_COLOR} roughness={0.75} metalness={0.02} />
+        <meshStandardMaterial color={floorMat.color} roughness={floorMat.roughness} metalness={floorMat.metalness} />
       </mesh>
-      {Array.from({ length: Math.ceil(w / 0.15) }, (_, i) => (
+      {/* Floor pattern lines */}
+      {floorMat.pattern === 'plank' && Array.from({ length: Math.ceil(w / 0.15) }, (_, i) => (
         <mesh key={`plank-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[i * 0.15, 0.001, d / 2]}>
           <planeGeometry args={[0.002, d]} />
-          <meshStandardMaterial color="#b8a888" transparent opacity={0.3} />
+          <meshStandardMaterial color={floorLineColor} transparent opacity={0.3} />
         </mesh>
       ))}
+      {floorMat.pattern === 'tile' && (
+        <>
+          {Array.from({ length: Math.ceil(w / 0.6) }, (_, i) => (
+            <mesh key={`tile-v-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[i * 0.6, 0.001, d / 2]}>
+              <planeGeometry args={[0.003, d]} />
+              <meshStandardMaterial color={floorLineColor} transparent opacity={0.2} />
+            </mesh>
+          ))}
+          {Array.from({ length: Math.ceil(d / 0.6) }, (_, i) => (
+            <mesh key={`tile-h-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[w / 2, 0.001, i * 0.6]}>
+              <planeGeometry args={[w, 0.003]} />
+              <meshStandardMaterial color={floorLineColor} transparent opacity={0.2} />
+            </mesh>
+          ))}
+        </>
+      )}
 
       {/* Back wall */}
       <mesh position={[w / 2, wallH / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[w, wallH, wallThickness]} />
-        <meshStandardMaterial color={WALL_COLOR} roughness={0.9} metalness={0.01} />
+        <meshStandardMaterial color={wallMat.color} roughness={wallMat.roughness} metalness={wallMat.metalness} />
         <Edges threshold={15} color={EDGE_COLOR} lineWidth={1.5} />
       </mesh>
       {/* Left wall */}
       <mesh position={[0, wallH / 2, d / 2]} castShadow receiveShadow>
         <boxGeometry args={[wallThickness, wallH, d]} />
-        <meshStandardMaterial color={WALL_COLOR} roughness={0.9} metalness={0.01} />
+        <meshStandardMaterial color={wallMat.color} roughness={wallMat.roughness} metalness={wallMat.metalness} />
         <Edges threshold={15} color={EDGE_COLOR} lineWidth={1.5} />
       </mesh>
       {/* Right wall (ghost) */}
       <mesh position={[w, wallH / 2, d / 2]}>
         <boxGeometry args={[wallThickness, wallH, d]} />
-        <meshStandardMaterial color={WALL_COLOR} transparent opacity={0.1} roughness={0.9} />
+        <meshStandardMaterial color={wallMat.color} transparent opacity={0.1} roughness={wallMat.roughness} />
         <Edges threshold={15} color={EDGE_COLOR} lineWidth={0.6} />
       </mesh>
       {/* Front wall (ghost) */}
       <mesh position={[w / 2, wallH / 2, d]}>
         <boxGeometry args={[w, wallH, wallThickness]} />
-        <meshStandardMaterial color={WALL_COLOR} transparent opacity={0.1} roughness={0.9} />
+        <meshStandardMaterial color={wallMat.color} transparent opacity={0.1} roughness={wallMat.roughness} />
         <Edges threshold={15} color={EDGE_COLOR} lineWidth={0.6} />
       </mesh>
 
