@@ -46,17 +46,23 @@ const FLOOR_MATERIALS: Record<FloorMaterialType, { color: string; roughness: num
   'carpet-beige': { color: '#c5b8a5', roughness: 0.95, metalness: 0.0, pattern: 'none' },
 };
 
-const WALL_MATERIALS: Record<WallMaterialType, { color: string; roughness: number; metalness: number; pattern: 'none' | 'stripe' | 'texture' | 'brick' | 'plank' }> = {
+const WALL_MATERIALS: Record<WallMaterialType, { color: string; roughness: number; metalness: number; pattern: 'none' | 'stripe' | 'texture' | 'brick' | 'plank' | 'damask' | 'grasscloth' | 'stone' | 'venetian' }> = {
   'paint-white': { color: '#f5f2ec', roughness: 0.9, metalness: 0.01, pattern: 'none' },
   'paint-cream': { color: '#f0e8d8', roughness: 0.9, metalness: 0.01, pattern: 'none' },
   'paint-gray': { color: '#d0cdc8', roughness: 0.88, metalness: 0.01, pattern: 'none' },
   'paint-sage': { color: '#c5cfbe', roughness: 0.88, metalness: 0.01, pattern: 'none' },
+  'paint-navy': { color: '#2c3e50', roughness: 0.85, metalness: 0.02, pattern: 'none' },
+  'paint-terracotta': { color: '#c0694a', roughness: 0.88, metalness: 0.01, pattern: 'none' },
   'wallpaper-stripe': { color: '#e8e4db', roughness: 0.85, metalness: 0.01, pattern: 'stripe' },
   'wallpaper-texture': { color: '#e5e0d5', roughness: 0.82, metalness: 0.01, pattern: 'texture' },
+  'wallpaper-damask': { color: '#e0dbd2', roughness: 0.78, metalness: 0.02, pattern: 'damask' },
+  'wallpaper-grasscloth': { color: '#d8d0c0', roughness: 0.92, metalness: 0.01, pattern: 'grasscloth' },
   'brick-white': { color: '#e8e0d5', roughness: 0.92, metalness: 0.02, pattern: 'brick' },
   'brick-red': { color: '#a05030', roughness: 0.92, metalness: 0.02, pattern: 'brick' },
   'concrete': { color: '#c0bdb8', roughness: 0.95, metalness: 0.01, pattern: 'texture' },
   'wood-panel': { color: '#b09878', roughness: 0.7, metalness: 0.03, pattern: 'plank' },
+  'stone-natural': { color: '#c8c0b5', roughness: 0.88, metalness: 0.03, pattern: 'stone' },
+  'plaster-venetian': { color: '#e8e2d8', roughness: 0.4, metalness: 0.06, pattern: 'venetian' },
 };
 
 // ===== Architectural Elements =====
