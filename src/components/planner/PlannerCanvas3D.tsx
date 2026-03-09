@@ -9,7 +9,7 @@ import { Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import * as THREE from 'three';
-import { ArchitecturalConfig, DEFAULT_ARCHITECTURAL_CONFIG } from './ArchitecturalSettingsPanel';
+import { ArchitecturalConfig, DEFAULT_ARCHITECTURAL_CONFIG, FloorMaterialType, WallMaterialType } from './ArchitecturalSettingsPanel';
 
 interface PlannerCanvas3DProps {
   roomDimensions: RoomDimensions;
