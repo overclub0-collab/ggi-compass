@@ -38,6 +38,63 @@ const MATERIALS = ['wood', 'metal', 'fabric', 'plastic', 'glass', 'leather', 'no
 
 const SHAPES = ['rectangular', 'round', 'L-shaped', 'curved', 'irregular'];
 
+const SURFACE_FINISHES = ['glossy', 'satin', 'matte', 'textured', 'raw'];
+const WOOD_GRAIN_DIRECTIONS = ['horizontal', 'vertical', 'diagonal', 'radial'];
+const WOOD_GRAIN_INTENSITIES = ['subtle', 'moderate', 'pronounced'];
+const KNOT_FREQUENCIES = ['none', 'few', 'many'];
+const FABRIC_TYPES = ['plain', 'twill', 'knit', 'velvet', 'leather-grain', 'mesh', 'woven'];
+const METAL_FINISH_TYPES = ['brushed', 'polished', 'powder-coated', 'anodized', 'chrome', 'matte'];
+const BRUSH_DIRECTIONS = ['horizontal', 'vertical', 'circular'];
+
+const PART_LABELS: Record<string, string> = {
+  top: '상판',
+  legs: '다리/프레임',
+  body: '본체/캐비닛',
+  seat: '좌석',
+  back: '등받이',
+  arms: '팔걸이',
+  drawers: '서랍',
+  doors: '문',
+  shelves: '선반',
+  cushion: '쿠션',
+  accent: '악센트',
+};
+
+const TEXTURE_PRESETS: Record<string, Record<string, unknown>> = {
+  '우드 (밝은)': {
+    woodGrain: { direction: 'horizontal', intensity: 'moderate', knotFrequency: 'few', grainColor: '#c8a87c' },
+    surfaceFinish: 'satin', roughnessEstimate: 0.6, metalnessEstimate: 0,
+  },
+  '우드 (어두운)': {
+    woodGrain: { direction: 'horizontal', intensity: 'pronounced', knotFrequency: 'few', grainColor: '#5a3a1a' },
+    surfaceFinish: 'satin', roughnessEstimate: 0.55, metalnessEstimate: 0,
+  },
+  '금속 (크롬)': {
+    metalFinish: { type: 'chrome', brushDirection: 'vertical' },
+    surfaceFinish: 'glossy', roughnessEstimate: 0.15, metalnessEstimate: 0.95,
+  },
+  '금속 (무광)': {
+    metalFinish: { type: 'matte' },
+    surfaceFinish: 'matte', roughnessEstimate: 0.7, metalnessEstimate: 0.8,
+  },
+  '금속 (분체도장)': {
+    metalFinish: { type: 'powder-coated' },
+    surfaceFinish: 'matte', roughnessEstimate: 0.65, metalnessEstimate: 0.3,
+  },
+  '패브릭 (일반)': {
+    fabricPattern: { type: 'plain', weaveScale: 1 },
+    surfaceFinish: 'textured', roughnessEstimate: 0.85, metalnessEstimate: 0,
+  },
+  '패브릭 (메쉬)': {
+    fabricPattern: { type: 'mesh', weaveScale: 0.5 },
+    surfaceFinish: 'matte', roughnessEstimate: 0.8, metalnessEstimate: 0,
+  },
+  '가죽': {
+    fabricPattern: { type: 'leather-grain', weaveScale: 0.8 },
+    surfaceFinish: 'satin', roughnessEstimate: 0.5, metalnessEstimate: 0.05,
+  },
+};
+
 export default function AdminFurnitureAnalysis() {
   const [records, setRecords] = useState<AnalysisRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
