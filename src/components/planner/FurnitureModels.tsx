@@ -1271,8 +1271,12 @@ function detectFurnitureType(item: PlacedFurniture): string {
   const name = (item.furniture.name || '').toLowerCase();
   const cat = (item.furniture.category || '').toLowerCase();
 
-  // Round table detection
-  if (name.includes('원형') || name.includes('라운드') || name.includes('둥근') || name.includes('원탁') || name.includes('round') || name.includes('원형탁자') || name.includes('원형식탁')) return 'roundtable';
+  return detectTypeFromKeywords(name, cat);
+}
+
+function detectTypeFromKeywords(name: string, cat: string): string {
+  // Round table detection — MUST be checked before generic desk/table
+  if (name.includes('원형') || name.includes('라운드') || name.includes('둥근') || name.includes('원탁') || name.includes('round') || name.includes('원형탁자') || name.includes('원형식탁') || name.includes('원형테이블')) return 'roundtable';
 
   // Blackboard / whiteboard cabinet
   if (name.includes('칠판') || name.includes('보조장') || name.includes('blackboard') || name.includes('화이트보드')) return 'blackboard';
@@ -1295,21 +1299,42 @@ function detectFurnitureType(item: PlacedFurniture): string {
   // Sofa
   if (name.includes('소파') || name.includes('sofa') || name.includes('카우치') || cat.includes('sofa')) return 'sofa';
   
-  // Storage / locker
-  if (name.includes('사물함') || name.includes('수납') || name.includes('서랍') || name.includes('캐비닛') || name.includes('locker') || name.includes('신발장') || name.includes('옷장') || name.includes('보관') || cat.includes('storage')) return 'storage';
+  // Storage / locker / cabinet
+  if (name.includes('사물함') || name.includes('수납') || name.includes('서랍') || name.includes('캐비닛') || name.includes('locker') || name.includes('신발장') || name.includes('옷장') || name.includes('보관') || name.includes('철장') || name.includes('장롱') || name.includes('락커') || name.includes('cabinet') || cat.includes('storage')) return 'storage';
   
   // Shelf / bookcase
-  if (name.includes('선반') || name.includes('책장') || name.includes('shelf') || name.includes('진열') || cat.includes('shelf')) return 'shelf';
+  if (name.includes('선반') || name.includes('책장') || name.includes('shelf') || name.includes('진열') || name.includes('거치대') || cat.includes('shelf')) return 'shelf';
   
-  // Desk / table (broad category — last)
-  if (name.includes('책상') || name.includes('탁자') || name.includes('테이블') || name.includes('강연대') || name.includes('교탁') || name.includes('desk') || name.includes('table') || name.includes('작업대') || name.includes('워크') || cat.includes('desk') || cat.includes('table')) return 'desk';
+  // Desk / table / conference table / workstation (broad — last)
+  if (name.includes('책상') || name.includes('탁자') || name.includes('테이블') || name.includes('강연대') || name.includes('교탁') || name.includes('desk') || name.includes('table') || name.includes('작업대') || name.includes('워크') || name.includes('회의') || name.includes('conference') || name.includes('세미나') || cat.includes('desk') || cat.includes('table')) return 'desk';
 
   return 'generic';
 }
 
-// ========== AI-enhanced model selection ==========
-function getModelFromAnalysis(analysis: FurnitureAnalysis): string {
-  return analysis.furnitureType || 'generic';
+// ========== AI-enhanced model selection with keyword cross-check ==========
+function getModelFromAnalysis(analysis: FurnitureAnalysis, item: PlacedFurniture): string {
+  const aiType = analysis.furnitureType || 'generic';
+  const name = (item.furniture.name || '').toLowerCase();
+  const cat = (item.furniture.category || '').toLowerCase();
+  const keywordType = detectTypeFromKeywords(name, cat);
+
+  // If keyword detection gives a specific type (not generic) and AI gave generic, prefer keyword
+  if (aiType === 'generic' && keywordType !== 'generic') {
+    return keywordType;
+  }
+
+  // If keyword says roundtable but AI doesn't, override (round tables are easy to detect by name)
+  if (keywordType === 'roundtable' && aiType !== 'roundtable') {
+    return 'roundtable';
+  }
+
+  // If keyword says specific structural types that AI might miss, prefer keyword
+  const structuralTypes = ['blackboard', 'bunkbed', 'pet', 'lab'];
+  if (structuralTypes.includes(keywordType) && !structuralTypes.includes(aiType)) {
+    return keywordType;
+  }
+
+  return aiType;
 }
 
 function getColorsFromAnalysis(analysis: FurnitureAnalysis, fallbackColor: string) {
