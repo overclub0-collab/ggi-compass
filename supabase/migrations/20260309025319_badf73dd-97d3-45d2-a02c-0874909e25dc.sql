@@ -1,0 +1,1 @@
+DELETE FROM public.furniture_analysis_cache;
