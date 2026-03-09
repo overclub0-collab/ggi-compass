@@ -514,29 +514,67 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
   return (
     <>
-      <SoftShadows size={25} samples={16} focus={0.5} />
+      <SoftShadows size={30} samples={20} focus={0.4} />
 
       {/* HDRI Environment Map for realistic reflections */}
       <Environment preset="apartment" background={false} environmentIntensity={0.5} />
 
-      <ambientLight intensity={0.25} />
+      {/* Soft ambient fill */}
+      <ambientLight intensity={0.15} />
+
+      {/* Primary key light — directional with high-res shadows */}
       <directionalLight
-        position={[w + 4, 12, d + 4]} intensity={1.2} castShadow
-        shadow-mapSize-width={2048} shadow-mapSize-height={2048}
-        shadow-bias={-0.0001}
+        position={[w + 4, 12, d + 4]} intensity={0.8} castShadow
+        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
+        shadow-bias={-0.00005}
+        shadow-normalBias={0.02}
         shadow-camera-near={0.5} shadow-camera-far={50}
-        shadow-camera-left={-10} shadow-camera-right={10}
-        shadow-camera-top={10} shadow-camera-bottom={-10}
+        shadow-camera-left={-12} shadow-camera-right={12}
+        shadow-camera-top={12} shadow-camera-bottom={-12}
       />
-      <directionalLight position={[-4, 8, -2]} intensity={0.25} />
-      <directionalLight position={[0, 5, d + 5]} intensity={0.15} />
-      <hemisphereLight args={['#c4d4e8', '#8b7355', 0.3]} />
+
+      {/* Rect Area Lights — soft, realistic indoor lighting */}
+      {/* Ceiling overhead panel light */}
+      <rectAreaLight
+        position={[w / 2, 2.75, d / 2]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        width={w * 0.6}
+        height={d * 0.6}
+        intensity={3}
+        color="#fff8ee"
+      />
+      {/* Window-side fill light */}
+      <rectAreaLight
+        position={[w / 2, 1.8, 0.05]}
+        rotation={[0, 0, 0]}
+        width={w * 0.8}
+        height={1.5}
+        intensity={1.5}
+        color="#e8f0ff"
+      />
+      {/* Side wall bounce */}
+      <rectAreaLight
+        position={[0.05, 1.4, d / 2]}
+        rotation={[0, Math.PI / 2, 0]}
+        width={d * 0.5}
+        height={1.2}
+        intensity={0.8}
+        color="#fff5e8"
+      />
+
+      {/* Soft fill from opposite side */}
+      <directionalLight position={[-3, 6, -2]} intensity={0.15} color="#c8d8f0" />
+      {/* Ground bounce */}
+      <hemisphereLight args={['#dde4f0', '#8b7355', 0.25]} />
       <color attach="background" args={['#f0eee8']} />
 
+      {/* Contact shadows for ground contact realism */}
       <ContactShadows
-        position={[w / 2, 0, d / 2]} opacity={0.5}
-        scale={Math.max(w, d) * 1.5} blur={2.5} far={4}
-        color="#2a1f14"
+        position={[w / 2, 0, d / 2]} opacity={0.55}
+        scale={Math.max(w, d) * 1.5} blur={3} far={4}
+        color="#1a1410"
+        resolution={1024}
+        frames={Infinity}
       />
 
       <Room dimensions={roomDimensions} archConfig={archConfig} />
