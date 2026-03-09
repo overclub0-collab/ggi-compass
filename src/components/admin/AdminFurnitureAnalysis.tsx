@@ -153,7 +153,7 @@ export default function AdminFurnitureAnalysis() {
       const { error } = await supabase
         .from('furniture_analysis_cache')
         .update({
-          analysis: editingAnalysis,
+          analysis: editingAnalysis as any,
           updated_at: new Date().toISOString(),
         })
         .eq('id', selectedRecord.id);
