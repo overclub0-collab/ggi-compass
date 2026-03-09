@@ -156,6 +156,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'spot', xRatio: 0.5, zRatio: 0.15 },
         { type: 'spot', xRatio: 0.5, zRatio: 0.85 },
       ],
+      floorMaterial: 'tile-gray',
+      wallMaterial: 'paint-white',
     },
   },
   {
