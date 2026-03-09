@@ -117,17 +117,21 @@ function CurtainRod({ width, yPos }: { width: number; yPos: number }) {
   );
 }
 
-function SheerCurtain({ width, height, color }: { width: number; height: number; color: string }) {
+function SheerCurtain({ width, height, color, openRatio = 0 }: { width: number; height: number; color: string; openRatio?: number }) {
   const curtainH = height + 0.15;
-  const panelW = width * 0.5;
-  const leftGeom = useDrapedGeometry(panelW, curtainH, 48, 0.018, 14);
-  const rightGeom = useDrapedGeometry(panelW, curtainH, 48, 0.018, 14);
+  // openRatio: 0=closed (panels cover window), 1=open (panels bunched at sides)
+  const closedPanelW = width * 0.5;
+  const panelW = closedPanelW * (1 - openRatio * 0.7); // shrink width when open
+  const panelOffset = width * 0.27 + openRatio * (width * 0.22); // move outward when open
+  const foldFreq = 14 + openRatio * 20; // more folds when bunched
+  const foldDepth = 0.018 + openRatio * 0.025;
+  const leftGeom = useDrapedGeometry(panelW, curtainH, 48, foldDepth, foldFreq);
+  const rightGeom = useDrapedGeometry(panelW, curtainH, 48, foldDepth, foldFreq);
   const baseColor = new THREE.Color(color);
 
   return (
     <group position={[0, 0, 0.07]}>
-      {/* Left panel */}
-      <mesh geometry={leftGeom} position={[-width * 0.27, 0, 0]}>
+      <mesh geometry={leftGeom} position={[-panelOffset, 0, 0]}>
         <meshPhysicalMaterial
           color={baseColor} transparent opacity={0.28}
           roughness={0.98} metalness={0.0} side={THREE.DoubleSide}
@@ -135,8 +139,7 @@ function SheerCurtain({ width, height, color }: { width: number; height: number;
           sheen={0.3} sheenColor={baseColor.clone().multiplyScalar(1.2)}
         />
       </mesh>
-      {/* Right panel */}
-      <mesh geometry={rightGeom} position={[width * 0.27, 0, 0]}>
+      <mesh geometry={rightGeom} position={[panelOffset, 0, 0]}>
         <meshPhysicalMaterial
           color={baseColor} transparent opacity={0.28}
           roughness={0.98} metalness={0.0} side={THREE.DoubleSide}
@@ -144,9 +147,9 @@ function SheerCurtain({ width, height, color }: { width: number; height: number;
           sheen={0.3} sheenColor={baseColor.clone().multiplyScalar(1.2)}
         />
       </mesh>
-      {/* Tiebacks */}
-      {[-1, 1].map(side => (
-        <mesh key={side} position={[side * width * 0.42, -height * 0.15, 0.015]} rotation={[0, 0, side * 0.15]}>
+      {/* Tiebacks — visible when partially open */}
+      {openRatio > 0.3 && [-1, 1].map(side => (
+        <mesh key={side} position={[side * (panelOffset + panelW * 0.3), -height * 0.15, 0.015]} rotation={[0, 0, side * 0.15]}>
           <torusGeometry args={[0.03, 0.004, 6, 16, Math.PI]} />
           <meshStandardMaterial color={baseColor.clone().multiplyScalar(0.7)} roughness={0.8} />
         </mesh>
