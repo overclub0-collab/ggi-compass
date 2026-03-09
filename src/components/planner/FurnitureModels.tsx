@@ -1395,12 +1395,28 @@ function AIEnhancedDesk({ w, d, h, color, isSelected, analysis }: {
 
       {/* Legs based on style */}
       {(() => {
-        const legStyle = analysis.legStyle || '4-legs';
+        // Keyword-based leg style override from product name
+        const itemName = ((analysis as any)._productName || '').toLowerCase();
+        let legStyle = analysis.legStyle || '4-legs';
+        let isWoodMaterial = analysis.primaryMaterial === 'wood' || analysis.secondaryMaterial === 'wood';
+        
+        // Override leg material from product name keywords
+        if (itemName.includes('철재') || itemName.includes('스틸') || itemName.includes('steel') || itemName.includes('metal')) {
+          isWoodMaterial = false;
+        }
+        if (itemName.includes('목재') || itemName.includes('원목') || itemName.includes('나무')) {
+          isWoodMaterial = true;
+        }
+        // Override leg style from product name if AI missed it
+        if (itemName.includes('트레슬') || itemName.includes('trestle')) legStyle = 'trestle';
+        if (itemName.includes('패널다리') || itemName.includes('panel')) legStyle = 'panel';
+        if (itemName.includes('슬레드') || itemName.includes('sled')) legStyle = 'sled';
+        if (itemName.includes('t자') || itemName.includes('t-frame') || itemName.includes('T프레임')) legStyle = 'T-frame';
+        
         const isSled = legStyle === 'sled';
         const isTrestle = legStyle === 'trestle';
         const isPedestal = legStyle === 'pedestal';
         const isStarBase = legStyle === 'star-base';
-        const isWoodMaterial = analysis.primaryMaterial === 'wood' || analysis.secondaryMaterial === 'wood';
         const isTapered = details.includes('tapered-legs');
         const isRoundLeg = analysis.legCount === 4 && (details.includes('round-legs') || details.includes('cylindrical'));
 
