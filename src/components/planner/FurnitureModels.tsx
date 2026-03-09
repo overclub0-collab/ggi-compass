@@ -1,5 +1,5 @@
 import { useRef, useMemo } from 'react';
-import { Edges, Text } from '@react-three/drei';
+import { Edges, Text, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { PlacedFurniture } from '@/types/planner';
 import { ThreeEvent } from '@react-three/fiber';
@@ -7,10 +7,143 @@ import { ThreeEvent } from '@react-three/fiber';
 const EDGE_COLOR = '#1a1a1a';
 const SELECTED_EDGE = '#0066cc';
 
-// ===== PBR Material helpers =====
+// ===== Procedural Texture Generators =====
+
+function createWoodTexture(baseColor: string, scale = 1): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+  const c = new THREE.Color(baseColor);
+  
+  // Base fill
+  ctx.fillStyle = `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
+  ctx.fillRect(0, 0, 512, 512);
+  
+  // Wood grain lines
+  for (let i = 0; i < 80; i++) {
+    const y = Math.random() * 512;
+    const variation = (Math.random() - 0.5) * 30;
+    const darker = c.clone().multiplyScalar(0.85 + Math.random() * 0.1);
+    ctx.strokeStyle = `rgba(${Math.round(darker.r*255)},${Math.round(darker.g*255)},${Math.round(darker.b*255)},${0.15 + Math.random() * 0.2})`;
+    ctx.lineWidth = 0.5 + Math.random() * 2;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    for (let x = 0; x < 512; x += 20) {
+      ctx.lineTo(x, y + Math.sin(x * 0.02 * scale) * (3 + variation * 0.3) + (Math.random() - 0.5) * 2);
+    }
+    ctx.stroke();
+  }
+  
+  // Knots (occasional)
+  for (let i = 0; i < 2; i++) {
+    const kx = Math.random() * 512;
+    const ky = Math.random() * 512;
+    const kr = 5 + Math.random() * 12;
+    const kColor = c.clone().multiplyScalar(0.7);
+    ctx.beginPath();
+    ctx.arc(kx, ky, kr, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${Math.round(kColor.r*255)},${Math.round(kColor.g*255)},${Math.round(kColor.b*255)},0.3)`;
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(scale, scale);
+  return tex;
+}
+
+function createMetalTexture(baseColor: string): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+  const c = new THREE.Color(baseColor);
+  
+  ctx.fillStyle = `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
+  ctx.fillRect(0, 0, 256, 256);
+  
+  // Brushed metal streaks
+  for (let i = 0; i < 200; i++) {
+    const y = Math.random() * 256;
+    const lighter = c.clone().lerp(new THREE.Color('#ffffff'), 0.1 + Math.random() * 0.15);
+    ctx.strokeStyle = `rgba(${Math.round(lighter.r*255)},${Math.round(lighter.g*255)},${Math.round(lighter.b*255)},${0.05 + Math.random() * 0.1})`;
+    ctx.lineWidth = 0.3 + Math.random() * 0.8;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(256, y + (Math.random() - 0.5) * 3);
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+function createFabricTexture(baseColor: string): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+  const c = new THREE.Color(baseColor);
+  
+  ctx.fillStyle = `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
+  ctx.fillRect(0, 0, 256, 256);
+  
+  // Weave pattern
+  for (let x = 0; x < 256; x += 3) {
+    for (let y = 0; y < 256; y += 3) {
+      const bright = ((x + y) % 6 < 3) ? 0.97 : 1.03;
+      const wc = c.clone().multiplyScalar(bright);
+      ctx.fillStyle = `rgba(${Math.round(wc.r*255)},${Math.round(wc.g*255)},${Math.round(wc.b*255)},0.4)`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(3, 3);
+  return tex;
+}
+
+function createWoodNormalMap(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+  
+  // Neutral normal (128,128,255)
+  ctx.fillStyle = 'rgb(128,128,255)';
+  ctx.fillRect(0, 0, 512, 512);
+  
+  // Grain bumps
+  for (let i = 0; i < 60; i++) {
+    const y = Math.random() * 512;
+    ctx.strokeStyle = `rgba(${120 + Math.random()*16},${125 + Math.random()*8},255,0.3)`;
+    ctx.lineWidth = 1 + Math.random() * 2;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    for (let x = 0; x < 512; x += 15) {
+      ctx.lineTo(x, y + Math.sin(x * 0.03) * 3);
+    }
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+// ===== PBR Material helpers with procedural textures =====
 function woodMat(color: string, isSelected = false) {
+  const map = useMemo(() => createWoodTexture(color), [color]);
+  const normalMap = useMemo(() => createWoodNormalMap(), []);
+  
   return (
     <meshStandardMaterial
+      map={map}
+      normalMap={normalMap}
+      normalScale={new THREE.Vector2(0.3, 0.3)}
       color={color}
       roughness={0.72}
       metalness={0.02}
@@ -22,8 +155,11 @@ function woodMat(color: string, isSelected = false) {
 }
 
 function metalMat(color: string, isSelected = false) {
+  const map = useMemo(() => createMetalTexture(color), [color]);
+  
   return (
     <meshStandardMaterial
+      map={map}
       color={color}
       roughness={0.28}
       metalness={0.9}
@@ -48,8 +184,11 @@ function plasticMat(color: string, isSelected = false) {
 }
 
 function fabricMat(color: string, isSelected = false) {
+  const map = useMemo(() => createFabricTexture(color), [color]);
+  
   return (
     <meshStandardMaterial
+      map={map}
       color={color}
       roughness={0.92}
       metalness={0.0}
