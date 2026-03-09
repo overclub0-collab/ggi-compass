@@ -75,10 +75,30 @@ Return a JSON object with these fields:
     "heightToWidthRatio": number,
     "seatHeightRatio": number (for chairs, 0-1 ratio of total height)
   },
-  "details": string[] (list of notable visual details like "crossbar", "curved-back", "tapered-legs", "rounded-edges", "metal-frame", "wood-grain", "upholstered", etc)
+  "details": string[] (list of notable visual details like "crossbar", "curved-back", "tapered-legs", "rounded-edges", "metal-frame", "wood-grain", "upholstered", etc),
+  "texture": {
+    "woodGrain": {
+      "direction": "horizontal" | "vertical" | "diagonal" | "radial",
+      "intensity": "subtle" | "moderate" | "pronounced",
+      "knotFrequency": "none" | "few" | "many",
+      "grainColor": "#hexcolor (darker grain line color)"
+    },
+    "fabricPattern": {
+      "type": "plain" | "twill" | "knit" | "velvet" | "leather-grain" | "mesh" | "woven",
+      "weaveScale": number (0.5-5, how tight the weave is),
+      "patternColor": "#hexcolor (secondary pattern color if visible)"
+    },
+    "metalFinish": {
+      "type": "brushed" | "polished" | "powder-coated" | "anodized" | "chrome" | "matte",
+      "brushDirection": "horizontal" | "vertical" | "circular"
+    },
+    "surfaceFinish": "glossy" | "satin" | "matte" | "textured" | "raw",
+    "roughnessEstimate": number (0-1, PBR roughness),
+    "metalnessEstimate": number (0-1, PBR metalness)
+  }
 }
 
-Be precise about colors - extract the actual colors from the image. For proportions, estimate carefully from the image perspective.`;
+Be precise about colors - extract the actual colors from the image. For proportions, estimate carefully from the image perspective. For texture, carefully observe grain direction, surface sheen, and material finish quality.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

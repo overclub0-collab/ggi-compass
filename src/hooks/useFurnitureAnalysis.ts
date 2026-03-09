@@ -1,6 +1,27 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface TextureAnalysis {
+  woodGrain?: {
+    direction: 'horizontal' | 'vertical' | 'diagonal' | 'radial';
+    intensity: 'subtle' | 'moderate' | 'pronounced';
+    knotFrequency: 'none' | 'few' | 'many';
+    grainColor: string;
+  };
+  fabricPattern?: {
+    type: 'plain' | 'twill' | 'knit' | 'velvet' | 'leather-grain' | 'mesh' | 'woven';
+    weaveScale: number;
+    patternColor?: string;
+  };
+  metalFinish?: {
+    type: 'brushed' | 'polished' | 'powder-coated' | 'anodized' | 'chrome' | 'matte';
+    brushDirection?: 'horizontal' | 'vertical' | 'circular';
+  };
+  surfaceFinish: 'glossy' | 'satin' | 'matte' | 'textured' | 'raw';
+  roughnessEstimate: number;
+  metalnessEstimate: number;
+}
+
 export interface FurnitureAnalysis {
   furnitureType: string;
   shape: string;
@@ -29,6 +50,7 @@ export interface FurnitureAnalysis {
     seatHeightRatio?: number;
   };
   details: string[];
+  texture?: TextureAnalysis;
 }
 
 // Batch analysis store to avoid duplicate calls
