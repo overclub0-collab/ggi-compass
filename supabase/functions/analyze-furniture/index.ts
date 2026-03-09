@@ -200,6 +200,23 @@ Be precise about colors - extract the actual colors from the image. For proporti
                     },
                     required: ["surfaceFinish", "roughnessEstimate", "metalnessEstimate"],
                   },
+                  partTextures: {
+                    type: "object",
+                    description: "Per-part texture overrides. Only include parts present in the furniture.",
+                    properties: {
+                      top: { $ref: "#/properties/texture" },
+                      legs: { $ref: "#/properties/texture" },
+                      body: { $ref: "#/properties/texture" },
+                      seat: { $ref: "#/properties/texture" },
+                      back: { $ref: "#/properties/texture" },
+                      arms: { $ref: "#/properties/texture" },
+                      drawers: { $ref: "#/properties/texture" },
+                      doors: { $ref: "#/properties/texture" },
+                      shelves: { $ref: "#/properties/texture" },
+                      cushion: { $ref: "#/properties/texture" },
+                      accent: { $ref: "#/properties/texture" },
+                    },
+                  },
                 },
                 required: [
                   "furnitureType", "shape", "legStyle", "legCount",
