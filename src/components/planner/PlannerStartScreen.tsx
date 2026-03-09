@@ -184,6 +184,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'spot', xRatio: 0.15, zRatio: 0.15 },
         { type: 'spot', xRatio: 0.85, zRatio: 0.85 },
       ],
+      floorMaterial: 'wood-light',
+      wallMaterial: 'paint-sage',
     },
   },
 ];
