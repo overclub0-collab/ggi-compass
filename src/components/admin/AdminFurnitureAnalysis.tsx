@@ -260,9 +260,37 @@ export default function AdminFurnitureAnalysis() {
     }
   };
 
+  const getDefaultAnalysis = (): Record<string, unknown> => ({
+    furnitureType: 'generic',
+    shape: 'rectangular',
+    topShape: 'rectangular',
+    legStyle: '4-legs',
+    legCount: 4,
+    hasArmrest: false,
+    hasBackrest: false,
+    hasDrawer: false,
+    drawerCount: 0,
+    hasDoor: false,
+    doorCount: 0,
+    hasShelf: false,
+    shelfCount: 0,
+    hasCushion: false,
+    primaryMaterial: 'wood',
+    secondaryMaterial: 'metal',
+    primaryColor: '#c8a87c',
+    secondaryColor: '#333333',
+    accentColor: '#999999',
+    topThickness: 0.03,
+    legThickness: 0.04,
+    proportions: { widthToDepthRatio: 1.5, heightToWidthRatio: 0.6, seatHeightRatio: 0 },
+    sections: { layout: 'single', hasOpenFront: false, hasBoardArea: false },
+    details: [],
+    texture: { surfaceFinish: 'satin', roughnessEstimate: 0.6, metalnessEstimate: 0 },
+  });
+
   const handleEdit = (record: ProductRecord) => {
     setSelectedRecord(record);
-    setEditingAnalysis(record.analysis ? { ...record.analysis } : null);
+    setEditingAnalysis(record.analysis ? { ...record.analysis } : getDefaultAnalysis());
   };
 
   const handleSaveAnalysis = async () => {
