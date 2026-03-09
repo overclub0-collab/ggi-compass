@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -6,37 +6,42 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sparkles, RefreshCw, Trash2, Search, Save, ChevronDown, ChevronRight, Eye, Plus, X } from 'lucide-react';
+import { Sparkles, RefreshCw, Trash2, Search, Save, Eye, Plus, X, Play, Square, AlertCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
-interface AnalysisRecord {
+interface ProductRecord {
   id: string;
-  product_id: string;
-  image_url: string;
-  analysis: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-  // joined
-  product_title?: string;
-  product_thumbnail?: string;
+  title: string;
+  thumbnail_url: string | null;
+  category: string | null;
+  main_category: string | null;
+  subcategory: string | null;
+  // Analysis data (null if not analyzed)
+  analysis_id: string | null;
+  analysis: Record<string, unknown> | null;
+  image_url: string | null;
+  analysis_updated_at: string | null;
 }
 
 const FURNITURE_TYPES = [
   'desk', 'chair', 'storage', 'shelf', 'sofa', 'lab',
-  'dining', 'roundtable', 'blackboard', 'bunkbed', 'pet', 'generic',
+  'dining', 'roundtable', 'blackboard', 'bunkbed', 'pet', 'podium', 'partition', 'generic',
 ];
 
 const LEG_STYLES = [
   '4-legs', 'T-frame', 'pedestal', 'sled', 'star-base', 'panel', 'trestle', 'none',
 ];
 
-const MATERIALS = ['wood', 'metal', 'fabric', 'plastic', 'glass', 'leather', 'none'];
+const MATERIALS = ['wood', 'metal', 'fabric', 'plastic', 'glass', 'leather', 'melamine', 'hpl', 'none'];
 
 const SHAPES = ['rectangular', 'round', 'L-shaped', 'curved', 'irregular'];
+
+const LAYOUTS = ['single', 'top-bottom', 'left-center-right', 'grid', 'complex'];
 
 const SURFACE_FINISHES = ['glossy', 'satin', 'matte', 'textured', 'raw'];
 const WOOD_GRAIN_DIRECTIONS = ['horizontal', 'vertical', 'diagonal', 'radial'];
@@ -96,45 +101,64 @@ const TEXTURE_PRESETS: Record<string, Record<string, unknown>> = {
 };
 
 export default function AdminFurnitureAnalysis() {
-  const [records, setRecords] = useState<AnalysisRecord[]>([]);
+  const [records, setRecords] = useState<ProductRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRecord, setSelectedRecord] = useState<AnalysisRecord | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<ProductRecord | null>(null);
   const [editingAnalysis, setEditingAnalysis] = useState<Record<string, unknown> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [reanalyzing, setReanalyzing] = useState<Set<string>>(new Set());
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all'); // all | analyzed | unanalyzed
+  
+  // Bulk analysis state
+  const [isBulkRunning, setIsBulkRunning] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, failed: 0 });
+  const bulkAbortRef = useRef(false);
 
   const fetchRecords = async () => {
     setIsLoading(true);
     try {
-      // Fetch analysis cache
-      const { data: analyses, error } = await supabase
-        .from('furniture_analysis_cache')
-        .select('*')
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch product info for each
-      const productIds = (analyses || []).map((a: any) => a.product_id);
-      const { data: products } = await supabase
+      // Fetch ALL products
+      const { data: products, error: pErr } = await supabase
         .from('products')
-        .select('id, title, thumbnail_url')
-        .in('id', productIds.length > 0 ? productIds : ['__none__']);
+        .select('id, title, thumbnail_url, category, main_category, subcategory')
+        .eq('is_active', true)
+        .order('title', { ascending: true });
 
-      const productMap = new Map((products || []).map((p: any) => [p.id, p]));
+      if (pErr) throw pErr;
 
-      const enriched: AnalysisRecord[] = (analyses || []).map((a: any) => ({
-        ...a,
-        product_title: (productMap.get(a.product_id) as any)?.title || '(삭제된 제품)',
-        product_thumbnail: (productMap.get(a.product_id) as any)?.thumbnail_url || a.image_url,
-      }));
+      // Fetch all analysis cache
+      const { data: analyses, error: aErr } = await supabase
+        .from('furniture_analysis_cache')
+        .select('*');
+
+      if (aErr) throw aErr;
+
+      const analysisMap = new Map(
+        (analyses || []).map((a: any) => [a.product_id, a])
+      );
+
+      const enriched: ProductRecord[] = (products || []).map((p: any) => {
+        const cached = analysisMap.get(p.id);
+        return {
+          id: p.id,
+          title: p.title,
+          thumbnail_url: p.thumbnail_url,
+          category: p.category,
+          main_category: p.main_category,
+          subcategory: p.subcategory,
+          analysis_id: cached?.id || null,
+          analysis: cached?.analysis || null,
+          image_url: cached?.image_url || p.thumbnail_url,
+          analysis_updated_at: cached?.updated_at || null,
+        };
+      });
 
       setRecords(enriched);
     } catch (e) {
-      console.error('Failed to fetch analysis records:', e);
-      toast.error('분석 데이터를 불러오지 못했습니다');
+      console.error('Failed to fetch records:', e);
+      toast.error('데이터를 불러오지 못했습니다');
     } finally {
       setIsLoading(false);
     }
@@ -144,52 +168,66 @@ export default function AdminFurnitureAnalysis() {
     fetchRecords();
   }, []);
 
-  const handleReanalyze = async (record: AnalysisRecord) => {
-    setReanalyzing((prev) => new Set(prev).add(record.product_id));
-    try {
-      // Delete cache first
-      await supabase
-        .from('furniture_analysis_cache')
-        .delete()
-        .eq('product_id', record.product_id);
+  const handleAnalyze = async (record: ProductRecord) => {
+    const imageUrl = record.thumbnail_url || record.image_url;
+    if (!imageUrl) {
+      toast.error('이미지가 없는 제품은 분석할 수 없습니다');
+      return;
+    }
 
-      // Re-invoke analysis
+    setReanalyzing((prev) => new Set(prev).add(record.id));
+    try {
+      // Delete existing cache if any
+      if (record.analysis_id) {
+        await supabase
+          .from('furniture_analysis_cache')
+          .delete()
+          .eq('product_id', record.id);
+      }
+
       const { data, error } = await supabase.functions.invoke('analyze-furniture', {
         body: {
-          product_id: record.product_id,
-          image_url: record.image_url,
-          product_name: record.product_title,
+          product_id: record.id,
+          image_url: imageUrl,
+          product_name: record.title,
         },
       });
 
       if (error) throw error;
 
-      toast.success('AI 재분석이 완료되었습니다');
+      toast.success(`"${record.title}" 분석 완료`);
       fetchRecords();
     } catch (e) {
-      console.error('Re-analyze failed:', e);
-      toast.error('재분석에 실패했습니다');
+      console.error('Analyze failed:', e);
+      toast.error(`"${record.title}" 분석 실패`);
     } finally {
       setReanalyzing((prev) => {
         const next = new Set(prev);
-        next.delete(record.product_id);
+        next.delete(record.id);
         return next;
       });
     }
   };
 
-  const handleDelete = async (record: AnalysisRecord) => {
-    if (!confirm(`"${record.product_title}"의 AI 분석 데이터를 삭제하시겠습니까?`)) return;
+  const handleDelete = async (record: ProductRecord) => {
+    if (!record.analysis_id) return;
+    if (!confirm(`"${record.title}"의 AI 분석 데이터를 삭제하시겠습니까?`)) return;
     try {
       const { error } = await supabase
         .from('furniture_analysis_cache')
         .delete()
-        .eq('id', record.id);
+        .eq('id', record.analysis_id);
 
       if (error) throw error;
 
       toast.success('분석 데이터가 삭제되었습니다');
-      setRecords((prev) => prev.filter((r) => r.id !== record.id));
+      setRecords((prev) =>
+        prev.map((r) =>
+          r.id === record.id
+            ? { ...r, analysis_id: null, analysis: null, analysis_updated_at: null }
+            : r
+        )
+      );
       if (selectedRecord?.id === record.id) {
         setSelectedRecord(null);
         setEditingAnalysis(null);
@@ -199,38 +237,112 @@ export default function AdminFurnitureAnalysis() {
     }
   };
 
-  const handleEdit = (record: AnalysisRecord) => {
+  const handleEdit = (record: ProductRecord) => {
     setSelectedRecord(record);
-    setEditingAnalysis({ ...record.analysis });
+    setEditingAnalysis(record.analysis ? { ...record.analysis } : null);
   };
 
   const handleSaveAnalysis = async () => {
     if (!selectedRecord || !editingAnalysis) return;
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('furniture_analysis_cache')
-        .update({
-          analysis: editingAnalysis as any,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', selectedRecord.id);
+      if (selectedRecord.analysis_id) {
+        // Update existing
+        const { error } = await supabase
+          .from('furniture_analysis_cache')
+          .update({
+            analysis: editingAnalysis as any,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', selectedRecord.analysis_id);
+        if (error) throw error;
+      } else {
+        // Insert new (manually created)
+        const { error } = await supabase
+          .from('furniture_analysis_cache')
+          .insert({
+            product_id: selectedRecord.id,
+            image_url: selectedRecord.thumbnail_url || '',
+            analysis: editingAnalysis as any,
+          });
+        if (error) throw error;
+      }
 
-      if (error) throw error;
-
-      toast.success('분석 데이터가 수정되었습니다');
+      toast.success('분석 데이터가 저장되었습니다');
       setRecords((prev) =>
         prev.map((r) =>
-          r.id === selectedRecord.id ? { ...r, analysis: editingAnalysis, updated_at: new Date().toISOString() } : r
+          r.id === selectedRecord.id
+            ? { ...r, analysis: editingAnalysis, analysis_updated_at: new Date().toISOString() }
+            : r
         )
       );
       setSelectedRecord(null);
       setEditingAnalysis(null);
+      fetchRecords();
     } catch (e) {
       toast.error('저장에 실패했습니다');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Bulk analyze all unanalyzed products
+  const handleBulkAnalyze = async () => {
+    const unanalyzed = records.filter(
+      (r) => !r.analysis && r.thumbnail_url
+    );
+    if (unanalyzed.length === 0) {
+      toast.info('모든 제품이 이미 분석되어 있습니다');
+      return;
+    }
+
+    bulkAbortRef.current = false;
+    setIsBulkRunning(true);
+    setBulkProgress({ current: 0, total: unanalyzed.length, failed: 0 });
+
+    let failed = 0;
+    const batchSize = 2;
+
+    for (let i = 0; i < unanalyzed.length; i += batchSize) {
+      if (bulkAbortRef.current) break;
+
+      const batch = unanalyzed.slice(i, i + batchSize);
+      const results = await Promise.allSettled(
+        batch.map(async (r) => {
+          const { error } = await supabase.functions.invoke('analyze-furniture', {
+            body: {
+              product_id: r.id,
+              image_url: r.thumbnail_url,
+              product_name: r.title,
+            },
+          });
+          if (error) throw error;
+        })
+      );
+
+      failed += results.filter((r) => r.status === 'rejected').length;
+      setBulkProgress({
+        current: Math.min(i + batchSize, unanalyzed.length),
+        total: unanalyzed.length,
+        failed,
+      });
+
+      // Delay between batches to avoid rate limits
+      if (i + batchSize < unanalyzed.length && !bulkAbortRef.current) {
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+
+    setIsBulkRunning(false);
+    toast.success(
+      `전체 분석 완료: ${unanalyzed.length - failed}개 성공, ${failed}개 실패`
+    );
+    fetchRecords();
+  };
+
+  const handleBulkStop = () => {
+    bulkAbortRef.current = true;
+    toast.info('분석 중단 요청됨...');
   };
 
   const updateField = (key: string, value: unknown) => {
@@ -247,12 +359,19 @@ export default function AdminFurnitureAnalysis() {
   const filteredRecords = records.filter((r) => {
     const matchesSearch =
       !searchQuery ||
-      (r.product_title || '').toLowerCase().includes(searchQuery.toLowerCase());
+      r.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType =
       filterType === 'all' ||
       (r.analysis as any)?.furnitureType === filterType;
-    return matchesSearch && matchesType;
+    const matchesStatus =
+      filterStatus === 'all' ||
+      (filterStatus === 'analyzed' && r.analysis) ||
+      (filterStatus === 'unanalyzed' && !r.analysis);
+    return matchesSearch && matchesType && matchesStatus;
   });
+
+  const analyzedCount = records.filter((r) => r.analysis).length;
+  const unanalyzedCount = records.filter((r) => !r.analysis).length;
 
   const analysis = editingAnalysis || {};
 
@@ -265,14 +384,51 @@ export default function AdminFurnitureAnalysis() {
             AI 3D 분석 관리
           </h2>
           <p className="text-sm text-muted-foreground">
-            총 {records.length}개 제품의 AI 분석 결과 · 수동 수정 가능
+            총 {records.length}개 제품 · 분석완료 {analyzedCount}개 · 미분석 {unanalyzedCount}개
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchRecords} disabled={isLoading}>
-          <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
-          새로고침
-        </Button>
+        <div className="flex items-center gap-2">
+          {!isBulkRunning ? (
+            <Button
+              size="sm"
+              onClick={handleBulkAnalyze}
+              disabled={isLoading || unanalyzedCount === 0}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              미분석 전체 실행 ({unanalyzedCount}개)
+            </Button>
+          ) : (
+            <Button size="sm" variant="destructive" onClick={handleBulkStop}>
+              <Square className="h-4 w-4 mr-2" />
+              중단
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={fetchRecords} disabled={isLoading}>
+            <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
+            새로고침
+          </Button>
+        </div>
       </div>
+
+      {/* Bulk progress */}
+      {isBulkRunning && (
+        <div className="border rounded-lg p-4 bg-muted/30 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">
+              전체 분석 진행 중... ({bulkProgress.current}/{bulkProgress.total})
+            </span>
+            {bulkProgress.failed > 0 && (
+              <span className="text-destructive text-xs flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {bulkProgress.failed}개 실패
+              </span>
+            )}
+          </div>
+          <Progress
+            value={(bulkProgress.current / Math.max(1, bulkProgress.total)) * 100}
+          />
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -285,6 +441,16 @@ export default function AdminFurnitureAnalysis() {
             className="pl-9"
           />
         </div>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="분석 상태" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">전체 상태</SelectItem>
+            <SelectItem value="analyzed">분석 완료</SelectItem>
+            <SelectItem value="unanalyzed">미분석</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="유형 필터" />
@@ -306,78 +472,107 @@ export default function AdminFurnitureAnalysis() {
       ) : filteredRecords.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-30" />
-          <p>AI 분석 데이터가 없습니다</p>
-          <p className="text-xs mt-1">3D 인테리어에서 제품을 배치하면 자동으로 분석됩니다</p>
+          <p>표시할 제품이 없습니다</p>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-2">
           {filteredRecords.map((record) => {
             const a = record.analysis as any;
+            const hasAnalysis = !!a;
+            const isProcessing = reanalyzing.has(record.id);
             return (
               <div
                 key={record.id}
-                className="border rounded-lg p-3 flex items-center gap-4 hover:bg-muted/30 transition-colors"
+                className={cn(
+                  'border rounded-lg p-3 flex items-center gap-4 hover:bg-muted/30 transition-colors',
+                  !hasAnalysis && 'border-dashed opacity-75'
+                )}
               >
                 {/* Thumbnail */}
-                <div className="w-16 h-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                  {record.product_thumbnail ? (
+                <div className="w-14 h-14 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                  {record.thumbnail_url ? (
                     <img
-                      src={record.product_thumbnail}
+                      src={record.thumbnail_url}
                       alt=""
                       className="w-full h-full object-contain"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      <Sparkles className="h-6 w-6" />
+                      <Sparkles className="h-5 w-5" />
                     </div>
                   )}
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm truncate">{record.product_title}</h3>
+                  <h3 className="font-semibold text-sm truncate">{record.title}</h3>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <Badge variant="outline" className="text-[10px]">
-                      {a?.furnitureType || '?'}
-                    </Badge>
-                    <Badge variant="secondary" className="text-[10px]">
-                      {a?.legStyle || '?'}
-                    </Badge>
-                    <Badge variant="secondary" className="text-[10px]">
-                      {a?.primaryMaterial || '?'}
-                    </Badge>
-                    {a?.primaryColor && (
-                      <div className="flex items-center gap-1">
-                        <div
-                          className="w-3 h-3 rounded-full border border-border"
-                          style={{ backgroundColor: a.primaryColor }}
-                        />
-                        <span className="text-[10px] text-muted-foreground">{a.primaryColor}</span>
-                      </div>
+                    {hasAnalysis ? (
+                      <>
+                        <Badge variant="default" className="text-[10px] bg-green-600">분석완료</Badge>
+                        <Badge variant="outline" className="text-[10px]">
+                          {a?.furnitureType || '?'}
+                        </Badge>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {a?.legStyle || '?'}
+                        </Badge>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {a?.primaryMaterial || '?'}
+                        </Badge>
+                        {a?.sections?.layout && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            {a.sections.layout}
+                          </Badge>
+                        )}
+                        {a?.primaryColor && (
+                          <div className="flex items-center gap-1">
+                            <div
+                              className="w-3 h-3 rounded-full border border-border"
+                              style={{ backgroundColor: a.primaryColor }}
+                            />
+                            <span className="text-[10px] text-muted-foreground">{a.primaryColor}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">미분석</Badge>
                     )}
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    분석일: {new Date(record.updated_at).toLocaleDateString('ko-KR')}
-                  </p>
+                  {record.analysis_updated_at && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      분석일: {new Date(record.analysis_updated_at).toLocaleDateString('ko-KR')}
+                    </p>
+                  )}
                 </div>
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(record)}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  {hasAnalysis && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(record)} title="보기/수정">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => handleReanalyze(record)}
-                    disabled={reanalyzing.has(record.product_id)}
+                    onClick={() => handleAnalyze(record)}
+                    disabled={isProcessing || !record.thumbnail_url}
+                    title={hasAnalysis ? '재분석' : 'AI 분석'}
                   >
-                    <RefreshCw className={cn('h-4 w-4', reanalyzing.has(record.product_id) && 'animate-spin')} />
+                    {isProcessing ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : hasAnalysis ? (
+                      <RefreshCw className="h-4 w-4" />
+                    ) : (
+                      <Sparkles className="h-4 w-4 text-primary" />
+                    )}
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(record)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {hasAnalysis && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(record)} title="삭제">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             );
@@ -391,23 +586,25 @@ export default function AdminFurnitureAnalysis() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              AI 분석 편집 — {selectedRecord?.product_title}
+              AI 분석 편집 — {selectedRecord?.title}
             </DialogTitle>
           </DialogHeader>
 
           <ScrollArea className="flex-1 pr-4">
             <div className="space-y-6 pb-4">
               {/* Preview */}
-              {selectedRecord?.product_thumbnail && (
+              {selectedRecord?.thumbnail_url && (
                 <div className="flex items-center gap-4">
                   <img
-                    src={selectedRecord.product_thumbnail}
+                    src={selectedRecord.thumbnail_url}
                     alt=""
                     className="w-24 h-24 rounded-lg object-contain bg-muted border"
                   />
                   <div className="flex-1">
-                    <p className="font-semibold">{selectedRecord.product_title}</p>
-                    <p className="text-xs text-muted-foreground">분석일: {new Date(selectedRecord.updated_at).toLocaleDateString('ko-KR')}</p>
+                    <p className="font-semibold">{selectedRecord.title}</p>
+                    {selectedRecord.analysis_updated_at && (
+                      <p className="text-xs text-muted-foreground">분석일: {new Date(selectedRecord.analysis_updated_at).toLocaleDateString('ko-KR')}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -615,6 +812,115 @@ export default function AdminFurnitureAnalysis() {
                 </div>
               </div>
 
+              {/* Sections */}
+              <div>
+                <Label className="text-xs font-bold mb-2 block">📐 구조 설정 (Sections)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">레이아웃</Label>
+                    <Select
+                      value={((analysis as any).sections as any)?.layout || 'single'}
+                      onValueChange={(v) => updateNestedField('sections', 'layout', v)}
+                    >
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {LAYOUTS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-4 pt-5">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={!!((analysis as any).sections as any)?.hasBoardArea}
+                        onCheckedChange={(v) => updateNestedField('sections', 'hasBoardArea', !!v)}
+                      />
+                      <span className="text-sm">보드 영역</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={!!((analysis as any).sections as any)?.hasOpenFront}
+                        onCheckedChange={(v) => updateNestedField('sections', 'hasOpenFront', !!v)}
+                      />
+                      <span className="text-sm">개방형</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-3 mt-3">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">하단 비율</Label>
+                    <Input
+                      type="number" step="0.05" min="0" max="1" className="mt-1"
+                      value={((analysis as any).sections as any)?.bottomRatio || 0}
+                      onChange={(e) => updateNestedField('sections', 'bottomRatio', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">중단 비율</Label>
+                    <Input
+                      type="number" step="0.05" min="0" max="1" className="mt-1"
+                      value={((analysis as any).sections as any)?.middleRatio || 0}
+                      onChange={(e) => updateNestedField('sections', 'middleRatio', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">상단 비율</Label>
+                    <Input
+                      type="number" step="0.05" min="0" max="1" className="mt-1"
+                      value={((analysis as any).sections as any)?.topRatio || 0}
+                      onChange={(e) => updateNestedField('sections', 'topRatio', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">사이드 비율</Label>
+                    <Input
+                      type="number" step="0.05" min="0" max="1" className="mt-1"
+                      value={((analysis as any).sections as any)?.leftSideRatio || 0}
+                      onChange={(e) => updateNestedField('sections', 'leftSideRatio', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-3 mt-3">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">열 수</Label>
+                    <Input
+                      type="number" min="0" className="mt-1"
+                      value={((analysis as any).sections as any)?.columns || 0}
+                      onChange={(e) => updateNestedField('sections', 'columns', parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">행 수</Label>
+                    <Input
+                      type="number" min="0" className="mt-1"
+                      value={((analysis as any).sections as any)?.rows || 0}
+                      onChange={(e) => updateNestedField('sections', 'rows', parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">격자 열</Label>
+                    <Input
+                      type="number" min="0" className="mt-1"
+                      value={((analysis as any).sections as any)?.compartmentGrid?.cols || 0}
+                      onChange={(e) => {
+                        const grid = { ...((analysis as any).sections?.compartmentGrid || {}), cols: parseInt(e.target.value) || 0 };
+                        updateNestedField('sections', 'compartmentGrid', grid);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">격자 행</Label>
+                    <Input
+                      type="number" min="0" className="mt-1"
+                      value={((analysis as any).sections as any)?.compartmentGrid?.rows || 0}
+                      onChange={(e) => {
+                        const grid = { ...((analysis as any).sections?.compartmentGrid || {}), rows: parseInt(e.target.value) || 0 };
+                        updateNestedField('sections', 'compartmentGrid', grid);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Proportions */}
               <div>
                 <Label className="text-xs font-bold mb-2 block">비율</Label>
@@ -662,6 +968,7 @@ export default function AdminFurnitureAnalysis() {
                   placeholder="crossbar, rounded-edges, metal-frame..."
                 />
               </div>
+
               {/* Part Textures */}
               <div>
                 <Label className="text-xs font-bold mb-2 block">🎨 파트별 텍스처 프리셋</Label>
