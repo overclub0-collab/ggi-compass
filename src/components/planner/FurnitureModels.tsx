@@ -3,15 +3,27 @@ import { Edges, Text, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { PlacedFurniture } from '@/types/planner';
 import { ThreeEvent } from '@react-three/fiber';
-import { getCachedAnalysis, FurnitureAnalysis, TextureAnalysis } from '@/hooks/useFurnitureAnalysis';
+import { getCachedAnalysis, FurnitureAnalysis, TextureAnalysis, PartTextures } from '@/hooks/useFurnitureAnalysis';
 
 const EDGE_COLOR = '#1a1a1a';
 const SELECTED_EDGE = '#0066cc';
 
 // ===== Procedural Texture Generators =====
 
-// Global texture analysis context for current rendering
+// Global texture analysis context for current rendering — set per-part before calling material fns
 let _currentTextureAnalysis: TextureAnalysis | undefined;
+let _currentPartTextures: PartTextures | undefined;
+let _currentDefaultTexture: TextureAnalysis | undefined;
+
+/** Switch the active texture context to a specific furniture part */
+function usePartTexture(part: keyof PartTextures) {
+  _currentTextureAnalysis = _currentPartTextures?.[part] || _currentDefaultTexture;
+}
+
+/** Reset texture context to the default (whole-furniture) texture */
+function useDefaultTexture() {
+  _currentTextureAnalysis = _currentDefaultTexture;
+}
 
 function createWoodTexture(baseColor: string, scale = 1): THREE.CanvasTexture {
   const textureInfo = _currentTextureAnalysis?.woodGrain;
