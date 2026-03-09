@@ -47,7 +47,7 @@ export interface OutletConfig {
 }
 
 export interface CeilingLightConfig {
-  type: 'panel' | 'pendant' | 'spot';
+  type: 'panel' | 'pendant' | 'spot' | 'chandelier' | 'track' | 'recessed' | 'wall-sconce' | 'linear';
   xRatio: number;
   zRatio: number;
 }
