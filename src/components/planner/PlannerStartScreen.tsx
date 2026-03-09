@@ -119,6 +119,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'pendant', xRatio: 0.5, zRatio: 0.7 },
         { type: 'pendant', xRatio: 0.75, zRatio: 0.7 },
       ],
+      floorMaterial: 'tile-white',
+      wallMaterial: 'paint-cream',
     },
   },
   {
