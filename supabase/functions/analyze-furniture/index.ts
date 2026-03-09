@@ -54,6 +54,30 @@ CRITICAL INSTRUCTIONS:
 4. For colors, extract the ACTUAL hex colors visible in the image, not generic approximations.
 5. Pay attention to materials: Korean school furniture often uses melamine-coated particleboard, steel frames, or HPL surfaces.
 
+★★★ LEG STYLE DETECTION — CRITICAL ★★★
+Pay EXTREME attention to the leg structure. This is the most important visual differentiator:
+- "4-legs": Four individual straight legs (square or round cross-section)
+- "T-frame": Two T-shaped side supports (vertical post + horizontal foot bar)
+- "panel": Solid side panels (thick board-like sides, common in wooden desks)
+- "trestle": A-frame or trestle supports (angled/splayed legs with crossbar)
+- "sled": U-shaped runners connecting front and back (like a sled/sleigh base)
+- "pedestal": Single central column
+- "star-base": 5-spoke star base with casters (office chairs)
+- "none": No legs (wall-mounted or sits directly on floor)
+
+★★★ MATERIAL DETECTION FOR LEGS ★★★
+- If legs are thin round tubes (often chrome/silver/black), set secondaryMaterial="metal"
+- If legs are thick solid wood (often matching the tabletop color), set secondaryMaterial="wood"  
+- If legs are flat steel plates or thick steel tubes, set secondaryMaterial="metal"
+- Wooden legs are often tapered (wider at top, narrower at bottom) — add "tapered-legs" to details
+- Round cross-section wood legs — add "round-legs" to details
+
+★★★ OPEN vs CLOSED STORAGE — CRITICAL ★★★
+- If the product has NO doors and shelves are visible/exposed, set hasDoor=false AND sections.hasOpenFront=true
+- 오픈형 (open-type) shelving: hasDoor=false, hasOpenFront=true
+- Products with visible items inside = open front
+- Only set hasDoor=true if you can clearly see door panels with handles/knobs
+
 Return a JSON object with these fields:
 {
   "furnitureType": one of ["desk", "chair", "storage", "shelf", "sofa", "lab", "dining", "roundtable", "blackboard", "bunkbed", "pet", "podium", "partition", "generic"],
@@ -95,7 +119,7 @@ Return a JSON object with these fields:
     "hasBoardArea": boolean (whiteboard/blackboard in center),
     "boardPosition": "center" | "top" | "back" (where the board is)
   },
-  "details": string[] (PRECISE list: "crossbar", "curved-back", "tapered-legs", "rounded-edges", "metal-frame", "wood-grain", "upholstered", "ventilation-holes", "number-labels", "handle-recessed", "handle-knob", "adjustable-feet", "casters", "wire-management", "keyboard-tray", "monitor-arm", "glass-top", "sliding-door", "folding", "stackable", "wall-mounted", "open-back", "closed-back", "edge-banding", "modesty-panel", "cable-tray", "pegboard", "hooks", "marker-tray", "chalk-tray", "upper-shelf", "compartments", "lock", "sink", "basin", "faucet"),
+  "details": string[] (PRECISE list: "crossbar", "curved-back", "tapered-legs", "round-legs", "cylindrical", "rounded-edges", "metal-frame", "wood-grain", "upholstered", "ventilation-holes", "number-labels", "handle-recessed", "handle-knob", "adjustable-feet", "casters", "wire-management", "keyboard-tray", "monitor-arm", "glass-top", "sliding-door", "folding", "stackable", "wall-mounted", "open-back", "closed-back", "edge-banding", "modesty-panel", "cable-tray", "pegboard", "hooks", "marker-tray", "chalk-tray", "upper-shelf", "compartments", "lock", "sink", "basin", "faucet"),
   "texture": {
     "woodGrain": { "direction": "horizontal"|"vertical"|"diagonal"|"radial", "intensity": "subtle"|"moderate"|"pronounced", "knotFrequency": "none"|"few"|"many", "grainColor": "#hex" },
     "fabricPattern": { "type": "plain"|"twill"|"knit"|"velvet"|"leather-grain"|"mesh"|"woven", "weaveScale": number, "patternColor": "#hex" },
@@ -120,12 +144,15 @@ Return a JSON object with these fields:
 }
 
 EXAMPLES of precise analysis:
-- 칠판보조장 (Blackboard Cabinet): sections.layout="left-center-right", sections.hasBoardArea=true, sections.bottomRatio=0.3, sections.leftSideRatio=0.12, compartmentGrid for upper shelves
-- 사물함 (Locker): sections.layout="grid", sections.compartmentGrid={cols:4,rows:5}, hasDoor=true, doorCount=20
-- 실험대 (Lab Bench): details includes "sink","faucet", sections.layout="single"
-- 교탁/강연대 (Podium): furnitureType="podium", sections.layout="complex"
+- 철재다리 책상: legStyle="4-legs" or "T-frame", secondaryMaterial="metal", legs.metalFinish.type="powder-coated"
+- 목재다리 책상: legStyle="4-legs", secondaryMaterial="wood", details=["tapered-legs" or "round-legs"]
+- 오픈형 신발장: hasDoor=false, sections.hasOpenFront=true, furnitureType="storage"
+- 도어형 사물함: hasDoor=true, sections.compartmentGrid={cols:N,rows:M}
+- 칠판보조장: sections.layout="left-center-right", sections.hasBoardArea=true
+- 실험대: details includes "sink","faucet", sections.layout="single"
 
-IMPORTANT: Count EXACTLY from the image. If a locker has 4 columns × 5 rows = 20 compartments, report doorCount=20, compartmentGrid={cols:4,rows:5}. Do NOT guess — analyze the image precisely.`;
+IMPORTANT: Count EXACTLY from the image. If a locker has 4 columns × 5 rows = 20 compartments, report doorCount=20, compartmentGrid={cols:4,rows:5}. Do NOT guess — analyze the image precisely.
+For leg style, look at the ACTUAL leg structure visible in the image, not assumptions.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
