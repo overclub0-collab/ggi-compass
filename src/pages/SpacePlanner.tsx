@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers, Sun } from 'lucide-react';
+import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers, Sun, Footprints } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { PlannerLeftPanel } from '@/components/planner/PlannerLeftPanel';
