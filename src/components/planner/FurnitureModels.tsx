@@ -1826,8 +1826,10 @@ function AIEnhancedStorage({ w, d, h, color, isSelected, analysis }: {
   const colors = getColorsFromAnalysis(analysis, color);
   const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
   const sections = analysis.sections;
-  const isOpenFront = sections?.hasOpenFront === true;
-  // CRITICAL: Respect AI analysis — if hasOpenFront is true OR hasDoor is explicitly false, no doors
+  const name = (analysis as any)._productName || '';
+  const nameHasOpen = name.includes('오픈') || name.includes('open') || name.includes('개방');
+  const isOpenFront = sections?.hasOpenFront === true || nameHasOpen;
+  // CRITICAL: Respect AI analysis — if hasOpenFront is true OR hasDoor is explicitly false OR product name says "오픈", no doors
   const hasDoor = isOpenFront ? false : (analysis.hasDoor ?? false);
   const doorCount = analysis.doorCount || 2;
   const hasShelf = analysis.hasShelf ?? true;
