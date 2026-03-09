@@ -986,11 +986,9 @@ function GenericModel({ w, d, h, color, isSelected }: {
   const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
   return (
     <group>
-      <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[w, h, d]} />
+      <RoundedBox args={[w, h, d]} radius={0.01} smoothness={4} position={[0, h / 2, 0]} castShadow receiveShadow>
         {woodMat(color, isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
-      </mesh>
+      </RoundedBox>
       <mesh position={[0, 0.005, 0]}>
         <boxGeometry args={[w + 0.01, 0.01, d + 0.01]} />
         {metalMat(darken(color, 0.3), isSelected)}
