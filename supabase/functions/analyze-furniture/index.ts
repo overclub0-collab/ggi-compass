@@ -77,28 +77,31 @@ Return a JSON object with these fields:
   },
   "details": string[] (list of notable visual details like "crossbar", "curved-back", "tapered-legs", "rounded-edges", "metal-frame", "wood-grain", "upholstered", etc),
   "texture": {
-    "woodGrain": {
-      "direction": "horizontal" | "vertical" | "diagonal" | "radial",
-      "intensity": "subtle" | "moderate" | "pronounced",
-      "knotFrequency": "none" | "few" | "many",
-      "grainColor": "#hexcolor (darker grain line color)"
-    },
-    "fabricPattern": {
-      "type": "plain" | "twill" | "knit" | "velvet" | "leather-grain" | "mesh" | "woven",
-      "weaveScale": number (0.5-5, how tight the weave is),
-      "patternColor": "#hexcolor (secondary pattern color if visible)"
-    },
-    "metalFinish": {
-      "type": "brushed" | "polished" | "powder-coated" | "anodized" | "chrome" | "matte",
-      "brushDirection": "horizontal" | "vertical" | "circular"
-    },
+    "woodGrain": { ... },
+    "fabricPattern": { ... },
+    "metalFinish": { ... },
     "surfaceFinish": "glossy" | "satin" | "matte" | "textured" | "raw",
-    "roughnessEstimate": number (0-1, PBR roughness),
-    "metalnessEstimate": number (0-1, PBR metalness)
+    "roughnessEstimate": number (0-1),
+    "metalnessEstimate": number (0-1)
+  },
+  "partTextures": {
+    "top": { texture object for the top surface/tabletop - often wood with specific grain },
+    "legs": { texture object for legs/frame - often metal with specific finish },
+    "body": { texture object for main body/cabinet },
+    "seat": { texture for seat cushion - fabric/leather },
+    "back": { texture for backrest },
+    "arms": { texture for armrests },
+    "drawers": { texture for drawer fronts },
+    "doors": { texture for door panels },
+    "shelves": { texture for shelf surfaces },
+    "cushion": { texture for cushions/mattresses },
+    "accent": { texture for accent/trim parts }
   }
 }
 
-Be precise about colors - extract the actual colors from the image. For proportions, estimate carefully from the image perspective. For texture, carefully observe grain direction, surface sheen, and material finish quality.`;
+IMPORTANT: For partTextures, only include parts that are actually present in the furniture. Each part texture object has the same schema as the main "texture" object. Different parts often have very different materials - e.g., a desk may have a wood-grain top (horizontal grain, satin finish) but powder-coated metal legs (matte finish). Analyze each visible part separately.
+
+Be precise about colors - extract the actual colors from the image. For proportions, estimate carefully from the image perspective. For texture, carefully observe grain direction, surface sheen, and material finish quality per part.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

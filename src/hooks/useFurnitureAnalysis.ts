@@ -22,6 +22,21 @@ export interface TextureAnalysis {
   metalnessEstimate: number;
 }
 
+// Multi-part texture: each furniture part can have its own texture analysis
+export interface PartTextures {
+  top?: TextureAnalysis;       // 상판
+  legs?: TextureAnalysis;      // 다리/프레임
+  body?: TextureAnalysis;      // 본체/캐비닛
+  seat?: TextureAnalysis;      // 좌석 (의자/소파)
+  back?: TextureAnalysis;      // 등받이
+  arms?: TextureAnalysis;      // 팔걸이
+  drawers?: TextureAnalysis;   // 서랍
+  doors?: TextureAnalysis;     // 문
+  shelves?: TextureAnalysis;   // 선반
+  cushion?: TextureAnalysis;   // 쿠션/매트리스
+  accent?: TextureAnalysis;    // 악센트 부분
+}
+
 export interface FurnitureAnalysis {
   furnitureType: string;
   shape: string;
@@ -51,6 +66,7 @@ export interface FurnitureAnalysis {
   };
   details: string[];
   texture?: TextureAnalysis;
+  partTextures?: PartTextures;
 }
 
 // Batch analysis store to avoid duplicate calls
