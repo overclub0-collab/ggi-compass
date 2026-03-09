@@ -111,11 +111,11 @@ export const HeroSection = () => {
             initial={{ opacity: 0, filter: 'blur(10px)' }}
             animate={{ opacity: 1, filter: 'blur(0px)' }}
             transition={{ duration: 0.8, delay: 1.6 }}>
-            공간의 미래를 만드는 전문 제조 여성기업 GGI
+            공간의 미래를 설계하는 전문 제조 여성기업 GGI
             <br />
-            교육·사무·반려동물을 위한 독보적인 가구 솔루션
+            교육·사무·반려동물을 위한 차별화된 가구 솔루션
             <br className="hidden sm:block" />
-            <span className="text-accent font-semibold">GGI</span>가 만드는 미래 교육의 기반입니다.
+            <span className="text-accent font-semibold">GGI</span>가 미래 공간의 기준을 만듭니다.
           </motion.p>
 
           {/* Buttons */}
