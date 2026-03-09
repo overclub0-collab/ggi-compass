@@ -598,11 +598,9 @@ export default function AdminFurnitureAnalysis() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  {hasAnalysis && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(record)} title="보기/수정">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(record)} title={hasAnalysis ? '보기/수정' : '수동 생성'}>
+                    {hasAnalysis ? <Eye className="h-4 w-4" /> : <Plus className="h-4 w-4 text-muted-foreground" />}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
