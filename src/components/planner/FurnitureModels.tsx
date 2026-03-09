@@ -1332,7 +1332,7 @@ function getModelFromAnalysis(analysis: FurnitureAnalysis, item: PlacedFurniture
   }
 
   // If keyword says specific structural types that AI might miss, prefer keyword
-  const structuralTypes = ['blackboard', 'bunkbed', 'pet', 'lab'];
+  const structuralTypes = ['blackboard', 'bunkbed', 'pet', 'lab', 'podium'];
   if (structuralTypes.includes(keywordType) && !structuralTypes.includes(aiType)) {
     return keywordType;
   }
