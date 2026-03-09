@@ -1789,17 +1789,25 @@ export function FurnitureObject({ item, isSelected, onSelect, onContextSelect }:
   // If AI analysis is available, use enhanced models
   const renderModel = () => {
     if (analysis) {
+      const props = { w, d, h, color: effectiveColor, isSelected, analysis };
       switch (furnitureType) {
         case 'desk':
         case 'dining':
-          return <AIEnhancedDesk w={w} d={d} h={h} color={effectiveColor} isSelected={isSelected} analysis={analysis} />;
+          return <AIEnhancedDesk {...props} />;
         case 'chair':
-          return <AIEnhancedChair w={w} d={d} h={h} color={effectiveColor} isSelected={isSelected} analysis={analysis} />;
-        // For other types, use existing models with AI colors
-        default: {
-          const ModelComponent = getModelComponent(furnitureType);
-          return <ModelComponent w={w} d={d} h={h} color={effectiveColor} isSelected={isSelected} />;
-        }
+          return <AIEnhancedChair {...props} />;
+        case 'sofa':
+          return <AIEnhancedSofa {...props} />;
+        case 'storage':
+          return <AIEnhancedStorage {...props} />;
+        case 'shelf':
+          return <AIEnhancedShelf {...props} />;
+        case 'lab':
+          return <AIEnhancedLab {...props} />;
+        case 'roundtable':
+          return <AIEnhancedRoundTable {...props} />;
+        default:
+          return <AIEnhancedGeneric {...props} />;
       }
     }
     
