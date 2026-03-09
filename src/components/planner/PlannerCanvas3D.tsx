@@ -487,8 +487,8 @@ function DoorElement({ position, rotation, width = 0.9, height = 2.1, type = 'sw
               </mesh>
               {/* Handle mounts */}
               {[-0.08, 0.08].map((yOff, j) => (
-                <mesh key={j} position={[xOff + (isDouble ? (i === 0 ? panelW * 0.35 : -panelW * 0.35) : panelW * 0.38), height * 0.47 + yOff, 0.012]}>
-                  <cylinderGeometry args={[0.006, 0.006, 0.016, 6]} rotation={[Math.PI / 2, 0, 0]} />
+                <mesh key={j} position={[xOff + (isDouble ? (i === 0 ? panelW * 0.35 : -panelW * 0.35) : panelW * 0.38), height * 0.47 + yOff, 0.012]} rotation={[Math.PI / 2, 0, 0]}>
+                  <cylinderGeometry args={[0.006, 0.006, 0.016, 6]} />
                   <meshStandardMaterial color="#b0b0b0" roughness={0.15} metalness={0.9} />
                 </mesh>
               ))}
