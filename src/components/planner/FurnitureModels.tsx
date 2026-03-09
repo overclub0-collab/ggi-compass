@@ -1340,29 +1340,33 @@ function AIEnhancedDesk({ w, d, h, color, isSelected, analysis }: {
   const primaryMatFn = analysis.primaryMaterial === 'metal' ? metalMat : woodMat;
   const legMatFn = analysis.secondaryMaterial === 'wood' ? woodMat : metalMat;
 
+  // Part-specific texture helpers
+  const topMat = (c: string, sel: boolean) => { usePartTexture('top'); return primaryMatFn(c, sel); };
+  const legMaterial = (c: string, sel: boolean) => { usePartTexture('legs'); return legMatFn(c, sel); };
+  const drawerMat = (c: string, sel: boolean) => { usePartTexture('drawers'); return primaryMatFn(c, sel); };
+
   return (
     <group>
       {/* Tabletop */}
       {hasRoundedEdges ? (
         <RoundedBox args={[w, topH, d]} radius={0.01} smoothness={4} position={[0, h - topH / 2, 0]} castShadow receiveShadow>
-          {primaryMatFn(colors.primary, isSelected)}
+          {topMat(colors.primary, isSelected)}
         </RoundedBox>
       ) : (
         <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
           <boxGeometry args={[w, topH, d]} />
-          {primaryMatFn(colors.primary, isSelected)}
+          {topMat(colors.primary, isSelected)}
           <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
         </mesh>
       )}
       {/* Edge banding */}
       <mesh position={[0, h - topH, 0]}>
         <boxGeometry args={[w + 0.002, 0.003, d + 0.002]} />
-        {primaryMatFn(darken(colors.primary, 0.08), isSelected)}
+        {topMat(darken(colors.primary, 0.08), isSelected)}
       </mesh>
 
       {/* Legs based on style */}
       {isTFrame ? (
-        // T-frame legs
         <>
           {[-1, 1].map((side) => {
             const xOff = side * (w / 2 - 0.06);
@@ -1370,29 +1374,27 @@ function AIEnhancedDesk({ w, d, h, color, isSelected, analysis }: {
               <group key={`tleg-${side}`}>
                 <mesh position={[xOff, legH / 2, 0]} castShadow>
                   <boxGeometry args={[legW, legH, legW]} />
-                  {legMatFn(colors.secondary, isSelected)}
+                  {legMaterial(colors.secondary, isSelected)}
                 </mesh>
                 <mesh position={[xOff, 0.015, 0]}>
                   <boxGeometry args={[legW, 0.03, d * 0.7]} />
-                  {legMatFn(colors.secondary, isSelected)}
+                  {legMaterial(colors.secondary, isSelected)}
                 </mesh>
               </group>
             );
           })}
         </>
       ) : isPanel ? (
-        // Panel legs
         <>
           {[-1, 1].map((side) => (
             <mesh key={`panel-${side}`} position={[side * (w / 2 - 0.015), legH / 2, 0]} castShadow>
               <boxGeometry args={[0.03, legH, d * 0.85]} />
-              {primaryMatFn(darken(colors.primary, 0.1), isSelected)}
+              {(() => { usePartTexture('legs'); return primaryMatFn(darken(colors.primary, 0.1), isSelected); })()}
               <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
             </mesh>
           ))}
         </>
       ) : (
-        // Standard 4 legs
         <>
           {[
             [-(w / 2 - legW / 2 - 0.01), 0, -(d / 2 - legD / 2 - 0.01)],
@@ -1402,7 +1404,7 @@ function AIEnhancedDesk({ w, d, h, color, isSelected, analysis }: {
           ].map(([lx, , lz], i) => (
             <mesh key={i} position={[lx, legH / 2, lz]} castShadow>
               <boxGeometry args={[legW, legH, legD]} />
-              {legMatFn(colors.secondary, isSelected)}
+              {legMaterial(colors.secondary, isSelected)}
               <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
             </mesh>
           ))}
@@ -1410,6 +1412,7 @@ function AIEnhancedDesk({ w, d, h, color, isSelected, analysis }: {
       )}
 
       {/* Front/back aprons */}
+      {(() => { usePartTexture('body'); return null; })()}
       <mesh position={[0, h - topH - 0.032, d / 2 - 0.01]} castShadow>
         <boxGeometry args={[w - legW * 2 - 0.04, 0.06, 0.02]} />
         {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
@@ -1423,23 +1426,23 @@ function AIEnhancedDesk({ w, d, h, color, isSelected, analysis }: {
       {hasCrossbar && (
         <mesh position={[0, legH * 0.12, 0]}>
           <boxGeometry args={[w * 0.6, 0.018, 0.018]} />
-          {legMatFn(colors.secondary, isSelected)}
+          {legMaterial(colors.secondary, isSelected)}
         </mesh>
       )}
 
       {/* Drawers if detected */}
       {hasDrawers && Array.from({ length: Math.min(drawerCount || 1, 3) }, (_, i) => {
-        const drawerH = Math.min(0.08, (legH - 0.06) / (drawerCount || 1));
-        const yOff = h - topH - 0.07 - i * (drawerH + 0.01);
+        const dH = Math.min(0.08, (legH - 0.06) / (drawerCount || 1));
+        const yOff = h - topH - 0.07 - i * (dH + 0.01);
         return (
           <group key={`drawer-${i}`}>
             <mesh position={[w * 0.25, yOff, d / 2 - 0.005]}>
-              <boxGeometry args={[w * 0.45, drawerH, 0.01]} />
-              {primaryMatFn(darken(colors.primary, 0.03), isSelected)}
+              <boxGeometry args={[w * 0.45, dH, 0.01]} />
+              {drawerMat(darken(colors.primary, 0.03), isSelected)}
             </mesh>
             <mesh position={[w * 0.25, yOff, d / 2 + 0.008]}>
               <boxGeometry args={[0.04, 0.01, 0.01]} />
-              <meshStandardMaterial color="#888" roughness={0.2} metalness={0.9} />
+              {(() => { usePartTexture('accent'); return metalMat('#888', isSelected); })()}
             </mesh>
           </group>
         );
@@ -1457,6 +1460,7 @@ function AIEnhancedDesk({ w, d, h, color, isSelected, analysis }: {
           <meshStandardMaterial color="#333" roughness={0.8} metalness={0.3} />
         </mesh>
       ))}
+      {(() => { useDefaultTexture(); return null; })()}
     </group>
   );
 }
