@@ -164,11 +164,44 @@ Be precise about colors - extract the actual colors from the image. For proporti
                     required: ["widthToDepthRatio", "heightToWidthRatio"],
                   },
                   details: { type: "array", items: { type: "string" } },
+                  texture: {
+                    type: "object",
+                    properties: {
+                      woodGrain: {
+                        type: "object",
+                        properties: {
+                          direction: { type: "string", enum: ["horizontal", "vertical", "diagonal", "radial"] },
+                          intensity: { type: "string", enum: ["subtle", "moderate", "pronounced"] },
+                          knotFrequency: { type: "string", enum: ["none", "few", "many"] },
+                          grainColor: { type: "string" },
+                        },
+                      },
+                      fabricPattern: {
+                        type: "object",
+                        properties: {
+                          type: { type: "string", enum: ["plain", "twill", "knit", "velvet", "leather-grain", "mesh", "woven"] },
+                          weaveScale: { type: "number" },
+                          patternColor: { type: "string" },
+                        },
+                      },
+                      metalFinish: {
+                        type: "object",
+                        properties: {
+                          type: { type: "string", enum: ["brushed", "polished", "powder-coated", "anodized", "chrome", "matte"] },
+                          brushDirection: { type: "string", enum: ["horizontal", "vertical", "circular"] },
+                        },
+                      },
+                      surfaceFinish: { type: "string", enum: ["glossy", "satin", "matte", "textured", "raw"] },
+                      roughnessEstimate: { type: "number" },
+                      metalnessEstimate: { type: "number" },
+                    },
+                    required: ["surfaceFinish", "roughnessEstimate", "metalnessEstimate"],
+                  },
                 },
                 required: [
                   "furnitureType", "shape", "legStyle", "legCount",
                   "primaryMaterial", "primaryColor", "secondaryColor",
-                  "topThickness", "legThickness", "proportions", "details"
+                  "topThickness", "legThickness", "proportions", "details", "texture"
                 ],
                 additionalProperties: false,
               },
