@@ -1774,6 +1774,136 @@ function AIEnhancedRoundTable({ w, d, h, color, isSelected, analysis }: {
   );
 }
 
+// ========== AI-enhanced Blackboard Cabinet ==========
+function AIEnhancedBlackboard({ w, d, h, color, isSelected, analysis }: {
+  w: number; d: number; h: number; color: string; isSelected: boolean; analysis: FurnitureAnalysis;
+}) {
+  const colors = getColorsFromAnalysis(analysis, color);
+  const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
+  const panelThick = 0.02;
+  const primaryMatFn = analysis.primaryMaterial === 'metal' ? metalMat : woodMat;
+  
+  const hasShelf = analysis.hasShelf ?? true;
+  const shelfCount = analysis.shelfCount || 2;
+  const hasDoor = analysis.hasDoor ?? true;
+  const doorCount = analysis.doorCount || 2;
+  const details = analysis.details || [];
+  const hasUpperShelves = hasShelf || details.includes('upper-shelf') || details.includes('compartments');
+  
+  const lowerH = h * 0.28;
+  const boardH = h * 0.42;
+  const upperH = h * 0.22;
+  const fillerH = h * 0.06;
+  const sideW = w * 0.12;
+  const boardAreaW = w - sideW * 2;
+
+  return (
+    <group>
+      {/* 하부장 */}
+      <mesh position={[0, lowerH / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[w, lowerH, d]} />
+        {primaryMatFn(colors.primary, isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
+      </mesh>
+      {/* 하부장 문 */}
+      {hasDoor && Array.from({ length: doorCount }, (_, i) => {
+        const dw = w / doorCount;
+        const cx = -(w / 2) + dw * i + dw / 2;
+        return (
+          <group key={`ld-${i}`}>
+            <mesh position={[cx, lowerH / 2, d / 2 + 0.002]}>
+              <boxGeometry args={[dw - 0.008, lowerH - 0.02, 0.003]} />
+              {primaryMatFn(lighten(colors.primary, 0.02), isSelected)}
+            </mesh>
+            <mesh position={[cx + dw * 0.35, lowerH / 2, d / 2 + 0.012]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.005, 0.005, 0.04, 8]} />
+              <meshStandardMaterial color={colors.secondary} roughness={0.2} metalness={0.95} />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* 양 사이드 장 */}
+      {[-1, 1].map((side) => {
+        const sx = side * (w / 2 - sideW / 2);
+        const sideFullH = boardH + upperH;
+        const sideY = lowerH + sideFullH / 2;
+        return (
+          <group key={`side-${side}`}>
+            <mesh position={[sx, sideY, 0]} castShadow>
+              <boxGeometry args={[sideW, sideFullH, d]} />
+              {primaryMatFn(colors.primary, isSelected)}
+              <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
+            </mesh>
+            {Array.from({ length: 3 }, (_, i) => (
+              <mesh key={`ss-${i}`} position={[sx, lowerH + (sideFullH / 4) * (i + 1), 0]}>
+                <boxGeometry args={[sideW - panelThick * 2, panelThick * 0.5, d - panelThick]} />
+                {primaryMatFn(darken(colors.primary, 0.08), isSelected)}
+              </mesh>
+            ))}
+          </group>
+        );
+      })}
+
+      {/* 화이트보드/칠판 */}
+      <mesh position={[0, lowerH + boardH / 2, -(d / 2 - panelThick / 2)]} castShadow>
+        <boxGeometry args={[boardAreaW - 0.04, boardH - 0.04, panelThick]} />
+        <meshStandardMaterial color="#f5f3ee" roughness={0.15} metalness={0.08} envMapIntensity={0.8} />
+      </mesh>
+      {/* 보드 프레임 */}
+      <mesh position={[0, lowerH + boardH, -(d / 2 - panelThick / 2)]}>
+        <boxGeometry args={[boardAreaW, 0.03, panelThick + 0.01]} />
+        {primaryMatFn(darken(colors.primary, 0.12), isSelected)}
+      </mesh>
+      <mesh position={[0, lowerH + 0.015, -(d / 2 - panelThick / 2)]}>
+        <boxGeometry args={[boardAreaW, 0.03, panelThick + 0.01]} />
+        {primaryMatFn(darken(colors.primary, 0.12), isSelected)}
+      </mesh>
+      <mesh position={[0, lowerH + 0.012, -(d / 2 - 0.04)]}>
+        <boxGeometry args={[boardAreaW * 0.85, 0.015, 0.06]} />
+        {primaryMatFn(darken(colors.primary, 0.1), isSelected)}
+      </mesh>
+
+      {/* 상부 선반장 */}
+      {hasUpperShelves && (
+        <>
+          <mesh position={[0, lowerH + boardH + upperH / 2, -(d / 2 - panelThick / 2)]}>
+            <boxGeometry args={[boardAreaW, upperH, panelThick]} />
+            {primaryMatFn(lighten(colors.primary, 0.04), isSelected)}
+          </mesh>
+          {Array.from({ length: Math.max(1, Math.min(shelfCount - 1, 2)) }, (_, i) => (
+            <mesh key={`us-${i}`} position={[0, lowerH + boardH + upperH * ((i + 1) / (shelfCount || 2)), 0]}>
+              <boxGeometry args={[boardAreaW - 0.02, panelThick, d]} />
+              {primaryMatFn(colors.primary, isSelected)}
+            </mesh>
+          ))}
+          {Array.from({ length: 3 }, (_, i) => (
+            <mesh key={`ud-${i}`} position={[-(boardAreaW / 2) + (boardAreaW / 4) * (i + 1), lowerH + boardH + upperH / 2, 0]}>
+              <boxGeometry args={[panelThick * 0.6, upperH, d - panelThick]} />
+              {primaryMatFn(darken(colors.primary, 0.06), isSelected)}
+            </mesh>
+          ))}
+          <mesh position={[0, lowerH + boardH + upperH, 0]}>
+            <boxGeometry args={[boardAreaW, panelThick, d]} />
+            {primaryMatFn(colors.primary, isSelected)}
+          </mesh>
+          <mesh position={[0, lowerH + boardH, 0]}>
+            <boxGeometry args={[boardAreaW, panelThick, d]} />
+            {primaryMatFn(colors.primary, isSelected)}
+          </mesh>
+        </>
+      )}
+
+      {/* 상부 마감 휠라 */}
+      <mesh position={[0, h - fillerH / 2, 0]} castShadow>
+        <boxGeometry args={[w + 0.01, fillerH, d + 0.005]} />
+        {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
+        <Edges threshold={15} color={edgeColor} lineWidth={0.8} />
+      </mesh>
+    </group>
+  );
+}
+
 // ========== AI-enhanced Generic (fallback) ==========
 function AIEnhancedGeneric({ w, d, h, color, isSelected, analysis }: {
   w: number; d: number; h: number; color: string; isSelected: boolean; analysis: FurnitureAnalysis;
