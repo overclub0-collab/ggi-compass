@@ -668,7 +668,7 @@ function FPSCameraControls({ roomDimensions, onExitFps }: { roomDimensions: Room
   return null;
 }
 
-function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig, hdriPreset, onCaptureReady }:
+function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig, hdriPreset, onCaptureReady, fpsMode, onExitFps }:
   Omit<PlannerCanvas3DProps, 'scale' | 'architecturalConfig'> & { archConfig: ArchitecturalConfig; hdriPreset: HdriPresetType; onCaptureReady: (fn: () => void) => void }) {
   const w = roomDimensions.width / 1000;
   const d = roomDimensions.height / 1000;
