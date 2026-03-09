@@ -393,10 +393,10 @@ function WindowElement({ position, rotation, width = 1.2, height = 1.4, type = '
       <pointLight position={[0, 0, -0.5]} intensity={0.4} color="#fffbe6" distance={5} />
 
       {/* Curtains */}
-      {curtain === 'sheer' && <SheerCurtain width={width} height={height} color={curtainColor} />}
-      {curtain === 'blackout' && <BlackoutCurtain width={width} height={height} color={curtainColor} />}
-      {curtain === 'roman' && <RomanShade width={width} height={height} color={curtainColor} />}
-      {curtain === 'venetian' && <VenetianBlinds width={width} height={height} color={curtainColor} />}
+      {curtain === 'sheer' && <SheerCurtain width={width} height={height} color={curtainColor} openRatio={curtainOpenRatio} />}
+      {curtain === 'blackout' && <BlackoutCurtain width={width} height={height} color={curtainColor} openRatio={curtainOpenRatio} />}
+      {curtain === 'roman' && <RomanShade width={width} height={height} color={curtainColor} openRatio={curtainOpenRatio} />}
+      {curtain === 'venetian' && <VenetianBlinds width={width} height={height} color={curtainColor} openRatio={curtainOpenRatio} />}
     </group>
   );
 }
