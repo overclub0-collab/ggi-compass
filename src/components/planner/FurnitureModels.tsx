@@ -570,11 +570,9 @@ function SofaModel({ w, d, h, color, isSelected }: {
   return (
     <group>
       {/* Base frame */}
-      <mesh position={[0, seatH / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[w, seatH, d]} />
+      <RoundedBox args={[w, seatH, d]} radius={0.015} smoothness={4} position={[0, seatH / 2, 0]} castShadow receiveShadow>
         {fabricMat(darken(color, 0.06), isSelected)}
-        <Edges threshold={15} color={edgeColor} lineWidth={edgeW} />
-      </mesh>
+      </RoundedBox>
       {/* Seat cushions */}
       {Array.from({ length: cushionCount }, (_, i) => {
         const cx = -(w / 2 - armW - 0.02) + cushionW * i + cushionW / 2;
