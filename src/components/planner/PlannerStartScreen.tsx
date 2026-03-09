@@ -45,6 +45,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'panel', xRatio: 0.3, zRatio: 0.7 },
         { type: 'panel', xRatio: 0.7, zRatio: 0.7 },
       ],
+      floorMaterial: 'carpet-gray',
+      wallMaterial: 'paint-cream',
     },
   },
   {
@@ -82,6 +84,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'panel', xRatio: 0.5, zRatio: 0.75 },
         { type: 'panel', xRatio: 0.75, zRatio: 0.75 },
       ],
+      floorMaterial: 'tile-gray',
+      wallMaterial: 'paint-cream',
     },
   },
   {
@@ -115,6 +119,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'pendant', xRatio: 0.5, zRatio: 0.7 },
         { type: 'pendant', xRatio: 0.75, zRatio: 0.7 },
       ],
+      floorMaterial: 'tile-white',
+      wallMaterial: 'paint-cream',
     },
   },
   {
@@ -150,6 +156,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'spot', xRatio: 0.5, zRatio: 0.15 },
         { type: 'spot', xRatio: 0.5, zRatio: 0.85 },
       ],
+      floorMaterial: 'tile-gray',
+      wallMaterial: 'paint-white',
     },
   },
   {
@@ -176,6 +184,8 @@ const TEMPLATES: SpaceTemplate[] = [
         { type: 'spot', xRatio: 0.15, zRatio: 0.15 },
         { type: 'spot', xRatio: 0.85, zRatio: 0.85 },
       ],
+      floorMaterial: 'wood-light',
+      wallMaterial: 'paint-sage',
     },
   },
 ];

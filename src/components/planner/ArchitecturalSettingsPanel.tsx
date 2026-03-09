@@ -49,6 +49,9 @@ export interface CeilingLightConfig {
   zRatio: number;
 }
 
+export type FloorMaterialType = 'wood-light' | 'wood-dark' | 'wood-walnut' | 'marble-white' | 'marble-gray' | 'tile-white' | 'tile-gray' | 'concrete' | 'carpet-gray' | 'carpet-blue';
+export type WallMaterialType = 'paint-white' | 'paint-cream' | 'paint-gray' | 'paint-sage' | 'wallpaper-stripe' | 'wallpaper-texture' | 'brick-white' | 'brick-red' | 'concrete' | 'wood-panel';
+
 export interface ArchitecturalConfig {
   windows: WindowConfig[];
   doors: DoorConfig[];
@@ -56,6 +59,8 @@ export interface ArchitecturalConfig {
   partitions: PartitionConfig[];
   outlets: OutletConfig[];
   ceilingLights: CeilingLightConfig[];
+  floorMaterial: FloorMaterialType;
+  wallMaterial: WallMaterialType;
 }
 
 const WINDOW_TYPES = [
@@ -612,4 +617,6 @@ export const DEFAULT_ARCHITECTURAL_CONFIG: ArchitecturalConfig = {
   ceilingLights: [
     { type: 'panel', xRatio: 0.5, zRatio: 0.5 },
   ],
+  floorMaterial: 'wood-light',
+  wallMaterial: 'paint-white',
 };

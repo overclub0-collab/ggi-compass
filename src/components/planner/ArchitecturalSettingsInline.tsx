@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import {
-  ArchitecturalConfig,
+  ArchitecturalConfig, FloorMaterialType, WallMaterialType,
   WindowConfig, DoorConfig, ColumnConfig, PartitionConfig, OutletConfig, CeilingLightConfig,
 } from './ArchitecturalSettingsPanel';
 
@@ -109,6 +109,23 @@ export const ArchitecturalSettingsInline = ({ config, onChange }: Props) => {
     <div className="p-3 space-y-1">
       <h3 className="text-sm font-bold text-[#000] px-1 pb-2">🏗️ 건축 요소</h3>
 
+      {/* Finishes Section — always at top */}
+      <div className="border border-border rounded-lg overflow-hidden mb-2">
+        <button
+          onClick={() => toggle('finishes')}
+          className="w-full flex items-center gap-2 px-3 py-2.5 text-[#000] bg-amber-50"
+        >
+          <span className="text-sm">🎨</span>
+          <span className="text-xs font-bold text-[#000] flex-1 text-left">마감재</span>
+          <ChevronDown className={cn("h-3.5 w-3.5 text-[#000] transition-transform", openSection === 'finishes' && "rotate-180")} />
+        </button>
+        {openSection === 'finishes' && (
+          <div className="p-3 space-y-3 border-t border-border">
+            <FinishesSection config={config} onChange={onChange} />
+          </div>
+        )}
+      </div>
+
       {ARCH_CATEGORIES.map(cat => {
         const Icon = cat.icon;
         const count = cat.count(config);
@@ -116,7 +133,6 @@ export const ArchitecturalSettingsInline = ({ config, onChange }: Props) => {
 
         return (
           <div key={cat.key} className="border border-border rounded-lg overflow-hidden">
-            {/* Section header - no hover effect */}
             <button
               onClick={() => toggle(cat.key)}
               className="w-full flex items-center gap-2 px-3 py-2.5 text-[#000] bg-muted/30"
@@ -130,8 +146,6 @@ export const ArchitecturalSettingsInline = ({ config, onChange }: Props) => {
               )}
               <ChevronDown className={cn("h-3.5 w-3.5 text-[#000] transition-transform", isOpen && "rotate-180")} />
             </button>
-
-            {/* Section content */}
             {isOpen && (
               <div className="p-3 space-y-3 border-t border-border">
                 {cat.key === 'windows' && <WindowsSection config={config} update={update} />}
@@ -150,6 +164,79 @@ export const ArchitecturalSettingsInline = ({ config, onChange }: Props) => {
 };
 
 // --- Section components ---
+
+const FLOOR_OPTIONS: { value: FloorMaterialType; label: string; swatch: string }[] = [
+  { value: 'wood-light', label: '🪵 라이트 우드', swatch: '#c8b89a' },
+  { value: 'wood-dark', label: '🪵 다크 우드', swatch: '#6b5340' },
+  { value: 'wood-walnut', label: '🪵 월넛', swatch: '#8b6f55' },
+  { value: 'marble-white', label: '🏛️ 화이트 대리석', swatch: '#eae8e3' },
+  { value: 'marble-gray', label: '🏛️ 그레이 대리석', swatch: '#b5b0a8' },
+  { value: 'tile-white', label: '🔲 화이트 타일', swatch: '#f0ede8' },
+  { value: 'tile-gray', label: '🔲 그레이 타일', swatch: '#a8a5a0' },
+  { value: 'concrete', label: '🧱 콘크리트', swatch: '#b8b5b0' },
+  { value: 'carpet-gray', label: '🧶 그레이 카펫', swatch: '#9a9590' },
+  { value: 'carpet-blue', label: '🧶 블루 카펫', swatch: '#6878a0' },
+];
+
+const WALL_OPTIONS_MAT: { value: WallMaterialType; label: string; swatch: string }[] = [
+  { value: 'paint-white', label: '🎨 화이트 페인트', swatch: '#f5f2ec' },
+  { value: 'paint-cream', label: '🎨 크림 페인트', swatch: '#f0e8d8' },
+  { value: 'paint-gray', label: '🎨 그레이 페인트', swatch: '#d0cdc8' },
+  { value: 'paint-sage', label: '🎨 세이지 페인트', swatch: '#c5cfbe' },
+  { value: 'wallpaper-stripe', label: '📜 스트라이프 벽지', swatch: '#e8e4db' },
+  { value: 'wallpaper-texture', label: '📜 텍스처 벽지', swatch: '#e5e0d5' },
+  { value: 'brick-white', label: '🧱 화이트 브릭', swatch: '#e8e0d5' },
+  { value: 'brick-red', label: '🧱 레드 브릭', swatch: '#a05030' },
+  { value: 'concrete', label: '🏗️ 콘크리트', swatch: '#c0bdb8' },
+  { value: 'wood-panel', label: '🪵 우드 패널', swatch: '#b09878' },
+];
+
+function FinishesSection({ config, onChange }: { config: ArchitecturalConfig; onChange: (c: ArchitecturalConfig) => void }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label className="text-[10px] font-bold text-[#000]">🏠 바닥재</Label>
+        <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+          {FLOOR_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => onChange({ ...config, floorMaterial: opt.value })}
+              className={cn(
+                "flex items-center gap-2 px-2 py-1.5 rounded-md border text-left text-[10px] font-medium transition-colors",
+                config.floorMaterial === opt.value
+                  ? "border-primary bg-primary/10 text-[#000]"
+                  : "border-border text-[#000]/70"
+              )}
+            >
+              <span className="w-4 h-4 rounded-sm shrink-0 border border-border/50" style={{ backgroundColor: opt.swatch }} />
+              <span className="truncate">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <Label className="text-[10px] font-bold text-[#000]">🧱 벽지</Label>
+        <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+          {WALL_OPTIONS_MAT.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => onChange({ ...config, wallMaterial: opt.value })}
+              className={cn(
+                "flex items-center gap-2 px-2 py-1.5 rounded-md border text-left text-[10px] font-medium transition-colors",
+                config.wallMaterial === opt.value
+                  ? "border-primary bg-primary/10 text-[#000]"
+                  : "border-border text-[#000]/70"
+              )}
+            >
+              <span className="w-4 h-4 rounded-sm shrink-0 border border-border/50" style={{ backgroundColor: opt.swatch }} />
+              <span className="truncate">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function WindowsSection({ config, update }: { config: ArchitecturalConfig; update: <K extends keyof ArchitecturalConfig>(k: K, v: ArchitecturalConfig[K]) => void }) {
   return (
