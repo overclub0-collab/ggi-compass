@@ -7,6 +7,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Save, Upload, Loader2, Eye, Image as ImageIcon, X } from 'lucide-react';
+import officeChairImage from '@/assets/category-office-chair.png';
+import blackboardCabinetImage from '@/assets/category-blackboard-cabinet.png';
+import categoryOfficeImage from '@/assets/category-office.jpg';
+import categoryDiningImage from '@/assets/category-dining.jpg';
+import categoryLabImage from '@/assets/category-lab.png';
+import categoryMilitaryImage from '@/assets/category-military.jpg';
+
+const fallbackImages: Record<string, string> = {
+  educational: blackboardCabinetImage,
+  office: categoryOfficeImage,
+  chairs: officeChairImage,
+  'dining-table': categoryDiningImage,
+  'lab-bench': categoryLabImage,
+  dining: categoryDiningImage,
+  lab: categoryLabImage,
+  military: categoryMilitaryImage,
+};
 
 interface CategoryShowcase {
   id: string;
