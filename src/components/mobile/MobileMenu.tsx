@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Home, Grid3X3, FileText, Phone } from 'lucide-react';
+import { ChevronDown, ChevronRight, Home, Grid3X3, FileText, Phone, Box, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Sheet,
