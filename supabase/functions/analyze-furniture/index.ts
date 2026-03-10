@@ -13,13 +13,19 @@ serve(async (req) => {
   }
 
   try {
-    const { product_id, image_url, product_name } = await req.json();
+    const { product_id, image_url, product_name, reference_images } = await req.json();
 
     if (!product_id || !image_url) {
       return new Response(
         JSON.stringify({ error: "product_id and image_url are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Collect all images for multi-angle analysis
+    const allImageUrls: string[] = [image_url];
+    if (Array.isArray(reference_images)) {
+      allImageUrls.push(...reference_images.slice(0, 10)); // Max 10 additional
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -186,12 +192,12 @@ For leg style, look at the ACTUAL leg structure visible in the image, not assump
           content: [
             {
               type: "text",
-              text: `Analyze this furniture product image. Product name: "${product_name || 'Unknown'}". Return the complete analysis JSON.`,
+              text: `Analyze this furniture product image${allImageUrls.length > 1 ? ' (multiple angles provided)' : ''}. Product name: "${product_name || 'Unknown'}". Return the complete analysis JSON.`,
             },
-            {
+            ...allImageUrls.map(url => ({
               type: "image_url",
-              image_url: { url: image_url },
-            },
+              image_url: { url },
+            })),
           ],
         },
       ],
