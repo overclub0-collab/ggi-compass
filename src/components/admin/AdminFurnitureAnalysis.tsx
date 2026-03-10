@@ -141,9 +141,8 @@ export default function AdminFurnitureAnalysis() {
 
     setReanalyzing((prev) => new Set(prev).add(record.id));
     try {
-      if (record.analysis_id) {
-        await supabase.from('furniture_analysis_cache').delete().eq('product_id', record.id);
-      }
+      // DO NOT delete existing cache before re-analysis — only overwrite on success
+      // This prevents data loss when AI credits are exhausted or analysis fails
 
       const { data, error } = await supabase.functions.invoke('analyze-furniture', {
         body: {
@@ -151,35 +150,58 @@ export default function AdminFurnitureAnalysis() {
           image_url: imageUrl,
           product_name: record.title,
           reference_images: record.reference_images,
+          force_refresh: true, // Tell edge function to skip cache and re-analyze
         },
       });
 
+      // supabase.functions.invoke returns error for non-2xx responses
+      // The actual error message may be in error.message or error.context
       if (error) {
-        const errorBody = data?.error || error.message || '알 수 없는 오류';
-        if (errorBody.includes('크레딧') || errorBody.includes('credit') || errorBody.includes('402')) {
-          toast.error('AI 크레딧이 부족합니다. Settings → Workspace → Usage에서 크레딧을 추가해주세요.', { duration: 8000 });
-        } else if (errorBody.includes('rate') || errorBody.includes('429')) {
+        let errorMsg = '알 수 없는 오류';
+        try {
+          // Try to extract JSON error body from FunctionsHttpError
+          const ctx = (error as any).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            errorMsg = body?.error || error.message;
+          } else {
+            errorMsg = error.message || '알 수 없는 오류';
+          }
+        } catch {
+          errorMsg = error.message || '알 수 없는 오류';
+        }
+        
+        if (errorMsg.includes('크레딧') || errorMsg.includes('credit') || errorMsg.includes('402')) {
+          toast.error('AI 크레딧이 부족합니다. Lovable 대시보드에서 크레딧을 충전해주세요.', { duration: 8000 });
+        } else if (errorMsg.includes('rate') || errorMsg.includes('429') || errorMsg.includes('요청이 너무 많습니다')) {
           toast.error('요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
         } else {
-          toast.error(`\"${record.title}\" 분석 실패: ${errorBody}`);
+          toast.error(`"${record.title}" 분석 실패: ${errorMsg}`);
         }
         return;
       }
 
       if (data?.error) {
         const errMsg = data.error;
-        if (errMsg.includes('크레딧') || errMsg.includes('credit')) {
-          toast.error('AI 크레딧이 부족합니다.', { duration: 8000 });
+        if (errMsg.includes('크레딧') || errMsg.includes('credit') || errMsg.includes('402')) {
+          toast.error('AI 크레딧이 부족합니다. Lovable 대시보드에서 크레딧을 충전해주세요.', { duration: 8000 });
+        } else if (errMsg.includes('rate') || errMsg.includes('429')) {
+          toast.error('요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
         } else {
-          toast.error(`\"${record.title}\" 분석 실패: ${errMsg}`);
+          toast.error(`"${record.title}" 분석 실패: ${errMsg}`);
         }
         return;
       }
 
-      toast.success(`\"${record.title}\" 분석 완료`);
+      toast.success(`"${record.title}" 분석 완료`);
       fetchRecords();
     } catch (e: any) {
-      toast.error(`\"${record.title}\" 분석 실패: ${e?.message || '알 수 없는 오류'}`);
+      const msg = e?.message || '알 수 없는 오류';
+      if (msg.includes('402') || msg.includes('크레딧')) {
+        toast.error('AI 크레딧이 부족합니다. Lovable 대시보드에서 크레딧을 충전해주세요.', { duration: 8000 });
+      } else {
+        toast.error(`"${record.title}" 분석 실패: ${msg}`);
+      }
     } finally {
       setReanalyzing((prev) => { const n = new Set(prev); n.delete(record.id); return n; });
     }
