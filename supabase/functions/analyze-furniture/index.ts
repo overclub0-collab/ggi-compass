@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { product_id, image_url, product_name, reference_images } = await req.json();
+    const { product_id, image_url, product_name, reference_images, force_refresh } = await req.json();
 
     if (!product_id || !image_url) {
       return new Response(
@@ -37,17 +37,19 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check cache first
-    const { data: cached } = await supabase
-      .from("furniture_analysis_cache")
-      .select("analysis")
-      .eq("product_id", product_id)
-      .maybeSingle();
+    // Check cache first (skip if force_refresh is true)
+    if (!force_refresh) {
+      const { data: cached } = await supabase
+        .from("furniture_analysis_cache")
+        .select("analysis")
+        .eq("product_id", product_id)
+        .maybeSingle();
 
-    if (cached?.analysis && Object.keys(cached.analysis).length > 0) {
-      return new Response(JSON.stringify({ analysis: cached.analysis, cached: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (cached?.analysis && Object.keys(cached.analysis).length > 0) {
+        return new Response(JSON.stringify({ analysis: cached.analysis, cached: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Call Gemini Vision to analyze the furniture image

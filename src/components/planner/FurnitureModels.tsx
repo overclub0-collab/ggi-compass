@@ -2837,7 +2837,7 @@ function AIEnhancedPet({ w, d, h, color, isSelected, analysis }: {
   );
 }
 
-// ========== AI-enhanced Generic (fallback) ==========
+// ========== AI-enhanced Generic — uses analysis data for proper structural modeling ==========
 function AIEnhancedGeneric({ w, d, h, color, isSelected, analysis }: {
   w: number; d: number; h: number; color: string; isSelected: boolean; analysis: FurnitureAnalysis;
 }) {
@@ -2845,16 +2845,290 @@ function AIEnhancedGeneric({ w, d, h, color, isSelected, analysis }: {
   const edgeColor = isSelected ? SELECTED_EDGE : EDGE_COLOR;
   const primaryMatFn = analysis.primaryMaterial === 'metal' ? metalMat :
     analysis.primaryMaterial === 'fabric' || analysis.primaryMaterial === 'leather' ? fabricMat : woodMat;
+  const legMatFn = (analysis.secondaryMaterial === 'wood') ? woodMat : 
+    (analysis.secondaryMaterial === 'metal' || analysis.secondaryMaterial === 'none') ? metalMat : primaryMatFn;
+  
+  const legStyle = analysis.legStyle || 'none';
+  const legCount = analysis.legCount || 4;
+  const hasLegs = legStyle !== 'none' && legCount > 0;
+  const topH = Math.max(0.015, h * (analysis.topThickness || 0.04));
+  const legW = Math.max(0.02, w * (analysis.legThickness || 0.04));
+  const legD = legW;
+  const hasDrawers = analysis.hasDrawer || false;
+  const drawerCount = analysis.drawerCount || 0;
+  const hasDoors = analysis.hasDoor || false;
+  const doorCount = analysis.doorCount || 0;
+  const hasShelf = analysis.hasShelf || false;
+  const shelfCount = analysis.shelfCount || 0;
+  const details = analysis.details || [];
+  const shape = analysis.shape || 'rectangular';
 
+  // Determine if this is a table-like or cabinet-like furniture
+  const isTableLike = hasLegs && !hasDoors && !hasDrawers && shelfCount <= 1;
+  const isCabinetLike = (hasDoors || (hasDrawers && drawerCount > 1) || shelfCount >= 2);
+
+  if (isCabinetLike) {
+    // ===== Cabinet/Storage-like generic =====
+    const panelThick = 0.018;
+    const bodyH = hasLegs ? h - 0.06 : h;
+    const baseY = hasLegs ? 0.06 : 0;
+    
+    return (
+      <group>
+        {/* Main body */}
+        {(() => { usePartTexture('body'); return null; })()}
+        {/* Back panel */}
+        <mesh position={[0, baseY + bodyH / 2, -(d / 2 - panelThick / 2)]} castShadow>
+          <boxGeometry args={[w, bodyH, panelThick]} />
+          {primaryMatFn(darken(colors.primary, 0.08), isSelected)}
+        </mesh>
+        {/* Left side */}
+        <mesh position={[-(w / 2 - panelThick / 2), baseY + bodyH / 2, 0]} castShadow>
+          <boxGeometry args={[panelThick, bodyH, d]} />
+          {primaryMatFn(colors.primary, isSelected)}
+          <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
+        </mesh>
+        {/* Right side */}
+        <mesh position={[(w / 2 - panelThick / 2), baseY + bodyH / 2, 0]} castShadow>
+          <boxGeometry args={[panelThick, bodyH, d]} />
+          {primaryMatFn(colors.primary, isSelected)}
+          <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
+        </mesh>
+        {/* Top panel */}
+        <mesh position={[0, baseY + bodyH, 0]} castShadow>
+          <boxGeometry args={[w + 0.004, panelThick, d + 0.004]} />
+          {primaryMatFn(colors.primary, isSelected)}
+          <Edges threshold={15} color={edgeColor} lineWidth={isSelected ? 2.5 : 1} />
+        </mesh>
+        {/* Bottom panel */}
+        <mesh position={[0, baseY + panelThick / 2, 0]} receiveShadow>
+          <boxGeometry args={[w - panelThick * 2, panelThick, d - panelThick]} />
+          {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
+        </mesh>
+
+        {/* Shelves */}
+        {hasShelf && Array.from({ length: Math.min(shelfCount, 6) }, (_, i) => {
+          const shelfY = baseY + (bodyH / (shelfCount + 1)) * (i + 1);
+          return (
+            <mesh key={`shelf-${i}`} position={[0, shelfY, 0]}>
+              <boxGeometry args={[w - panelThick * 2 - 0.01, panelThick * 0.6, d - panelThick - 0.01]} />
+              {primaryMatFn(darken(colors.primary, 0.03), isSelected)}
+            </mesh>
+          );
+        })}
+
+        {/* Doors */}
+        {hasDoors && (() => {
+          const cols = Math.min(doorCount, 4);
+          const doorW = (w - panelThick * 2 - 0.01 * (cols + 1)) / cols;
+          return Array.from({ length: cols }, (_, i) => {
+            const dx = -(w / 2 - panelThick) + 0.01 + doorW / 2 + i * (doorW + 0.01);
+            return (
+              <group key={`door-${i}`}>
+                <mesh position={[dx, baseY + bodyH / 2, d / 2 - 0.002]}>
+                  <boxGeometry args={[doorW, bodyH - panelThick * 2 - 0.01, 0.005]} />
+                  {primaryMatFn(lighten(colors.primary, 0.03), isSelected)}
+                </mesh>
+                {/* Handle */}
+                <mesh position={[dx + doorW * 0.35, baseY + bodyH / 2, d / 2 + 0.008]}>
+                  <boxGeometry args={[0.012, 0.04, 0.01]} />
+                  <meshStandardMaterial color="#888" roughness={0.2} metalness={0.9} />
+                </mesh>
+              </group>
+            );
+          });
+        })()}
+
+        {/* Drawers */}
+        {hasDrawers && !hasDoors && Array.from({ length: Math.min(drawerCount, 5) }, (_, i) => {
+          const dH = Math.min(0.12, (bodyH - 0.04) / drawerCount);
+          const yOff = baseY + bodyH - panelThick - 0.01 - i * (dH + 0.008) - dH / 2;
+          return (
+            <group key={`drawer-${i}`}>
+              <mesh position={[0, yOff, d / 2 - 0.002]}>
+                <boxGeometry args={[w - panelThick * 2 - 0.02, dH - 0.005, 0.005]} />
+                {primaryMatFn(lighten(colors.primary, 0.02), isSelected)}
+              </mesh>
+              <mesh position={[0, yOff, d / 2 + 0.008]}>
+                <boxGeometry args={[0.04, 0.01, 0.01]} />
+                <meshStandardMaterial color="#888" roughness={0.2} metalness={0.9} />
+              </mesh>
+            </group>
+          );
+        })}
+
+        {/* Base legs/feet */}
+        {hasLegs && [
+          [-(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
+          [(w / 2 - 0.03), 0, -(d / 2 - 0.03)],
+          [-(w / 2 - 0.03), 0, (d / 2 - 0.03)],
+          [(w / 2 - 0.03), 0, (d / 2 - 0.03)],
+        ].map(([fx, , fz], i) => (
+          <mesh key={`foot-${i}`} position={[fx, 0.03, fz]} castShadow>
+            <boxGeometry args={[legW, 0.06, legD]} />
+            {legMatFn(colors.secondary, isSelected)}
+          </mesh>
+        ))}
+        {(() => { useDefaultTexture(); return null; })()}
+      </group>
+    );
+  }
+
+  if (isTableLike) {
+    // ===== Table-like generic =====
+    const legH = h - topH;
+    
+    return (
+      <group>
+        {/* Top surface */}
+        {(() => { usePartTexture('top'); return null; })()}
+        {shape === 'round' ? (
+          <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[w / 2, w / 2, topH, 32]} />
+            {primaryMatFn(colors.primary, isSelected)}
+          </mesh>
+        ) : (
+          <RoundedBox args={[w, topH, d]} radius={0.008} smoothness={4} position={[0, h - topH / 2, 0]} castShadow receiveShadow>
+            {primaryMatFn(colors.primary, isSelected)}
+          </RoundedBox>
+        )}
+        {/* Edge banding */}
+        <mesh position={[0, h - topH, 0]}>
+          <boxGeometry args={[w + 0.002, 0.003, d + 0.002]} />
+          {primaryMatFn(darken(colors.primary, 0.08), isSelected)}
+        </mesh>
+
+        {/* Legs */}
+        {(() => { usePartTexture('legs'); return null; })()}
+        {legStyle === 'panel' ? (
+          // Panel legs
+          <>
+            {[-1, 1].map((side) => (
+              <mesh key={`panel-${side}`} position={[side * (w / 2 - 0.015), legH / 2, 0]} castShadow>
+                <boxGeometry args={[0.03, legH, d * 0.85]} />
+                {legMatFn(colors.secondary, isSelected)}
+                <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
+              </mesh>
+            ))}
+          </>
+        ) : legStyle === 'T-frame' ? (
+          <>
+            {[-1, 1].map((side) => (
+              <group key={`tleg-${side}`}>
+                <mesh position={[side * (w / 2 - 0.06), legH / 2, 0]} castShadow>
+                  <boxGeometry args={[legW, legH, legW]} />
+                  {legMatFn(colors.secondary, isSelected)}
+                </mesh>
+                <mesh position={[side * (w / 2 - 0.06), 0.015, 0]}>
+                  <boxGeometry args={[legW, 0.03, d * 0.7]} />
+                  {legMatFn(colors.secondary, isSelected)}
+                </mesh>
+              </group>
+            ))}
+          </>
+        ) : legStyle === 'sled' ? (
+          <>
+            {[-1, 1].map((side) => (
+              <group key={`sled-${side}`}>
+                <mesh position={[side * (w / 2 - legW - 0.02), legH * 0.5, d / 2 - legW / 2 - 0.01]} castShadow>
+                  <boxGeometry args={[legW, legH, legW]} />
+                  {legMatFn(colors.secondary, isSelected)}
+                </mesh>
+                <mesh position={[side * (w / 2 - legW - 0.02), legH * 0.5, -(d / 2 - legW / 2 - 0.01)]} castShadow>
+                  <boxGeometry args={[legW, legH, legW]} />
+                  {legMatFn(colors.secondary, isSelected)}
+                </mesh>
+                <mesh position={[side * (w / 2 - legW - 0.02), legW / 2, 0]} castShadow>
+                  <boxGeometry args={[legW, legW, d - legW - 0.02]} />
+                  {legMatFn(colors.secondary, isSelected)}
+                </mesh>
+              </group>
+            ))}
+          </>
+        ) : legStyle === 'pedestal' ? (
+          <group>
+            <mesh position={[0, legH * 0.5, 0]} castShadow>
+              <cylinderGeometry args={[0.04, 0.06, legH, 12]} />
+              {legMatFn(colors.secondary, isSelected)}
+            </mesh>
+            <mesh position={[0, 0.01, 0]}>
+              <cylinderGeometry args={[Math.min(w, d) * 0.3, Math.min(w, d) * 0.35, 0.02, 16]} />
+              {legMatFn(darken(colors.secondary, 0.1), isSelected)}
+            </mesh>
+          </group>
+        ) : (
+          // Default 4-legs
+          <>
+            {[
+              [-(w / 2 - legW / 2 - 0.01), -(d / 2 - legD / 2 - 0.01)],
+              [(w / 2 - legW / 2 - 0.01), -(d / 2 - legD / 2 - 0.01)],
+              [-(w / 2 - legW / 2 - 0.01), (d / 2 - legD / 2 - 0.01)],
+              [(w / 2 - legW / 2 - 0.01), (d / 2 - legD / 2 - 0.01)],
+            ].map(([lx, lz], i) => (
+              <mesh key={i} position={[lx, legH / 2, lz]} castShadow>
+                {details.includes('round-legs') || details.includes('cylindrical') ? (
+                  <cylinderGeometry args={[legW * 0.5, legW * 0.5, legH, 12]} />
+                ) : (
+                  <boxGeometry args={[legW, legH, legD]} />
+                )}
+                {legMatFn(colors.secondary, isSelected)}
+                <Edges threshold={15} color={edgeColor} lineWidth={0.6} />
+              </mesh>
+            ))}
+          </>
+        )}
+
+        {/* Single shelf if applicable */}
+        {hasShelf && shelfCount === 1 && (
+          <mesh position={[0, legH * 0.2, 0]}>
+            <boxGeometry args={[w * 0.7, 0.015, d * 0.7]} />
+            {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
+          </mesh>
+        )}
+
+        {/* Aprons for table */}
+        <mesh position={[0, h - topH - 0.032, d / 2 - 0.01]} castShadow>
+          <boxGeometry args={[w - legW * 2 - 0.04, 0.05, 0.018]} />
+          {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
+        </mesh>
+        <mesh position={[0, h - topH - 0.032, -(d / 2 - 0.01)]} castShadow>
+          <boxGeometry args={[w - legW * 2 - 0.04, 0.05, 0.018]} />
+          {primaryMatFn(darken(colors.primary, 0.05), isSelected)}
+        </mesh>
+
+        {/* Foot caps */}
+        {legStyle === '4-legs' && [
+          [-(w / 2 - legW / 2 - 0.01), -(d / 2 - legD / 2 - 0.01)],
+          [(w / 2 - legW / 2 - 0.01), -(d / 2 - legD / 2 - 0.01)],
+          [-(w / 2 - legW / 2 - 0.01), (d / 2 - legD / 2 - 0.01)],
+          [(w / 2 - legW / 2 - 0.01), (d / 2 - legD / 2 - 0.01)],
+        ].map(([lx, lz], i) => (
+          <mesh key={`cap-${i}`} position={[lx, 0.005, lz]}>
+            <cylinderGeometry args={[0.015, 0.018, 0.01, 8]} />
+            <meshStandardMaterial color="#333" roughness={0.8} metalness={0.3} />
+          </mesh>
+        ))}
+        {(() => { useDefaultTexture(); return null; })()}
+      </group>
+    );
+  }
+
+  // ===== Fallback: Simple box with proper material and edges =====
   return (
     <group>
+      {/* Main body with proper material */}
       <RoundedBox args={[w, h, d]} radius={0.01} smoothness={4} position={[0, h / 2, 0]} castShadow receiveShadow>
         {primaryMatFn(colors.primary, isSelected)}
       </RoundedBox>
-      {/* Simple edge detail */}
+      {/* Top edge detail */}
       <mesh position={[0, h + 0.003, 0]}>
         <boxGeometry args={[w + 0.004, 0.004, d + 0.004]} />
         {primaryMatFn(darken(colors.primary, 0.1), isSelected)}
+      </mesh>
+      {/* Front face accent line */}
+      <mesh position={[0, h * 0.5, d / 2 + 0.002]}>
+        <boxGeometry args={[w * 0.9, 0.003, 0.001]} />
+        <meshStandardMaterial color={darken(colors.primary, 0.3)} roughness={0.4} metalness={0.3} />
       </mesh>
     </group>
   );
