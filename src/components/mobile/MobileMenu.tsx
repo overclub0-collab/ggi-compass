@@ -160,13 +160,23 @@ export const MobileMenu = ({
               납품사례
             </Link>
 
+            {/* 3D 인테리어 */}
+            <Link
+              to="/planner"
+              onClick={handleLinkClick}
+              className="w-full flex items-center gap-4 text-foreground hover:text-primary hover:bg-muted transition-colors py-4 px-4 rounded-xl text-lg font-bold"
+            >
+              <Box className="h-5 w-5 text-primary" />
+              3D 인테리어
+            </Link>
+
             {/* 카탈로그 */}
             <Link
               to="/catalogs"
               onClick={handleLinkClick}
               className="w-full flex items-center gap-4 text-foreground hover:text-primary hover:bg-muted transition-colors py-4 px-4 rounded-xl text-lg font-medium"
             >
-              <FileText className="h-5 w-5 text-primary" />
+              <BookOpen className="h-5 w-5 text-primary" />
               카탈로그
             </Link>
           </nav>
