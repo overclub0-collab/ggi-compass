@@ -192,12 +192,12 @@ For leg style, look at the ACTUAL leg structure visible in the image, not assump
           content: [
             {
               type: "text",
-              text: `Analyze this furniture product image. Product name: "${product_name || 'Unknown'}". Return the complete analysis JSON.`,
+              text: `Analyze this furniture product image${allImageUrls.length > 1 ? ' (multiple angles provided)' : ''}. Product name: "${product_name || 'Unknown'}". Return the complete analysis JSON.`,
             },
-            {
+            ...allImageUrls.map(url => ({
               type: "image_url",
-              image_url: { url: image_url },
-            },
+              image_url: { url },
+            })),
           ],
         },
       ],
