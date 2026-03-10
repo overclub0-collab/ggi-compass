@@ -22,19 +22,18 @@ export interface TextureAnalysis {
   metalnessEstimate: number;
 }
 
-// Multi-part texture: each furniture part can have its own texture analysis
 export interface PartTextures {
-  top?: TextureAnalysis;       // 상판
-  legs?: TextureAnalysis;      // 다리/프레임
-  body?: TextureAnalysis;      // 본체/캐비닛
-  seat?: TextureAnalysis;      // 좌석 (의자/소파)
-  back?: TextureAnalysis;      // 등받이
-  arms?: TextureAnalysis;      // 팔걸이
-  drawers?: TextureAnalysis;   // 서랍
-  doors?: TextureAnalysis;     // 문
-  shelves?: TextureAnalysis;   // 선반
-  cushion?: TextureAnalysis;   // 쿠션/매트리스
-  accent?: TextureAnalysis;    // 악센트 부분
+  top?: TextureAnalysis;
+  legs?: TextureAnalysis;
+  body?: TextureAnalysis;
+  seat?: TextureAnalysis;
+  back?: TextureAnalysis;
+  arms?: TextureAnalysis;
+  drawers?: TextureAnalysis;
+  doors?: TextureAnalysis;
+  shelves?: TextureAnalysis;
+  cushion?: TextureAnalysis;
+  accent?: TextureAnalysis;
 }
 
 export interface SectionLayout {
@@ -84,80 +83,104 @@ export interface FurnitureAnalysis {
   partTextures?: PartTextures;
 }
 
-// Batch analysis store to avoid duplicate calls
+// In-memory cache
 const analysisCache = new Map<string, FurnitureAnalysis | null>();
-const pendingRequests = new Map<string, Promise<FurnitureAnalysis | null>>();
 
-async function fetchAnalysis(productId: string, imageUrl: string, productName: string): Promise<FurnitureAnalysis | null> {
-  // Check in-memory cache
+/**
+ * Fetch analysis directly from the database cache table.
+ * No AI calls — only reads manually or previously saved data.
+ */
+async function fetchAnalysisFromDB(productId: string): Promise<FurnitureAnalysis | null> {
   if (analysisCache.has(productId)) {
     return analysisCache.get(productId) || null;
   }
 
-  // Deduplicate concurrent requests
-  if (pendingRequests.has(productId)) {
-    return pendingRequests.get(productId)!;
-  }
+  try {
+    const { data, error } = await supabase
+      .from('furniture_analysis_cache')
+      .select('analysis')
+      .eq('product_id', productId)
+      .maybeSingle();
 
-  const promise = (async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('analyze-furniture', {
-        body: { product_id: productId, image_url: imageUrl, product_name: productName },
-      });
-
-      if (error) {
-        console.error('Furniture analysis error:', error);
-        return null;
-      }
-
-      const analysis = data?.analysis as FurnitureAnalysis | null;
-      analysisCache.set(productId, analysis);
-      return analysis;
-    } catch (e) {
-      console.error('Furniture analysis fetch failed:', e);
+    if (error) {
+      console.error('DB analysis fetch error:', error);
       return null;
-    } finally {
-      pendingRequests.delete(productId);
     }
-  })();
 
-  pendingRequests.set(productId, promise);
-  return promise;
+    if (!data?.analysis || typeof data.analysis !== 'object' || Object.keys(data.analysis as object).length === 0) {
+      analysisCache.set(productId, null);
+      return null;
+    }
+
+    const analysis = data.analysis as unknown as FurnitureAnalysis;
+    analysisCache.set(productId, analysis);
+    return analysis;
+  } catch (e) {
+    console.error('Furniture analysis DB fetch failed:', e);
+    return null;
+  }
 }
 
 export function useFurnitureAnalysis(productId: string, imageUrl: string, productName: string) {
   return useQuery({
     queryKey: ['furniture-analysis', productId],
-    queryFn: () => fetchAnalysis(productId, imageUrl, productName),
-    enabled: !!productId && !!imageUrl,
-    staleTime: Infinity, // Never refetch — cached permanently
+    queryFn: () => fetchAnalysisFromDB(productId),
+    enabled: !!productId,
+    staleTime: Infinity,
     gcTime: Infinity,
     retry: 1,
   });
 }
 
-// Prefetch multiple analyses in batch
+/**
+ * Prefetch multiple analyses from DB in batch (no AI calls).
+ */
 export async function prefetchAnalyses(
   products: Array<{ id: string; thumbnail: string; name: string }>
 ) {
   const toFetch = products.filter(
-    (p) => p.thumbnail && !analysisCache.has(p.id) && !pendingRequests.has(p.id)
+    (p) => !analysisCache.has(p.id)
   );
 
-  // Limit concurrent requests to avoid rate limiting
-  const batchSize = 3;
-  for (let i = 0; i < toFetch.length; i += batchSize) {
-    const batch = toFetch.slice(i, i + batchSize);
-    await Promise.allSettled(
-      batch.map((p) => fetchAnalysis(p.id, p.thumbnail, p.name))
-    );
-    // Small delay between batches
-    if (i + batchSize < toFetch.length) {
-      await new Promise((r) => setTimeout(r, 500));
+  if (toFetch.length === 0) return;
+
+  try {
+    const { data, error } = await supabase
+      .from('furniture_analysis_cache')
+      .select('product_id, analysis')
+      .in('product_id', toFetch.map(p => p.id));
+
+    if (error) {
+      console.error('Batch analysis fetch error:', error);
+      return;
     }
+
+    // Cache all results
+    const foundIds = new Set<string>();
+    for (const row of data || []) {
+      const analysis = row.analysis && typeof row.analysis === 'object' && Object.keys(row.analysis as object).length > 0
+        ? (row.analysis as unknown as FurnitureAnalysis)
+        : null;
+      analysisCache.set(row.product_id, analysis);
+      foundIds.add(row.product_id);
+    }
+
+    // Mark unfound products as null
+    for (const p of toFetch) {
+      if (!foundIds.has(p.id)) {
+        analysisCache.set(p.id, null);
+      }
+    }
+  } catch (e) {
+    console.error('Batch analysis fetch failed:', e);
   }
 }
 
 export function getCachedAnalysis(productId: string): FurnitureAnalysis | null {
   return analysisCache.get(productId) || null;
+}
+
+/** Clear in-memory cache for a product (e.g., after admin saves new analysis) */
+export function invalidateAnalysisCache(productId: string) {
+  analysisCache.delete(productId);
 }
