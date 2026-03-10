@@ -61,7 +61,7 @@ export default function AdminHomepageManager() {
       (data || []).forEach(cat => {
         initial[cat.id] = {
           description: cat.description || '',
-          image_url: cat.image_url || '',
+          image_url: cat.image_url || fallbackImages[cat.slug] || '',
         };
       });
       setEditData(initial);
