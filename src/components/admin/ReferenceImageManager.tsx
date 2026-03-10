@@ -132,14 +132,36 @@ export default function ReferenceImageManager({
         body: {
           product_id: productId,
           product_name: productTitle,
-          reference_images: referenceImages.slice(0, 5), // Send up to 5 for context
+          reference_images: referenceImages.slice(0, 5),
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Extract error message from FunctionsHttpError
+        let errorMsg = '알 수 없는 오류';
+        try {
+          const ctx = (error as any).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            errorMsg = body?.error || error.message;
+          } else {
+            errorMsg = error.message || '알 수 없는 오류';
+          }
+        } catch {
+          errorMsg = error.message || '알 수 없는 오류';
+        }
+        
+        if (errorMsg.includes('크레딧') || errorMsg.includes('credit') || errorMsg.includes('402')) {
+          toast.error('AI 크레딧이 부족합니다. Lovable 대시보드에서 크레딧을 충전해주세요.', { duration: 8000 });
+        } else {
+          toast.error(`AI 이미지 생성 실패: ${errorMsg}`);
+        }
+        return;
+      }
+
       if (data?.error) {
         if (data.error.includes('크레딧') || data.error.includes('402')) {
-          toast.error('AI 크레딧이 부족합니다.');
+          toast.error('AI 크레딧이 부족합니다. Lovable 대시보드에서 크레딧을 충전해주세요.', { duration: 8000 });
         } else {
           toast.error(data.error);
         }
@@ -157,7 +179,12 @@ export default function ReferenceImageManager({
         toast.success(`${data.generated_urls.length}장의 AI 추론 이미지가 생성되었습니다`);
       }
     } catch (e: any) {
-      toast.error('AI 이미지 생성에 실패했습니다');
+      const msg = e?.message || '';
+      if (msg.includes('402') || msg.includes('크레딧')) {
+        toast.error('AI 크레딧이 부족합니다. Lovable 대시보드에서 크레딧을 충전해주세요.', { duration: 8000 });
+      } else {
+        toast.error('AI 이미지 생성에 실패했습니다');
+      }
     } finally {
       setGenerating(false);
     }
