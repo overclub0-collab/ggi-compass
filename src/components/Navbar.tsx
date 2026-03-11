@@ -169,9 +169,7 @@ export const Navbar = () => {
                   <Link 
                     key={item.id}
                     to="/planner"
-                    className={cn(
-                      "text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none font-bold"
-                    )}
+                    className="bg-accent text-accent-foreground px-3 py-1.5 rounded-md font-bold transition-all hover:bg-accent/90 flex items-center leading-none"
                   >
                     {item.label}
                   </Link>
