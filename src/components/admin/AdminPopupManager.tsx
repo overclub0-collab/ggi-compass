@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Eye, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
-import ImageDropzone from "./ImageDropzone";
+
 
 interface Popup {
   id: string;
