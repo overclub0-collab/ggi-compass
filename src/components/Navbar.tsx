@@ -179,9 +179,7 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/about"
-                    className={cn(
-                      "text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none"
-                    )}
+                    className="text-white hover:text-accent transition-colors py-2 flex items-center leading-none"
                   >
                     {item.label}
                   </Link>
