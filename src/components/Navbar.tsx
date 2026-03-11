@@ -191,8 +191,8 @@ export const Navbar = () => {
                   key={item.id} 
                   onClick={() => scrollToSection(item.id)} 
                   className={cn(
-                    "text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none", 
-                    activeSection === item.id && "text-primary"
+                    "text-white hover:text-accent transition-colors py-2 flex items-center leading-none", 
+                    activeSection === item.id && "text-accent"
                   )}
                 >
                   {item.label}
