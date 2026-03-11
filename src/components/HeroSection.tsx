@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ExternalLink, BadgeCheck, Building2, Leaf, ShieldCheck } from 'lucide-react';
+import { ExternalLink, BadgeCheck, Building2, Leaf, ShieldCheck, Box } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CatalogDownloadButton } from '@/components/CatalogDownloadButton';
 import { motion, AnimatePresence } from 'framer-motion';
