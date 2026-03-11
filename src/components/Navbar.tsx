@@ -111,7 +111,7 @@ export const Navbar = () => {
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="transition-colors py-2 flex items-center leading-none text-gray-400 text-xs font-mono bg-transparent font-thin">
+                    className="transition-colors py-2 flex items-center leading-none text-xs font-mono bg-transparent font-semibold text-secondary-foreground">
                     
                     {item.label}
                   </a>);
@@ -181,7 +181,7 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/about"
-                    className={cn("transition-colors py-2 flex items-center leading-none text-gray-400 font-sans font-normal text-xs"
+                    className={cn("transition-colors py-2 flex items-center leading-none text-secondary-foreground font-mono text-xs font-semibold"
 
                     )}>
                     
