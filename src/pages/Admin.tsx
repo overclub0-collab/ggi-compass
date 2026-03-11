@@ -764,6 +764,14 @@ const Admin = () => {
             기업소개
           </Button>
           <Button
+            variant={activeTab === 'popups' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('popups')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <ImageIcon className="h-4 w-4 mr-2" />
+            팝업 관리
+          </Button>
+          <Button
             variant={activeTab === 'ai-analysis' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('ai-analysis')}
             className="min-h-[40px] flex-shrink-0"
