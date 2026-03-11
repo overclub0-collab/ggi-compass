@@ -111,7 +111,7 @@ export const Navbar = () => {
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="transition-colors py-2 flex items-center leading-none text-xs font-mono bg-transparent font-semibold text-secondary-foreground">
+                    className="transition-colors py-2 flex items-center leading-none font-mono bg-transparent font-semibold text-secondary-foreground text-sm">
                     
                     {item.label}
                   </a>);
@@ -132,7 +132,7 @@ export const Navbar = () => {
                       activeSection === item.id && "text-primary"
                       )}>
                       
-                      <span className="flex items-center text-xs font-mono text-secondary-foreground bg-transparent">{item.label}</span>
+                      <span className="flex items-center font-mono text-secondary-foreground bg-transparent font-semibold text-sm">{item.label}</span>
                       <ChevronDown className={cn(
                         "h-4 w-4 transition-transform flex-shrink-0",
                         megaMenuOpen && "rotate-180"
@@ -155,7 +155,7 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/delivery-cases"
-                    className={cn("transition-colors py-2 flex items-center leading-none text-gray-400 font-thin text-xs font-mono"
+                    className={cn("transition-colors py-2 flex items-center leading-none font-mono text-secondary-foreground font-semibold text-sm"
 
                     )}>
                     
@@ -169,7 +169,7 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/planner"
-                    className="bg-accent px-3 py-1.5 rounded-md transition-all hover:bg-accent/90 flex items-center leading-none font-mono font-extralight text-sm text-slate-700">
+                    className="bg-accent px-3 py-1.5 rounded-md transition-all hover:bg-accent/90 flex items-center leading-none font-mono font-semibold text-sm text-secondary-foreground">
                     
                     {item.label}
                   </Link>);
@@ -181,7 +181,7 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/about"
-                    className={cn("transition-colors py-2 flex items-center leading-none text-secondary-foreground font-mono text-xs font-semibold"
+                    className={cn("transition-colors py-2 flex items-center leading-none text-secondary-foreground font-mono font-semibold text-sm"
 
                     )}>
                     
@@ -205,9 +205,9 @@ export const Navbar = () => {
             })}
             <Link
               to="/inquiry"
-              className="px-5 py-2.5 rounded-lg transition-all shadow-md font-extralight text-sm font-mono border-0 text-background bg-primary">
+              className="px-5 py-2.5 rounded-lg transition-all shadow-md text-sm font-mono border-0 text-background bg-primary font-semibold my-px">
               
-              견적/문의
+              ​견적/문의
             </Link>
           </div>
 
