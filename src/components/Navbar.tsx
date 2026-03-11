@@ -132,7 +132,7 @@ export const Navbar = () => {
                       activeSection === item.id && "text-primary"
                       )}>
                       
-                      <span className="flex items-center text-muted-foreground bg-muted text-xs font-mono">{item.label}</span>
+                      <span className="flex items-center text-xs font-mono text-secondary-foreground bg-transparent">{item.label}</span>
                       <ChevronDown className={cn(
                         "h-4 w-4 transition-transform flex-shrink-0",
                         megaMenuOpen && "rotate-180"
