@@ -128,7 +128,7 @@ export const Navbar = () => {
                   >
                     <button 
                       className={cn(
-                        "text-foreground/70 hover:text-primary transition-colors flex items-center gap-1 py-2 leading-none", 
+                        "text-white hover:text-accent transition-colors flex items-center gap-1 py-2 leading-none", 
                         activeSection === item.id && "text-primary"
                       )}
                     >
