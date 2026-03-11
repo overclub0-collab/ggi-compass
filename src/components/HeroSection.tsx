@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ExternalLink, BadgeCheck, Building2, Leaf, ShieldCheck } from 'lucide-react';
+import { ExternalLink, BadgeCheck, Building2, Leaf, ShieldCheck, Box } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CatalogDownloadButton } from '@/components/CatalogDownloadButton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -126,6 +126,10 @@ export const HeroSection = () => {
             <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base shadow-lg w-full sm:w-auto justify-center" onClick={() => window.open('https://shop.g2b.go.kr/', '_blank')}>
               <ExternalLink className="w-5 h-5 mr-2 flex-shrink-0" />
               <span>조달청 나라장터 바로가기</span>
+            </Button>
+            <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-base shadow-lg w-full sm:w-auto justify-center" onClick={() => window.location.href = '/planner'}>
+              <Box className="w-5 h-5 mr-2 flex-shrink-0" />
+              <span>3D 인테리어 바로가기</span>
             </Button>
             <CatalogDownloadButton variant="hero" />
           </motion.div>
