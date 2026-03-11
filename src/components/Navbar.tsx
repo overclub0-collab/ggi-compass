@@ -102,7 +102,7 @@ export const Navbar = () => {
           </Link>
           
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-6 lg:space-x-8 text-sm font-medium h-full leading-none">
+          <div className="hidden md:flex items-center space-x-6 lg:space-x-8 text-sm font-bold h-full leading-none" style={{ WebkitTextStroke: '0.5px black', textShadow: '0 0 2px rgba(0,0,0,0.3)' }}>
             {navItems.map(item => {
               if (item.isExternal) {
                 return (
