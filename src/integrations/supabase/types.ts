@@ -321,6 +321,57 @@ export type Database = {
         }
         Relationships: []
       }
+      popups: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          end_date: string | null
+          height: number
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          link_url: string | null
+          position_x: number | null
+          position_y: number | null
+          start_date: string | null
+          title: string
+          updated_at: string
+          width: number
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          end_date?: string | null
+          height?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          position_x?: number | null
+          position_y?: number | null
+          start_date?: string | null
+          title: string
+          updated_at?: string
+          width?: number
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          end_date?: string | null
+          height?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          position_x?: number | null
+          position_y?: number | null
+          start_date?: string | null
+          title?: string
+          updated_at?: string
+          width?: number
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           badges: string[] | null
