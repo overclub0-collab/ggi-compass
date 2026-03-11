@@ -17,12 +17,12 @@ interface Category {
 }
 
 const navItems = [
-  { id: 'about', label: '기업소개', isExternal: false },
-  { id: 'procurement', label: '나라장터/조달', isExternal: true, href: 'https://shop.g2b.go.kr/' },
-  { id: 'products', label: '주요제품', isExternal: false, hasMegaMenu: true },
-  { id: 'delivery-cases', label: '납품사례', isExternal: false, isDeliveryCasesLink: true },
-  { id: 'planner', label: '3D 인테리어', isExternal: false, isPlannerLink: true },
-];
+{ id: 'about', label: '기업소개', isExternal: false },
+{ id: 'procurement', label: '나라장터/조달', isExternal: true, href: 'https://shop.g2b.go.kr/' },
+{ id: 'products', label: '주요제품', isExternal: false, hasMegaMenu: true },
+{ id: 'delivery-cases', label: '납품사례', isExternal: false, isDeliveryCasesLink: true },
+{ id: 'planner', label: '3D 인테리어', isExternal: false, isPlannerLink: true }];
+
 
 export const Navbar = () => {
   const [activeSection, setActiveSection] = useState('hero');
@@ -38,28 +38,28 @@ export const Navbar = () => {
   }, []);
 
   const fetchCategories = async () => {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true });
+    const { data, error } = await supabase.
+    from('categories').
+    select('*').
+    eq('is_active', true).
+    order('display_order', { ascending: true });
 
     if (!error && data) {
       setCategories(data);
     }
   };
 
-  const mainCategories = categories.filter(c => !c.parent_id);
-  const getSubcategories = (parentId: string) => 
-    categories.filter(c => c.parent_id === parentId);
+  const mainCategories = categories.filter((c) => !c.parent_id);
+  const getSubcategories = (parentId: string) =>
+  categories.filter((c) => c.parent_id === parentId);
 
   useEffect(() => {
     if (!isHomePage) return;
-    
+
     const handleScroll = () => {
       const sections = ['hero', 'about', 'procurement', 'products', 'contact'];
       let current = 'hero';
-      sections.forEach(section => {
+      sections.forEach((section) => {
         const element = document.getElementById(section);
         if (element && window.scrollY >= element.offsetTop - 120) {
           current = section;
@@ -86,7 +86,7 @@ export const Navbar = () => {
   }, [isHomePage]);
 
   const handleMobileMenuToggle = useCallback(() => {
-    setMobileMenuOpen(prev => !prev);
+    setMobileMenuOpen((prev) => !prev);
   }, []);
 
   const handleMobileMenuClose = useCallback(() => {
@@ -102,37 +102,37 @@ export const Navbar = () => {
           </Link>
           
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-6 lg:space-x-8 text-sm font-bold h-full leading-none" style={{ WebkitTextStroke: '0.5px black', textShadow: '0 0 2px rgba(0,0,0,0.3)' }}>
-            {navItems.map(item => {
+          <div className="hidden md:flex items-center space-x-6 lg:space-x-8 text-sm font-medium h-full leading-none">
+            {navItems.map((item) => {
               if (item.isExternal) {
                 return (
-                  <a 
-                    key={item.id} 
-                    href={item.href} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-white hover:text-accent transition-colors py-2 flex items-center leading-none"
-                  >
+                  <a
+                    key={item.id}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transition-colors py-2 flex items-center leading-none text-gray-400 text-xs font-mono bg-transparent font-thin">
+                    
                     {item.label}
-                  </a>
-                );
+                  </a>);
+
               }
-              
+
               if (item.hasMegaMenu) {
                 return (
-                  <div 
+                  <div
                     key={item.id}
                     className="relative flex items-center h-full"
                     onMouseEnter={() => setMegaMenuOpen(true)}
-                    onMouseLeave={() => setMegaMenuOpen(false)}
-                  >
-                    <button 
-                      className={cn(
-                        "text-white hover:text-accent transition-colors flex items-center gap-1 py-2 leading-none", 
-                        activeSection === item.id && "text-primary"
-                      )}
-                    >
-                      <span className="flex items-center">{item.label}</span>
+                    onMouseLeave={() => setMegaMenuOpen(false)}>
+                    
+                    <button
+                      className={cn("transition-colors flex items-center gap-1 py-2 leading-none text-gray-400 font-thin",
+
+                      activeSection === item.id && "text-primary"
+                      )}>
+                      
+                      <span className="flex items-center text-muted-foreground bg-muted text-xs font-mono">{item.label}</span>
                       <ChevronDown className={cn(
                         "h-4 w-4 transition-transform flex-shrink-0",
                         megaMenuOpen && "rotate-180"
@@ -140,38 +140,40 @@ export const Navbar = () => {
                     </button>
 
                     {/* Mega Menu */}
-                    {megaMenuOpen && (
-                      <MegaMenu 
-                        categories={categories} 
-                        onClose={() => setMegaMenuOpen(false)} 
-                      />
-                    )}
-                  </div>
-                );
+                    {megaMenuOpen &&
+                    <MegaMenu
+                      categories={categories}
+                      onClose={() => setMegaMenuOpen(false)} />
+
+                    }
+                  </div>);
+
               }
 
               if (item.isDeliveryCasesLink) {
                 return (
-                  <Link 
+                  <Link
                     key={item.id}
                     to="/delivery-cases"
-                    className="text-white hover:text-accent transition-colors py-2 flex items-center leading-none"
-                  >
+                    className={cn("transition-colors py-2 flex items-center leading-none text-gray-400 font-thin text-xs font-mono"
+
+                    )}>
+                    
                     {item.label}
-                  </Link>
-                );
+                  </Link>);
+
               }
 
               if ((item as any).isPlannerLink) {
                 return (
-                  <Link 
+                  <Link
                     key={item.id}
                     to="/planner"
-                    className="bg-accent text-accent-foreground px-3 py-1.5 rounded-md font-bold transition-all hover:bg-accent/90 flex items-center leading-none"
-                  >
+                    className="bg-accent px-3 py-1.5 rounded-md transition-all hover:bg-accent/90 flex items-center leading-none font-mono font-extralight text-sm text-slate-700">
+                    
                     {item.label}
-                  </Link>
-                );
+                  </Link>);
+
               }
 
               if (item.id === 'about') {
@@ -179,42 +181,44 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/about"
-                    className="text-white hover:text-accent transition-colors py-2 flex items-center leading-none"
-                  >
+                    className={cn("transition-colors py-2 flex items-center leading-none text-gray-400 font-sans font-normal text-xs"
+
+                    )}>
+                    
                     {item.label}
-                  </Link>
-                );
+                  </Link>);
+
               }
 
               return (
-                <button 
-                  key={item.id} 
-                  onClick={() => scrollToSection(item.id)} 
+                <button
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
                   className={cn(
-                    "text-white hover:text-accent transition-colors py-2 flex items-center leading-none", 
-                    activeSection === item.id && "text-accent"
-                  )}
-                >
+                    "text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none",
+                    activeSection === item.id && "text-primary"
+                  )}>
+                  
                   {item.label}
-                </button>
-              );
+                </button>);
+
             })}
-            <Link 
+            <Link
               to="/inquiry"
-              className="bg-primary text-primary-foreground px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-all font-bold shadow-md"
-            >
+              className="px-5 py-2.5 rounded-lg transition-all shadow-md font-extralight text-sm font-mono border-0 text-background bg-primary">
+              
               견적/문의
             </Link>
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
+          <button
             type="button"
-            className="md:hidden text-foreground p-2 -mr-2 touch-target" 
+            className="md:hidden text-foreground p-2 -mr-2 touch-target"
             onClick={handleMobileMenuToggle}
             aria-label="메뉴 열기"
-            aria-expanded={mobileMenuOpen}
-          >
+            aria-expanded={mobileMenuOpen}>
+            
             <Menu className="w-6 h-6" />
           </button>
         </div>
@@ -225,8 +229,8 @@ export const Navbar = () => {
         isOpen={mobileMenuOpen}
         onClose={handleMobileMenuClose}
         categories={categories}
-        onScrollToSection={scrollToSection}
-      />
-    </>
-  );
+        onScrollToSection={scrollToSection} />
+      
+    </>);
+
 };
