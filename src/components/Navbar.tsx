@@ -169,7 +169,7 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/planner"
-                    className="bg-accent rounded-md transition-all hover:bg-accent/90 flex items-center leading-none font-mono text-sm text-secondary-foreground font-bold my-px px-[20px] py-[10px]">
+                    className="bg-accent rounded-md transition-all hover:bg-accent/90 flex items-center leading-none font-mono text-sm text-secondary-foreground font-bold py-[10px] px-[20px] my-0">
                     
                     {item.label}
                   </Link>);
@@ -205,7 +205,7 @@ export const Navbar = () => {
             })}
             <Link
               to="/inquiry"
-              className="px-5 py-2.5 rounded-lg transition-all shadow-md text-sm font-mono border-0 text-background bg-primary my-px font-bold">
+              className="px-5 py-2.5 rounded-lg transition-all shadow-md text-sm border-0 text-background bg-primary my-px font-bold font-sans">
               
               ​
 견적/문의
