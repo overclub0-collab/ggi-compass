@@ -102,7 +102,7 @@ export const Navbar = () => {
           </Link>
           
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-6 lg:space-x-8 text-sm font-medium h-full leading-none">
+          <div className="hidden md:flex items-center space-x-6 lg:space-x-8 text-sm font-bold h-full leading-none" style={{ WebkitTextStroke: '0.5px black', textShadow: '0 0 2px rgba(0,0,0,0.3)' }}>
             {navItems.map(item => {
               if (item.isExternal) {
                 return (
@@ -111,7 +111,7 @@ export const Navbar = () => {
                     href={item.href} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none"
+                    className="text-white hover:text-accent transition-colors py-2 flex items-center leading-none"
                   >
                     {item.label}
                   </a>
@@ -128,7 +128,7 @@ export const Navbar = () => {
                   >
                     <button 
                       className={cn(
-                        "text-foreground/70 hover:text-primary transition-colors flex items-center gap-1 py-2 leading-none", 
+                        "text-white hover:text-accent transition-colors flex items-center gap-1 py-2 leading-none", 
                         activeSection === item.id && "text-primary"
                       )}
                     >
@@ -155,9 +155,7 @@ export const Navbar = () => {
                   <Link 
                     key={item.id}
                     to="/delivery-cases"
-                    className={cn(
-                      "text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none"
-                    )}
+                    className="text-white hover:text-accent transition-colors py-2 flex items-center leading-none"
                   >
                     {item.label}
                   </Link>
@@ -181,9 +179,7 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/about"
-                    className={cn(
-                      "text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none"
-                    )}
+                    className="text-white hover:text-accent transition-colors py-2 flex items-center leading-none"
                   >
                     {item.label}
                   </Link>
@@ -195,8 +191,8 @@ export const Navbar = () => {
                   key={item.id} 
                   onClick={() => scrollToSection(item.id)} 
                   className={cn(
-                    "text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none", 
-                    activeSection === item.id && "text-primary"
+                    "text-white hover:text-accent transition-colors py-2 flex items-center leading-none", 
+                    activeSection === item.id && "text-accent"
                   )}
                 >
                   {item.label}
