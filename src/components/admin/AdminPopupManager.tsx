@@ -346,11 +346,24 @@ export default function AdminPopupManager() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <ImageDropzone
-                    onFileSelect={handleImageUpload}
-                    currentImage={null}
-                    label="팝업 이미지를 드래그하거나 클릭하여 업로드"
-                  />
+                  <div
+                    className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => document.getElementById("popup-image-input")?.click()}
+                  >
+                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">클릭하여 이미지 업로드</p>
+                    <input
+                      id="popup-image-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </div>
                   <Input
                     value={form.image_url}
                     onChange={(e) => setForm((p) => ({ ...p, image_url: e.target.value }))}
