@@ -76,7 +76,7 @@ export const PlannerLeftPanel = ({
   onDragStart,
 }: PlannerLeftPanelProps) => {
   return (
-    <div className="w-[280px] flex flex-col h-full bg-background border-r border-border shrink-0">
+    <div className="w-full md:w-[280px] flex flex-col h-full bg-background border-r border-border shrink-0">
       <Tabs defaultValue="products" className="flex flex-col h-full">
         <TabsList className="w-full h-auto p-0 bg-transparent border-b border-border rounded-none shrink-0">
           <TabsTrigger
