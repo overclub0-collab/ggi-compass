@@ -36,7 +36,8 @@ export const MobileMenu = ({
   categories, 
   onScrollToSection 
 }: MobileMenuProps) => {
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [productsOpen, setProductsOpen] = useState(false);
+  const [expandedMainCat, setExpandedMainCat] = useState<string | null>(null);
 
   const mainCategories = categories.filter(c => !c.parent_id);
   const getSubcategories = (parentId: string) => 
@@ -88,8 +89,8 @@ export const MobileMenu = ({
 
             {/* 주요제품 - Collapsible */}
             <Collapsible
-              open={expandedCategory === 'products'}
-              onOpenChange={(open) => setExpandedCategory(open ? 'products' : null)}
+              open={productsOpen}
+              onOpenChange={setProductsOpen}
             >
               <CollapsibleTrigger className="w-full flex items-center justify-between text-foreground hover:text-primary hover:bg-muted transition-colors py-4 px-4 rounded-xl text-lg font-medium">
                 <span className="flex items-center gap-4">
@@ -98,7 +99,7 @@ export const MobileMenu = ({
                 </span>
                 <ChevronDown className={cn(
                   "h-5 w-5 transition-transform duration-200",
-                  expandedCategory === 'products' && "rotate-180"
+                  productsOpen && "rotate-180"
                 )} />
               </CollapsibleTrigger>
               
@@ -106,14 +107,14 @@ export const MobileMenu = ({
                 {mainCategories.map((mainCat) => (
                   <Collapsible
                     key={mainCat.id}
-                    open={expandedCategory === mainCat.id}
-                    onOpenChange={(open) => setExpandedCategory(open ? mainCat.id : 'products')}
+                    open={expandedMainCat === mainCat.id}
+                    onOpenChange={(open) => setExpandedMainCat(open ? mainCat.id : null)}
                   >
                     <CollapsibleTrigger className="w-full flex items-center justify-between text-primary font-semibold py-3 px-4 rounded-lg hover:bg-muted transition-colors">
                       {mainCat.name}
                       <ChevronDown className={cn(
                         "h-4 w-4 transition-transform duration-200",
-                        expandedCategory === mainCat.id && "rotate-180"
+                        expandedMainCat === mainCat.id && "rotate-180"
                       )} />
                     </CollapsibleTrigger>
                     
