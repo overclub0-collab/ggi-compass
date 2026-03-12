@@ -36,7 +36,8 @@ export const MobileMenu = ({
   categories, 
   onScrollToSection 
 }: MobileMenuProps) => {
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [productsOpen, setProductsOpen] = useState(false);
+  const [expandedMainCat, setExpandedMainCat] = useState<string | null>(null);
 
   const mainCategories = categories.filter(c => !c.parent_id);
   const getSubcategories = (parentId: string) => 
