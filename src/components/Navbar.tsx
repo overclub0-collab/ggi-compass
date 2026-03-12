@@ -102,8 +102,11 @@ export const Navbar = () => {
           </Link>
           
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-6 lg:space-x-8 text-sm font-medium h-full leading-none">
+          <div className="hidden md:flex items-center gap-1 lg:gap-2 text-[13px] font-medium h-full leading-none">
             {navItems.map((item) => {
+              const baseNavClass = "relative px-3 py-2 rounded-lg flex items-center leading-none tracking-tight text-foreground/80 font-medium transition-all duration-200 hover:text-primary hover:bg-primary/5 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-0 after:h-[2px] after:bg-primary after:rounded-full after:transition-all after:duration-300 hover:after:w-2/3";
+              const activeNavClass = "text-primary after:w-2/3";
+
               if (item.isExternal) {
                 return (
                   <a
@@ -111,11 +114,9 @@ export const Navbar = () => {
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="transition-colors py-2 flex items-center leading-none font-mono bg-transparent font-semibold text-sm text-ggi-slate">
-                    
+                    className={baseNavClass}>
                     {item.label}
                   </a>);
-
               }
 
               if (item.hasMegaMenu) {
@@ -125,29 +126,22 @@ export const Navbar = () => {
                     className="relative flex items-center h-full"
                     onMouseEnter={() => setMegaMenuOpen(true)}
                     onMouseLeave={() => setMegaMenuOpen(false)}>
-                    
                     <button
-                      className={cn("transition-colors flex items-center gap-1 py-2 leading-none text-gray-400 font-thin",
-
-                      activeSection === item.id && "text-primary"
+                      className={cn(baseNavClass, "gap-1",
+                        activeSection === item.id && activeNavClass
                       )}>
-                      
-                      <span className="flex items-center font-mono bg-transparent font-semibold text-sm text-ggi-slate">{item.label}</span>
+                      <span>{item.label}</span>
                       <ChevronDown className={cn(
-                        "h-4 w-4 transition-transform flex-shrink-0",
+                        "h-3.5 w-3.5 transition-transform duration-200 flex-shrink-0 opacity-60",
                         megaMenuOpen && "rotate-180"
                       )} />
                     </button>
-
-                    {/* Mega Menu */}
                     {megaMenuOpen &&
-                    <MegaMenu
-                      categories={categories}
-                      onClose={() => setMegaMenuOpen(false)} />
-
+                      <MegaMenu
+                        categories={categories}
+                        onClose={() => setMegaMenuOpen(false)} />
                     }
                   </div>);
-
               }
 
               if (item.isDeliveryCasesLink) {
@@ -155,13 +149,9 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/delivery-cases"
-                    className={cn("transition-colors py-2 flex items-center leading-none font-mono font-semibold text-sm text-ggi-slate"
-
-                    )}>
-                    
+                    className={baseNavClass}>
                     {item.label}
                   </Link>);
-
               }
 
               if ((item as any).isPlannerLink) {
@@ -169,11 +159,9 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/planner"
-                    className="bg-accent rounded-md transition-all hover:bg-accent/90 flex items-center leading-none font-mono text-sm text-secondary-foreground font-bold py-[10px] px-[20px] my-0">
-                    
+                    className="bg-accent text-accent-foreground rounded-lg transition-all duration-200 hover:bg-accent/85 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] flex items-center leading-none text-[13px] font-semibold py-2.5 px-5">
                     {item.label}
                   </Link>);
-
               }
 
               if (item.id === 'about') {
@@ -181,34 +169,25 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/about"
-                    className={cn("transition-colors py-2 flex items-center leading-none font-mono font-semibold text-sm text-ggi-slate"
-
-                    )}>
-                    
+                    className={baseNavClass}>
                     {item.label}
                   </Link>);
-
               }
 
               return (
                 <button
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
-                  className={cn(
-                    "text-foreground/70 hover:text-primary transition-colors py-2 flex items-center leading-none",
-                    activeSection === item.id && "text-primary"
+                  className={cn(baseNavClass,
+                    activeSection === item.id && activeNavClass
                   )}>
-                  
                   {item.label}
                 </button>);
-
             })}
             <Link
               to="/inquiry"
-              className="px-5 py-2.5 rounded-lg transition-all shadow-md text-sm border-0 text-background bg-primary my-px font-bold font-sans">
-              
-              ​
-견적/문의
+              className="ml-2 px-5 py-2.5 rounded-lg transition-all duration-200 text-[13px] border-0 text-primary-foreground bg-primary font-semibold hover:bg-primary/90 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]">
+              견적/문의
             </Link>
           </div>
 
