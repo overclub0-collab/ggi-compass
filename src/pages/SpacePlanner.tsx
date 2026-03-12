@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers, Sun, Footprints } from 'lucide-react';
+import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers, Sun, Footprints, Menu, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { PlannerLeftPanel } from '@/components/planner/PlannerLeftPanel';
@@ -12,8 +12,10 @@ import { ConsultationDialog } from '@/components/planner/ConsultationDialog';
 import { DEFAULT_ARCHITECTURAL_CONFIG, ArchitecturalConfig } from '@/components/planner/ArchitecturalSettingsPanel';
 import { PlannerStartScreen } from '@/components/planner/PlannerStartScreen';
 import { usePlannerState } from '@/hooks/usePlannerState';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { FurnitureItem, RoomDimensions } from '@/types/planner';
 import ggiLogo from '@/assets/ggi-logo-new.png';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 const SpacePlanner = () => {
   const {
@@ -25,6 +27,7 @@ const SpacePlanner = () => {
     clearAll, getTotalPrice,
   } = usePlannerState();
 
+  const isMobile = useIsMobile();
   const [started, setStarted] = useState(false);
   const [consultationOpen, setConsultationOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
@@ -33,6 +36,7 @@ const SpacePlanner = () => {
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [archConfig, setArchConfig] = useState<ArchitecturalConfig>(DEFAULT_ARCHITECTURAL_CONFIG);
   const [hdriPreset, setHdriPreset] = useState<'apartment' | 'studio' | 'warehouse' | 'city' | 'sunset' | 'forest'>('apartment');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const pinnedFurniture = pinnedId ? placedFurniture.find(f => f.id === pinnedId) : undefined;
 
@@ -44,7 +48,8 @@ const SpacePlanner = () => {
 
   const handleDragStart = useCallback((furniture: FurnitureItem) => {
     setDraggingFurniture(furniture);
-  }, []);
+    if (isMobile) setMobileSidebarOpen(false);
+  }, [isMobile]);
 
   const handleDrop = useCallback((furniture: FurnitureItem, x: number, y: number) => {
     addFurniture(furniture, x, y);
@@ -65,7 +70,6 @@ const SpacePlanner = () => {
   }, [removeFurniture, pinnedId]);
 
   const handleSelect = useCallback((id: string | null) => {
-    // Never deselect on empty-space click — selection persists until X button
     if (id === null) return;
     setSelectedId(id);
   }, [setSelectedId]);
@@ -78,39 +82,50 @@ const SpacePlanner = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header — simplified, no settings buttons */}
-      <header className="h-12 bg-[#0A1931] text-white px-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="flex items-center gap-2">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* Header */}
+      <header className="h-12 bg-[#0A1931] text-white px-2 sm:px-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {isMobile && (
+            <Button
+              variant="ghost" size="icon"
+              onClick={() => setMobileSidebarOpen(true)}
+              className="h-8 w-8 text-white hover:bg-white/10"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+          )}
+          <Link to="/" className="flex items-center gap-1 sm:gap-2">
             <ArrowLeft className="h-4 w-4" />
-            <img src={ggiLogo} alt="GGI" className="h-7" />
+            <img src={ggiLogo} alt="GGI" className="h-6 sm:h-7" />
           </Link>
-          <div className="h-5 w-px bg-white/20" />
-          <h1 className="font-bold text-sm">3D 인테리어</h1>
+          <div className="h-5 w-px bg-white/20 hidden sm:block" />
+          <h1 className="font-bold text-xs sm:text-sm hidden sm:block">3D 인테리어</h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {/* View mode toggle */}
           <div className="flex items-center bg-white/10 rounded-lg p-0.5">
             <Button
               variant="ghost" size="sm"
-              onClick={() => setViewMode('2d')}
-              className={`h-7 px-2.5 text-xs font-bold gap-1 ${viewMode === '2d' ? 'bg-white/25 text-white' : 'text-white/60'}`}
+              onClick={() => { setViewMode('2d'); setFpsMode(false); }}
+              className={`h-7 px-2 sm:px-2.5 text-xs font-bold gap-1 ${viewMode === '2d' ? 'bg-white/25 text-white' : 'text-white/60'}`}
             >
-              <Layers className="h-3 w-3" />2D
+              <Layers className="h-3 w-3" />
+              <span className="hidden sm:inline">2D</span>
             </Button>
             <Button
               variant="ghost" size="sm"
               onClick={() => setViewMode('3d')}
-              className={`h-7 px-2.5 text-xs font-bold gap-1 ${viewMode === '3d' ? 'bg-white/25 text-white' : 'text-white/60'}`}
+              className={`h-7 px-2 sm:px-2.5 text-xs font-bold gap-1 ${viewMode === '3d' ? 'bg-white/25 text-white' : 'text-white/60'}`}
             >
-              <Box className="h-3 w-3" />3D
+              <Box className="h-3 w-3" />
+              <span className="hidden sm:inline">3D</span>
             </Button>
           </div>
 
-          {/* Zoom controls — 2D only */}
-          {viewMode === '2d' && (
+          {/* Zoom controls — 2D only, desktop only */}
+          {viewMode === '2d' && !isMobile && (
             <div className="flex items-center gap-1 bg-white/10 rounded-lg p-0.5">
               <Button variant="ghost" size="icon" onClick={handleZoomOut} className="h-7 w-7 text-white">
                 <ZoomOut className="h-3.5 w-3.5" />
@@ -122,8 +137,8 @@ const SpacePlanner = () => {
             </div>
           )}
 
-          {/* FPS mode toggle — 3D only */}
-          {viewMode === '3d' && (
+          {/* FPS mode toggle — 3D only, desktop only */}
+          {viewMode === '3d' && !isMobile && (
             <Button
               variant="ghost" size="sm"
               onClick={() => setFpsMode(prev => !prev)}
@@ -134,8 +149,8 @@ const SpacePlanner = () => {
             </Button>
           )}
 
-          {/* HDRI Environment Preset — 3D only */}
-          {viewMode === '3d' && (
+          {/* HDRI Environment Preset — 3D only, desktop only */}
+          {viewMode === '3d' && !isMobile && (
             <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2 py-0.5">
               <Sun className="h-3.5 w-3.5 text-white/70" />
               <Select value={hdriPreset} onValueChange={(v) => setHdriPreset(v as typeof hdriPreset)}>
@@ -157,60 +172,96 @@ const SpacePlanner = () => {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Unified Left Panel: Products + Room Size + Architectural Elements */}
-        <PlannerLeftPanel
-          roomDimensions={roomDimensions}
-          onRoomDimensionsChange={setRoomDimensions}
-          archConfig={archConfig}
-          onArchConfigChange={setArchConfig}
-          onDragStart={handleDragStart}
-        />
-
-        {viewMode === '2d' ? (
-          <PlannerCanvas
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Desktop: inline sidebar */}
+        {!isMobile && (
+          <PlannerLeftPanel
             roomDimensions={roomDimensions}
-            placedFurniture={placedFurniture}
-            selectedId={selectedId}
-            scale={scale}
-            onDrop={handleDrop}
-            onSelect={handleSelect}
-            onMove={updateFurniturePosition}
-            architecturalConfig={archConfig}
+            onRoomDimensionsChange={setRoomDimensions}
+            archConfig={archConfig}
             onArchConfigChange={setArchConfig}
-          />
-        ) : (
-          <PlannerCanvas3D
-            roomDimensions={roomDimensions}
-            placedFurniture={placedFurniture}
-            selectedId={selectedId}
-            scale={scale}
-            onSelect={handleSelect}
-            onRightClickSelect={handleRightClickSelect}
-            architecturalConfig={archConfig}
-            hdriPreset={hdriPreset}
-            fpsMode={fpsMode}
-            onExitFps={() => setFpsMode(false)}
+            onDragStart={handleDragStart}
           />
         )}
 
-        <FurnitureDetailPanel
-          selectedFurniture={selectedFurniture}
-          pinnedFurniture={pinnedFurniture}
-          onRotate={rotateFurniture}
-          onDelete={handleDelete}
-          onClose={() => { setSelectedId(null); setPinnedId(null); }}
-          onUnpin={handleUnpin}
-          onColorChange={changeFurnitureColor}
-        />
+        {/* Mobile: sheet sidebar */}
+        {isMobile && (
+          <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+            <SheetContent side="left" className="w-[280px] p-0">
+              <div className="h-full flex flex-col">
+                <div className="p-3 border-b border-border flex items-center justify-between">
+                  <span className="font-bold text-sm">제품 / 설정</span>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMobileSidebarOpen(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <PlannerLeftPanel
+                    roomDimensions={roomDimensions}
+                    onRoomDimensionsChange={setRoomDimensions}
+                    archConfig={archConfig}
+                    onArchConfigChange={setArchConfig}
+                    onDragStart={handleDragStart}
+                  />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
+
+        {/* Canvas area - takes full width on mobile */}
+        <div className="flex-1 min-w-0">
+          {viewMode === '2d' ? (
+            <PlannerCanvas
+              roomDimensions={roomDimensions}
+              placedFurniture={placedFurniture}
+              selectedId={selectedId}
+              scale={isMobile ? scale * 0.6 : scale}
+              onDrop={handleDrop}
+              onSelect={handleSelect}
+              onMove={updateFurniturePosition}
+              architecturalConfig={archConfig}
+              onArchConfigChange={setArchConfig}
+            />
+          ) : (
+            <div className="w-full h-full">
+              <PlannerCanvas3D
+                roomDimensions={roomDimensions}
+                placedFurniture={placedFurniture}
+                selectedId={selectedId}
+                scale={scale}
+                onSelect={handleSelect}
+                onRightClickSelect={handleRightClickSelect}
+                architecturalConfig={archConfig}
+                hdriPreset={hdriPreset}
+                fpsMode={isMobile ? false : fpsMode}
+                onExitFps={() => setFpsMode(false)}
+              />
+            </div>
+          )}
+        </div>
+
+        {!isMobile && (
+          <FurnitureDetailPanel
+            selectedFurniture={selectedFurniture}
+            pinnedFurniture={pinnedFurniture}
+            onRotate={rotateFurniture}
+            onDelete={handleDelete}
+            onClose={() => { setSelectedId(null); setPinnedId(null); }}
+            onUnpin={handleUnpin}
+            onColorChange={changeFurnitureColor}
+          />
+        )}
       </div>
 
-      {/* Footer */}
-      <div className="h-7 bg-[#0A1931]/5 border-t border-border flex items-center justify-center gap-6 text-[10px] text-muted-foreground">
-        <span>✅ 여성기업 인증</span>
-        <span>🏛️ 나라장터 조달 등록</span>
-        <span>📋 GGI 3D 인테리어</span>
-      </div>
+      {/* Footer - hide on mobile */}
+      {!isMobile && (
+        <div className="h-7 bg-[#0A1931]/5 border-t border-border flex items-center justify-center gap-6 text-[10px] text-muted-foreground">
+          <span>✅ 여성기업 인증</span>
+          <span>🏛️ 나라장터 조달 등록</span>
+          <span>📋 GGI 3D 인테리어</span>
+        </div>
+      )}
 
       <QuoteSummary
         placedFurniture={placedFurniture}
