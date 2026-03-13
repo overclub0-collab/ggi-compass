@@ -46,6 +46,7 @@ export const MobileMenu = ({
 }: MobileMenuProps) => {
   const [productsOpen, setProductsOpen] = useState(false);
   const [expandedMainCat, setExpandedMainCat] = useState<string | null>(null);
+  const [pcOnlyModalOpen, setPcOnlyModalOpen] = useState(false);
 
   const mainCategories = categories.filter(c => !c.parent_id);
   const getSubcategories = (parentId: string) => 
