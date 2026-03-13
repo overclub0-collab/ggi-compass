@@ -204,5 +204,31 @@ export const MobileMenu = ({
         </div>
       </SheetContent>
     </Sheet>
+
+    {/* PC 전용 안내 모달 */}
+    <Dialog open={pcOnlyModalOpen} onOpenChange={setPcOnlyModalOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Monitor className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <DialogTitle className="text-center text-lg">PC 환경에서 이용해 주세요</DialogTitle>
+          <DialogDescription className="text-center text-sm leading-relaxed mt-2">
+            본 서비스는 고사양 3D 렌더링 및 정밀 설계를 위해
+            PC 환경에 최적화되어 있습니다.
+            <br />
+            원활한 사용을 위해 PC 버전을 이용해 주세요.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-center mt-4">
+          <Button onClick={() => setPcOnlyModalOpen(false)} className="px-8">
+            확인
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
