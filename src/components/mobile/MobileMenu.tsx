@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Home, Grid3X3, FileText, Phone, Box, BookOpen } from 'lucide-react';
+import { ChevronDown, ChevronRight, Home, Grid3X3, FileText, Phone, Box, BookOpen, Monitor } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Sheet,
@@ -12,6 +12,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 interface Category {
@@ -38,6 +46,7 @@ export const MobileMenu = ({
 }: MobileMenuProps) => {
   const [productsOpen, setProductsOpen] = useState(false);
   const [expandedMainCat, setExpandedMainCat] = useState<string | null>(null);
+  const [pcOnlyModalOpen, setPcOnlyModalOpen] = useState(false);
 
   const mainCategories = categories.filter(c => !c.parent_id);
   const getSubcategories = (parentId: string) => 
@@ -53,6 +62,7 @@ export const MobileMenu = ({
   };
 
   return (
+    <>
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
         side="right" 
@@ -161,15 +171,14 @@ export const MobileMenu = ({
               납품사례
             </Link>
 
-            {/* 3D 인테리어 */}
-            <Link
-              to="/planner"
-              onClick={handleLinkClick}
+            {/* 3D 인테리어 - 모바일 진입 차단 */}
+            <button
+              onClick={() => setPcOnlyModalOpen(true)}
               className="w-full flex items-center gap-4 text-foreground hover:text-primary hover:bg-muted transition-colors py-4 px-4 rounded-xl text-lg font-bold"
             >
               <Box className="h-5 w-5 text-primary" />
               3D 인테리어
-            </Link>
+            </button>
 
             {/* 카탈로그 */}
             <Link
@@ -196,5 +205,31 @@ export const MobileMenu = ({
         </div>
       </SheetContent>
     </Sheet>
+
+    {/* PC 전용 안내 모달 */}
+    <Dialog open={pcOnlyModalOpen} onOpenChange={setPcOnlyModalOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Monitor className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <DialogTitle className="text-center text-lg">PC 환경에서 이용해 주세요</DialogTitle>
+          <DialogDescription className="text-center text-sm leading-relaxed mt-2">
+            본 서비스는 고사양 3D 렌더링 및 정밀 설계를 위해
+            PC 환경에 최적화되어 있습니다.
+            <br />
+            원활한 사용을 위해 PC 버전을 이용해 주세요.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-center mt-4">
+          <Button onClick={() => setPcOnlyModalOpen(false)} className="px-8">
+            확인
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };

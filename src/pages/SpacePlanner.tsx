@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers, Sun, Footprints, Menu, X } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers, Sun, Footprints, Menu, X, Monitor } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { PlannerLeftPanel } from '@/components/planner/PlannerLeftPanel';
@@ -76,6 +76,40 @@ const SpacePlanner = () => {
 
   const handleZoomIn = () => setScale(prev => Math.min(prev * 1.2, 0.3));
   const handleZoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.05));
+
+  const navigate = useNavigate();
+  const [showPcOnlyModal, setShowPcOnlyModal] = useState(false);
+
+  // Block access on screens < 1024px
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setShowPcOnlyModal(true);
+    }
+  }, []);
+
+  if (showPcOnlyModal) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Monitor className="h-10 w-10 text-primary" />
+            </div>
+          </div>
+          <h1 className="text-xl font-bold text-foreground">PC 환경에서 이용해 주세요</h1>
+          <p className="text-muted-foreground leading-relaxed">
+            본 서비스는 고사양 3D 렌더링 및 정밀 설계를 위해
+            PC 환경에 최적화되어 있습니다.
+            <br />
+            원활한 사용을 위해 PC 버전을 이용해 주세요.
+          </p>
+          <Button onClick={() => navigate('/')} className="px-8">
+            홈으로 돌아가기
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!started) {
     return <PlannerStartScreen onStart={handleStart} />;
