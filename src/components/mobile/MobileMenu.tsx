@@ -62,6 +62,7 @@ export const MobileMenu = ({
   };
 
   return (
+    <>
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
         side="right" 
