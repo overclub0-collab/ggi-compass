@@ -170,15 +170,14 @@ export const MobileMenu = ({
               납품사례
             </Link>
 
-            {/* 3D 인테리어 */}
-            <Link
-              to="/planner"
-              onClick={handleLinkClick}
+            {/* 3D 인테리어 - 모바일 진입 차단 */}
+            <button
+              onClick={() => setPcOnlyModalOpen(true)}
               className="w-full flex items-center gap-4 text-foreground hover:text-primary hover:bg-muted transition-colors py-4 px-4 rounded-xl text-lg font-bold"
             >
               <Box className="h-5 w-5 text-primary" />
               3D 인테리어
-            </Link>
+            </button>
 
             {/* 카탈로그 */}
             <Link
