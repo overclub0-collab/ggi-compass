@@ -150,6 +150,7 @@ export type Database = {
           section_key: string
           title: string | null
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           content?: string | null
@@ -162,6 +163,7 @@ export type Database = {
           section_key: string
           title?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           content?: string | null
@@ -174,6 +176,7 @@ export type Database = {
           section_key?: string
           title?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: []
       }
