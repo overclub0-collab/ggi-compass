@@ -1358,7 +1358,7 @@ export const PlannerCanvas3D = ({
   }, []);
 
   return (
-    <div className="flex-1 bg-muted/30 relative" onContextMenu={(e) => e.preventDefault()}>
+    <div className="w-full h-full bg-muted/30 relative" onContextMenu={(e) => e.preventDefault()}>
       {/* Tooltip */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
         {fpsMode
