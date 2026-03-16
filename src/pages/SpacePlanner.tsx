@@ -258,7 +258,7 @@ const SpacePlanner = () => {
               onArchConfigChange={setArchConfig}
             />
           ) : (
-            <div className="w-full h-full">
+            <div className="w-full h-full relative">
               <PlannerCanvas3D
                 roomDimensions={roomDimensions}
                 placedFurniture={placedFurniture}

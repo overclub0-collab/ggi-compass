@@ -1223,7 +1223,7 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
   return (
     <>
-      <SoftShadows size={30} samples={20} focus={0.4} />
+      <SoftShadows size={25} samples={8} focus={0.5} />
 
       {/* HDRI Environment Map for realistic reflections */}
       <Environment preset={hdriPreset} background={false} environmentIntensity={0.5} />
@@ -1234,12 +1234,12 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
       {/* Primary key light — directional with high-res shadows */}
       <directionalLight
         position={[w + 4, 12, d + 4]} intensity={0.8} castShadow
-        shadow-mapSize-width={4096} shadow-mapSize-height={4096}
-        shadow-bias={-0.00005}
-        shadow-normalBias={0.02}
-        shadow-camera-near={0.5} shadow-camera-far={50}
-        shadow-camera-left={-12} shadow-camera-right={12}
-        shadow-camera-top={12} shadow-camera-bottom={-12}
+        shadow-mapSize-width={2048} shadow-mapSize-height={2048}
+        shadow-bias={-0.0001}
+        shadow-normalBias={0.03}
+        shadow-camera-near={0.5} shadow-camera-far={40}
+        shadow-camera-left={-10} shadow-camera-right={10}
+        shadow-camera-top={10} shadow-camera-bottom={-10}
       />
 
       {/* Rect Area Lights — soft, realistic indoor lighting */}
@@ -1279,11 +1279,11 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
       {/* Contact shadows for ground contact realism */}
       <ContactShadows
-        position={[w / 2, 0, d / 2]} opacity={0.55}
-        scale={Math.max(w, d) * 1.5} blur={3} far={4}
+        position={[w / 2, 0, d / 2]} opacity={0.5}
+        scale={Math.max(w, d) * 1.5} blur={2.5} far={3}
         color="#1a1410"
-        resolution={1024}
-        frames={Infinity}
+        resolution={512}
+        frames={1}
       />
 
       <Room dimensions={roomDimensions} archConfig={archConfig} />
@@ -1298,22 +1298,22 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
       <SnapshotHelper onCapture={onCaptureReady} />
 
       {/* Post-processing: SSAO + subtle Bloom */}
-      <EffectComposer multisampling={4}>
+      <EffectComposer multisampling={2}>
         <SSAO
           blendFunction={BlendFunction.MULTIPLY}
-          samples={21}
-          radius={0.12}
-          intensity={18}
+          samples={9}
+          radius={0.1}
+          intensity={15}
           luminanceInfluence={0.6}
-          worldDistanceThreshold={1.2}
+          worldDistanceThreshold={1.0}
           worldDistanceFalloff={0.5}
           worldProximityThreshold={0.4}
           worldProximityFalloff={0.3}
         />
         <Bloom
-          intensity={0.08}
-          luminanceThreshold={0.9}
-          luminanceSmoothing={0.6}
+          intensity={0.06}
+          luminanceThreshold={0.92}
+          luminanceSmoothing={0.5}
           mipmapBlur
         />
       </EffectComposer>
@@ -1358,7 +1358,7 @@ export const PlannerCanvas3D = ({
   }, []);
 
   return (
-    <div className="flex-1 bg-muted/30 relative" onContextMenu={(e) => e.preventDefault()}>
+    <div className="w-full h-full bg-muted/30 relative" onContextMenu={(e) => e.preventDefault()}>
       {/* Tooltip */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
         {fpsMode
@@ -1377,9 +1377,9 @@ export const PlannerCanvas3D = ({
       <Canvas
         shadows
         camera={{ position: fpsMode ? [roomDimensions.width / 2000, 1.6, roomDimensions.height / 1000 - 1] : [8, 6, 8], fov: fpsMode ? 75 : 45 }}
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', height: '100%', display: 'block' }}
         gl={{ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
         onContextMenu={(e) => e.preventDefault()}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
