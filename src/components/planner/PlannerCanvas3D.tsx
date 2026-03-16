@@ -1298,22 +1298,22 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
       <SnapshotHelper onCapture={onCaptureReady} />
 
       {/* Post-processing: SSAO + subtle Bloom */}
-      <EffectComposer multisampling={4}>
+      <EffectComposer multisampling={2}>
         <SSAO
           blendFunction={BlendFunction.MULTIPLY}
-          samples={21}
-          radius={0.12}
-          intensity={18}
+          samples={9}
+          radius={0.1}
+          intensity={15}
           luminanceInfluence={0.6}
-          worldDistanceThreshold={1.2}
+          worldDistanceThreshold={1.0}
           worldDistanceFalloff={0.5}
           worldProximityThreshold={0.4}
           worldProximityFalloff={0.3}
         />
         <Bloom
-          intensity={0.08}
-          luminanceThreshold={0.9}
-          luminanceSmoothing={0.6}
+          intensity={0.06}
+          luminanceThreshold={0.92}
+          luminanceSmoothing={0.5}
           mipmapBlur
         />
       </EffectComposer>
