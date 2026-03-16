@@ -1223,7 +1223,7 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
   return (
     <>
-      <SoftShadows size={30} samples={20} focus={0.4} />
+      <SoftShadows size={25} samples={8} focus={0.5} />
 
       {/* HDRI Environment Map for realistic reflections */}
       <Environment preset={hdriPreset} background={false} environmentIntensity={0.5} />
