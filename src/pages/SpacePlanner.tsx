@@ -258,19 +258,18 @@ const SpacePlanner = () => {
               onArchConfigChange={setArchConfig}
             />
           ) : (
-              <PlannerCanvas3D
-                roomDimensions={roomDimensions}
-                placedFurniture={placedFurniture}
-                selectedId={selectedId}
-                scale={scale}
-                onSelect={handleSelect}
-                onRightClickSelect={handleRightClickSelect}
-                architecturalConfig={archConfig}
-                hdriPreset={hdriPreset}
-                fpsMode={isMobile ? false : fpsMode}
-                onExitFps={() => setFpsMode(false)}
-              />
-            </div>
+            <PlannerCanvas3D
+              roomDimensions={roomDimensions}
+              placedFurniture={placedFurniture}
+              selectedId={selectedId}
+              scale={scale}
+              onSelect={handleSelect}
+              onRightClickSelect={handleRightClickSelect}
+              architecturalConfig={archConfig}
+              hdriPreset={hdriPreset}
+              fpsMode={isMobile ? false : fpsMode}
+              onExitFps={() => setFpsMode(false)}
+            />
           )}
         </div>
 
