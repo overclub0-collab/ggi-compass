@@ -1279,11 +1279,11 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
       {/* Contact shadows for ground contact realism */}
       <ContactShadows
-        position={[w / 2, 0, d / 2]} opacity={0.55}
-        scale={Math.max(w, d) * 1.5} blur={3} far={4}
+        position={[w / 2, 0, d / 2]} opacity={0.5}
+        scale={Math.max(w, d) * 1.5} blur={2.5} far={3}
         color="#1a1410"
-        resolution={1024}
-        frames={Infinity}
+        resolution={512}
+        frames={1}
       />
 
       <Room dimensions={roomDimensions} archConfig={archConfig} />
