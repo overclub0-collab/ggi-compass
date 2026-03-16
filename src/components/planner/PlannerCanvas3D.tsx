@@ -1377,9 +1377,9 @@ export const PlannerCanvas3D = ({
       <Canvas
         shadows
         camera={{ position: fpsMode ? [roomDimensions.width / 2000, 1.6, roomDimensions.height / 1000 - 1] : [8, 6, 8], fov: fpsMode ? 75 : 45 }}
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', height: '100%', display: 'block' }}
         gl={{ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
         onContextMenu={(e) => e.preventDefault()}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
