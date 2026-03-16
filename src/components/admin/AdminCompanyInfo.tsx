@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Save, GripVertical } from 'lucide-react';
+import { Save, GripVertical, Video } from 'lucide-react';
 import CompanyImageDropzone from './CompanyImageDropzone';
 
 interface CompanySection {
@@ -16,6 +16,7 @@ interface CompanySection {
   content: string | null;
   image_url: string | null;
   images: string[] | null;
+  video_url: string | null;
   display_order: number;
   is_active: boolean;
 }
@@ -67,9 +68,10 @@ const AdminCompanyInfo = () => {
         content: section.content,
         image_url: section.images?.[0] || section.image_url,
         images: section.images || [],
+        video_url: section.video_url || null,
         is_active: section.is_active,
         display_order: section.display_order,
-      })
+      } as any)
       .eq('id', section.id);
 
     if (error) {
@@ -140,6 +142,25 @@ const AdminCompanyInfo = () => {
                 className="mt-1 text-sm"
               />
             </div>
+
+            {/* Video URL - hero section only */}
+            {section.section_key === 'hero' && (
+              <div>
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  <Video className="h-3.5 w-3.5" />
+                  배경 동영상 URL (MP4)
+                </Label>
+                <Input
+                  value={(section as any).video_url || ''}
+                  onChange={(e) => handleChange(section.id, 'video_url' as any, e.target.value)}
+                  placeholder="https://example.com/video.mp4 (비워두면 이미지만 표시)"
+                  className="mt-1"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  동영상이 설정되면 히어로 배경에 자동 재생됩니다. 이미지는 동영상 로딩 전 포스터로 사용됩니다.
+                </p>
+              </div>
+            )}
 
             <div>
               <Label className="text-xs font-medium">이미지</Label>

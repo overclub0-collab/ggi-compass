@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Building2, Award, History, Eye, MessageSquare, Quote, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import heroFallback from '@/assets/about-hero-video-poster.jpg';
 
 interface CompanySection {
   id: string;
@@ -11,6 +12,7 @@ interface CompanySection {
   title: string | null;
   content: string | null;
   image_url: string | null;
+  video_url: string | null;
   display_order: number;
 }
 
@@ -52,27 +54,46 @@ const About = () => {
     );
   }
 
+  const heroVideoUrl = heroSection?.video_url;
+  const heroImageUrl = heroSection?.image_url || heroFallback;
+
   return (
     <PageLayout>
       <main className="pt-20">
-        {/* Hero Banner */}
-        <section className="relative bg-gradient-to-br from-primary/10 via-background to-accent/5 py-16 sm:py-24">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-            {heroSection?.image_url && (
+        {/* Hero Banner with Video/Image */}
+        <section className="relative overflow-hidden bg-primary/5">
+          <div className="relative w-full" style={{ minHeight: '420px', maxHeight: '560px' }}>
+            {heroVideoUrl ? (
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                poster={heroImageUrl}
+                className="absolute inset-0 w-full h-full object-cover"
+              >
+                <source src={heroVideoUrl} type="video/mp4" />
+              </video>
+            ) : (
               <img
-                src={heroSection.image_url}
+                src={heroImageUrl}
                 alt="회사 대표 이미지"
-                className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-2xl mx-auto mb-8 shadow-lg border-4 border-background"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             )}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-primary mb-4">
-              {heroSection?.title || '주식회사 지지아이'}
-            </h1>
-            {heroSection?.content && (
-              <p className="text-muted-foreground text-base sm:text-lg leading-relaxed max-w-2xl mx-auto whitespace-pre-line">
-                {heroSection.content}
-              </p>
-            )}
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-primary/70 via-primary/50 to-primary/80" />
+            {/* Content */}
+            <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 sm:px-6 py-16 sm:py-24" style={{ minHeight: '420px' }}>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-primary-foreground mb-4 drop-shadow-lg">
+                {heroSection?.title || '주식회사 지지아이'}
+              </h1>
+              {heroSection?.content && (
+                <p className="text-primary-foreground/90 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto whitespace-pre-line drop-shadow">
+                  {heroSection.content}
+                </p>
+              )}
+            </div>
           </div>
         </section>
 

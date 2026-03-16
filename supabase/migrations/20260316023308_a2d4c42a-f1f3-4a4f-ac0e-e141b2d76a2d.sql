@@ -1,0 +1,1 @@
+ALTER TABLE public.company_info ADD COLUMN IF NOT EXISTS video_url TEXT DEFAULT NULL;
