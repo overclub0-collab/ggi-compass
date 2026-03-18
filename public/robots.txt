@@ -1,4 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin-auth
+
 User-agent: Googlebot
+Allow: /
+
+User-agent: Yeti
 Allow: /
 
 User-agent: Bingbot
@@ -10,7 +18,4 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
-Allow: /
-
-Sitemap: https://ggi-compass.lovable.app/sitemap.xml
+Sitemap: https://zizii.kr/sitemap.xml
