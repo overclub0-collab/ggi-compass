@@ -104,7 +104,7 @@ export const Navbar = () => {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-1.5 lg:gap-2.5 h-full">
             {navItems.map((item) => {
-              const baseNavClass = "relative h-10 px-4 flex items-center justify-center leading-none tracking-tight text-foreground/80 font-bold text-[16px] transition-all duration-300 hover:text-primary hover:scale-105 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-primary after:rounded-full after:transition-all after:duration-300 after:ease-out hover:after:w-full";
+               const baseNavClass = "relative h-10 px-4 flex items-center justify-center leading-none tracking-tight text-foreground/80 font-bold text-[16px] transition-all duration-300 hover:text-primary hover:font-extrabold hover:scale-[1.15] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-primary after:rounded-full after:transition-all after:duration-300 after:ease-out hover:after:w-full";
               const activeNavClass = "text-primary after:w-full";
 
               if (item.isExternal) {
