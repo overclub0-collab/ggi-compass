@@ -87,15 +87,20 @@ const AdminCompanyInfo = () => {
     }
 
     setUploadingVideoId(sectionId);
+    const toastId = toast.loading('동영상 업로드 중... 파일 크기에 따라 시간이 걸릴 수 있습니다.');
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `company/video/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('product-images')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
 
       if (uploadError) throw uploadError;
+      toast.dismiss(toastId);
 
       const { data: { publicUrl } } = supabase.storage
         .from('product-images')
@@ -104,6 +109,7 @@ const AdminCompanyInfo = () => {
       handleChange(sectionId, 'video_url', publicUrl);
       toast.success('동영상이 업로드되었습니다.');
     } catch (error: any) {
+      toast.dismiss(toastId);
       toast.error('동영상 업로드 실패: ' + error.message);
     } finally {
       setUploadingVideoId(null);
