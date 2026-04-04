@@ -378,6 +378,48 @@ export type Database = {
         }
         Relationships: []
       }
+      product_banners: {
+        Row: {
+          animation_speed: number | null
+          animation_type: string | null
+          created_at: string
+          fallback_image_url: string | null
+          id: string
+          is_active: boolean | null
+          main_title: string | null
+          overlay_opacity: number | null
+          sub_title: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          animation_speed?: number | null
+          animation_type?: string | null
+          created_at?: string
+          fallback_image_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          main_title?: string | null
+          overlay_opacity?: number | null
+          sub_title?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          animation_speed?: number | null
+          animation_type?: string | null
+          created_at?: string
+          fallback_image_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          main_title?: string | null
+          overlay_opacity?: number | null
+          sub_title?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           badges: string[] | null

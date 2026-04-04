@@ -27,7 +27,8 @@ import {
   FolderOpen,
   Folder,
   Image as ImageIcon,
-  Sparkles
+  Sparkles,
+  Video
 } from 'lucide-react';
 import {
   Select,
@@ -68,6 +69,7 @@ import AdminMegaMenuThumbnails from '@/components/admin/AdminMegaMenuThumbnails'
 import AdminHomepageManager from '@/components/admin/AdminHomepageManager';
 import AdminPopupManager from '@/components/admin/AdminPopupManager';
 import AdminFurnitureAnalysis from '@/components/admin/AdminFurnitureAnalysis';
+import AdminProductBanner from '@/components/admin/AdminProductBanner';
 import CategoryFormDialog from '@/components/admin/CategoryFormDialog';
 import type { User } from '@supabase/supabase-js';
 
@@ -136,7 +138,7 @@ const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users' | 'company' | 'mega-menu' | 'homepage' | 'ai-analysis' | 'popups'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'catalogs' | 'inquiries' | 'delivery-cases' | 'users' | 'company' | 'mega-menu' | 'homepage' | 'ai-analysis' | 'popups' | 'product-banner'>('dashboard');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
@@ -779,6 +781,14 @@ const Admin = () => {
             <Sparkles className="h-4 w-4 mr-2" />
             AI 분석
           </Button>
+          <Button
+            variant={activeTab === 'product-banner' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('product-banner')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <Video className="h-4 w-4 mr-2" />
+            제품 배너
+          </Button>
         </div>
       </header>
 
@@ -1057,6 +1067,8 @@ const Admin = () => {
             <AdminFurnitureAnalysis />
           ) : activeTab === 'popups' ? (
             <AdminPopupManager />
+          ) : activeTab === 'product-banner' ? (
+            <AdminProductBanner />
           ) : null}
         </main>
       </div>

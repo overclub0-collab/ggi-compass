@@ -1,6 +1,7 @@
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useEffect, useState, useCallback } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
+import ProductBanner from '@/components/ProductBanner';
 import { CategorySidebar } from '@/components/CategorySidebar';
 import { ProductCard } from '@/components/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -250,7 +251,11 @@ const ProductListNew = () => {
   return (
     <PageLayout>
       <main className="pt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {/* Full-width Product Banner */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
+          <ProductBanner />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6 flex-wrap">
             {getBreadcrumbs().map((crumb, index, arr) => (
