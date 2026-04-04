@@ -27,7 +27,8 @@ import {
   FolderOpen,
   Folder,
   Image as ImageIcon,
-  Sparkles
+  Sparkles,
+  Video
 } from 'lucide-react';
 import {
   Select,
