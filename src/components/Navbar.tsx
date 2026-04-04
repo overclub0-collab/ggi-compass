@@ -102,9 +102,9 @@ export const Navbar = () => {
           </Link>
           
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-2 lg:gap-3 text-[15px] font-medium h-full leading-none">
+          <div className="hidden md:flex items-center gap-1.5 lg:gap-2.5 h-full">
             {navItems.map((item) => {
-              const baseNavClass = "relative px-4 py-2.5 flex items-center leading-none tracking-tight text-foreground/70 font-semibold transition-all duration-300 hover:text-primary after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-primary after:rounded-full after:transition-all after:duration-300 after:ease-out hover:after:w-full";
+              const baseNavClass = "relative h-10 px-4 flex items-center justify-center leading-none tracking-tight text-foreground/80 font-bold text-[16px] transition-all duration-300 hover:text-primary hover:scale-105 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-primary after:rounded-full after:transition-all after:duration-300 after:ease-out hover:after:w-full";
               const activeNavClass = "text-primary after:w-full";
 
               if (item.isExternal) {
@@ -159,7 +159,7 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/planner"
-                    className="h-10 px-6 bg-accent text-accent-foreground rounded-lg transition-all duration-300 hover:bg-accent/85 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center leading-none text-[15px] font-bold tracking-tight">
+                    className="h-10 px-6 bg-accent text-accent-foreground rounded-lg transition-all duration-300 hover:bg-accent/85 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center leading-none text-[16px] font-bold tracking-tight">
                     {item.label}
                   </Link>);
               }
@@ -186,7 +186,7 @@ export const Navbar = () => {
             })}
             <Link
               to="/inquiry"
-              className="h-10 px-6 ml-1 rounded-lg transition-all duration-300 border-0 text-primary-foreground bg-primary font-bold hover:bg-primary/90 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center text-[15px] tracking-tight">
+              className="h-10 px-6 ml-1 rounded-lg transition-all duration-300 border-0 text-primary-foreground bg-primary font-bold hover:bg-primary/90 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center text-[16px] tracking-tight">
               견적/문의
             </Link>
           </div>
