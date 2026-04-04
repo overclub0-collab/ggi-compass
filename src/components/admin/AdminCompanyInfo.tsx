@@ -81,8 +81,8 @@ const AdminCompanyInfo = () => {
       toast.error('MP4, WebM, OGG 동영상만 업로드 가능합니다.');
       return;
     }
-    if (file.size > 100 * 1024 * 1024) {
-      toast.error('동영상 크기는 100MB 이하여야 합니다.');
+    if (file.size > 500 * 1024 * 1024) {
+      toast.error('동영상 크기는 500MB 이하여야 합니다.');
       return;
     }
 
