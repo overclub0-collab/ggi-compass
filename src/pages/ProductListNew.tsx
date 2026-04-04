@@ -251,10 +251,8 @@ const ProductListNew = () => {
   return (
     <PageLayout>
       <main className="pt-20">
-        {/* Full-width Product Banner */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
-          <ProductBanner />
-        </div>
+        {/* Full-width Product Banner - matching About page hero style */}
+        <ProductBanner />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6 flex-wrap">

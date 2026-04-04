@@ -65,72 +65,71 @@ const ProductBanner = () => {
 
   if (!banner) return null;
 
-  const overlayOpacity = banner.overlay_opacity ?? 0.3;
   const animType = banner.animation_type || 'fade-up';
   const animSpeed = banner.animation_speed || 1.2;
   const variants = getAnimationVariants(animType, animSpeed);
 
   return (
-    <div className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[70vh] overflow-hidden rounded-2xl mb-8">
-      {/* Fallback Image */}
-      {banner.fallback_image_url && (
-        <img
-          src={banner.fallback_image_url}
-          alt="Banner"
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${videoLoaded ? 'opacity-0' : 'opacity-100'}`}
-        />
-      )}
-
-      {/* Video Background */}
-      {banner.video_url && (
-        <video
-          ref={videoRef}
-          src={banner.video_url}
-          autoPlay
-          muted
-          loop
-          playsInline
-          onLoadedData={() => setVideoLoaded(true)}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
-        />
-      )}
-
-      {/* Fallback gradient if no media */}
-      {!banner.video_url && !banner.fallback_image_url && (
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-primary/40" />
-      )}
-
-      {/* Dark Overlay */}
-      <div
-        className="absolute inset-0"
-        style={{ backgroundColor: `rgba(0, 0, 0, ${overlayOpacity})` }}
-      />
-
-      {/* Text Layer */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center z-10">
-        {banner.main_title && (
-          <motion.h2
-            variants={variants}
-            initial="hidden"
-            animate="visible"
-            className="text-3xl sm:text-5xl lg:text-6xl font-black text-white drop-shadow-lg mb-4"
-          >
-            {banner.main_title}
-          </motion.h2>
+    <section className="relative overflow-hidden bg-primary/5">
+      <div className="relative w-full" style={{ minHeight: '420px', maxHeight: '560px' }}>
+        {/* Fallback Image */}
+        {banner.fallback_image_url && (
+          <img
+            src={banner.fallback_image_url}
+            alt="Banner"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${videoLoaded ? 'opacity-0' : 'opacity-100'}`}
+          />
         )}
-        {banner.sub_title && (
-          <motion.p
-            variants={variants}
-            initial="hidden"
-            animate="visible"
-            transition={{ delay: 0.3 }}
-            className="text-base sm:text-xl lg:text-2xl text-white/90 drop-shadow-md max-w-2xl"
+
+        {/* Video Background */}
+        {banner.video_url && (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            loop
+            playsInline
+            onLoadedData={() => setVideoLoaded(true)}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
           >
-            {banner.sub_title}
-          </motion.p>
+            <source src={banner.video_url} type="video/mp4" />
+          </video>
         )}
+
+        {/* Fallback gradient if no media */}
+        {!banner.video_url && !banner.fallback_image_url && (
+          <div className="absolute inset-0 bg-primary" />
+        )}
+
+        {/* Blue gradient overlay - matching About page style */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/70 via-primary/50 to-primary/80" />
+
+        {/* Text Layer */}
+        <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 sm:px-6 py-16 sm:py-24" style={{ minHeight: '420px' }}>
+          {banner.main_title && (
+            <motion.h1
+              variants={variants}
+              initial="hidden"
+              animate="visible"
+              className="text-3xl sm:text-4xl lg:text-5xl font-black text-primary-foreground mb-4 drop-shadow-lg"
+            >
+              {banner.main_title}
+            </motion.h1>
+          )}
+          {banner.sub_title && (
+            <motion.p
+              variants={variants}
+              initial="hidden"
+              animate="visible"
+              transition={{ delay: 0.3 }}
+              className="text-primary-foreground/90 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto drop-shadow"
+            >
+              {banner.sub_title}
+            </motion.p>
+          )}
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
 
