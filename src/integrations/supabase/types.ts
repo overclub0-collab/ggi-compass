@@ -148,6 +148,7 @@ export type Database = {
           images: string[] | null
           is_active: boolean
           section_key: string
+          text_animation: string | null
           title: string | null
           updated_at: string
           video_url: string | null
@@ -161,6 +162,7 @@ export type Database = {
           images?: string[] | null
           is_active?: boolean
           section_key: string
+          text_animation?: string | null
           title?: string | null
           updated_at?: string
           video_url?: string | null
@@ -174,6 +176,7 @@ export type Database = {
           images?: string[] | null
           is_active?: boolean
           section_key?: string
+          text_animation?: string | null
           title?: string | null
           updated_at?: string
           video_url?: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.company_info ADD COLUMN text_animation text DEFAULT 'none';
