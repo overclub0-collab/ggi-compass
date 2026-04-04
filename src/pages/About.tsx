@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Award, History, Eye, MessageSquare, Quote, CheckCircle } from 'lucide-react';
+import { Building2, Award, History, Eye, MessageSquare, Quote } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 import heroFallback from '@/assets/about-hero-video-poster.jpg';
 
 interface CompanySection {
@@ -14,6 +15,7 @@ interface CompanySection {
   image_url: string | null;
   video_url: string | null;
   display_order: number;
+  text_animation: string | null;
 }
 
 const sectionIcons: Record<string, React.ReactNode> = {
@@ -22,6 +24,90 @@ const sectionIcons: Record<string, React.ReactNode> = {
   vision: <Eye className="h-6 w-6" />,
   history: <History className="h-6 w-6" />,
   certifications: <Award className="h-6 w-6" />,
+};
+
+const getAnimationVariants = (type: string | null) => {
+  switch (type) {
+    case 'fade-up':
+      return { hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0 } };
+    case 'fade-down':
+      return { hidden: { opacity: 0, y: -40 }, visible: { opacity: 1, y: 0 } };
+    case 'fade-left':
+      return { hidden: { opacity: 0, x: -60 }, visible: { opacity: 1, x: 0 } };
+    case 'fade-right':
+      return { hidden: { opacity: 0, x: 60 }, visible: { opacity: 1, x: 0 } };
+    case 'zoom-in':
+      return { hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } };
+    case 'blur-in':
+      return { hidden: { opacity: 0, filter: 'blur(12px)' }, visible: { opacity: 1, filter: 'blur(0px)' } };
+    case 'bounce-in':
+      return {
+        hidden: { opacity: 0, scale: 0.5 },
+        visible: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 15 } },
+      };
+    case 'stagger':
+    case 'typewriter':
+      return { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
+    default:
+      return { hidden: { opacity: 1 }, visible: { opacity: 1 } };
+  }
+};
+
+const AnimatedText = ({ text, animation }: { text: string; animation: string | null }) => {
+  if (animation === 'stagger' || animation === 'typewriter') {
+    const chars = text.split('');
+    return (
+      <motion.span
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ staggerChildren: animation === 'typewriter' ? 0.04 : 0.03 }}
+      >
+        {chars.map((char, i) => (
+          <motion.span
+            key={i}
+            variants={{
+              hidden: { opacity: 0, y: animation === 'typewriter' ? 0 : 10 },
+              visible: { opacity: 1, y: 0 },
+            }}
+            className="inline-block"
+            style={{ whiteSpace: char === ' ' ? 'pre' : undefined }}
+          >
+            {char === ' ' ? '\u00A0' : char}
+          </motion.span>
+        ))}
+      </motion.span>
+    );
+  }
+
+  const variants = getAnimationVariants(animation);
+  return (
+    <motion.span
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.3 }}
+      variants={variants}
+      transition={{ duration: 0.7, ease: 'easeOut' }}
+      className="block"
+    >
+      {text}
+    </motion.span>
+  );
+};
+
+const AnimatedBlock = ({ children, animation, delay = 0 }: { children: React.ReactNode; animation: string | null; delay?: number }) => {
+  const variants = getAnimationVariants(animation);
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.2 }}
+      variants={variants}
+      transition={{ duration: 0.7, ease: 'easeOut', delay }}
+    >
+      {children}
+    </motion.div>
+  );
 };
 
 const About = () => {
@@ -35,7 +121,7 @@ const About = () => {
         .select('*')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
-      if (data) setSections(data as CompanySection[]);
+      if (data) setSections(data as unknown as CompanySection[]);
       setIsLoading(false);
     };
     fetchSections();
@@ -56,6 +142,7 @@ const About = () => {
 
   const heroVideoUrl = heroSection?.video_url;
   const heroImageUrl = heroSection?.image_url || heroFallback;
+  const heroAnimation = heroSection?.text_animation || 'fade-up';
 
   return (
     <PageLayout>
@@ -81,17 +168,17 @@ const About = () => {
                 className="absolute inset-0 w-full h-full object-cover"
               />
             )}
-            {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-primary/70 via-primary/50 to-primary/80" />
-            {/* Content */}
             <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 sm:px-6 py-16 sm:py-24" style={{ minHeight: '420px' }}>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-primary-foreground mb-4 drop-shadow-lg">
-                {heroSection?.title || '주식회사 지지아이'}
+                <AnimatedText text={heroSection?.title || '주식회사 지지아이'} animation={heroAnimation} />
               </h1>
               {heroSection?.content && (
-                <p className="text-primary-foreground/90 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto whitespace-pre-line drop-shadow">
-                  {heroSection.content}
-                </p>
+                <AnimatedBlock animation={heroAnimation} delay={0.3}>
+                  <p className="text-primary-foreground/90 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto whitespace-pre-line drop-shadow">
+                    {heroSection.content}
+                  </p>
+                </AnimatedBlock>
               )}
             </div>
           </div>
@@ -171,35 +258,48 @@ const About = () => {
 
         {/* Content Sections */}
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-12">
-          {otherSections.map((section, idx) => (
-            <section
-              key={section.id}
-              className={`flex flex-col ${idx % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} gap-8 items-start`}
-            >
-              {section.image_url && (
-                <div className="w-full md:w-2/5 flex-shrink-0">
-                  <img
-                    src={section.image_url}
-                    alt={section.title || ''}
-                    className="w-full rounded-xl shadow-md object-cover aspect-[4/3]"
-                  />
+          {otherSections.map((section, idx) => {
+            const anim = section.text_animation || 'none';
+            return (
+              <section
+                key={section.id}
+                className={`flex flex-col ${idx % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} gap-8 items-start`}
+              >
+                {section.image_url && (
+                  <AnimatedBlock animation={anim === 'none' ? 'fade-up' : anim} delay={0.1}>
+                    <div className="w-full md:w-auto flex-shrink-0">
+                      <img
+                        src={section.image_url}
+                        alt={section.title || ''}
+                        className="w-full rounded-xl shadow-md object-cover aspect-[4/3]"
+                      />
+                    </div>
+                  </AnimatedBlock>
+                )}
+                <div className={`flex-1 ${!section.image_url ? 'w-full' : ''}`}>
+                  <AnimatedBlock animation={anim} delay={0}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                        {sectionIcons[section.section_key] || <Building2 className="h-5 w-5" />}
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                        {anim === 'stagger' || anim === 'typewriter' ? (
+                          <AnimatedText text={section.title || ''} animation={anim} />
+                        ) : (
+                          section.title
+                        )}
+                      </h2>
+                    </div>
+                  </AnimatedBlock>
+                  <AnimatedBlock animation={anim} delay={0.2}>
+                    <div className="text-muted-foreground leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                      {section.content}
+                    </div>
+                  </AnimatedBlock>
                 </div>
-              )}
-              <div className={`flex-1 ${!section.image_url ? 'w-full' : ''}`}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-                    {sectionIcons[section.section_key] || <Building2 className="h-5 w-5" />}
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-                    {section.title}
-                  </h2>
-                </div>
-                <div className="text-muted-foreground leading-relaxed whitespace-pre-line text-sm sm:text-base">
-                  {section.content}
-                </div>
-              </div>
-            </section>
-          ))}
+              </section>
+            );
+          })}
         </div>
 
         {/* CTA */}
