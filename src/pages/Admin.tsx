@@ -780,6 +780,14 @@ const Admin = () => {
             <Sparkles className="h-4 w-4 mr-2" />
             AI 분석
           </Button>
+          <Button
+            variant={activeTab === 'product-banner' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('product-banner')}
+            className="min-h-[40px] flex-shrink-0"
+          >
+            <Video className="h-4 w-4 mr-2" />
+            제품 배너
+          </Button>
         </div>
       </header>
 
