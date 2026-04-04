@@ -102,10 +102,10 @@ export const Navbar = () => {
           </Link>
           
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-1 lg:gap-2 text-[13px] font-medium h-full leading-none">
+          <div className="hidden md:flex items-center gap-2 lg:gap-3 text-[15px] font-medium h-full leading-none">
             {navItems.map((item) => {
-              const baseNavClass = "relative px-3 py-2 rounded-lg flex items-center leading-none tracking-tight text-foreground/80 font-medium transition-all duration-200 hover:text-primary hover:bg-primary/5 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-0 after:h-[2px] after:bg-primary after:rounded-full after:transition-all after:duration-300 hover:after:w-2/3";
-              const activeNavClass = "text-primary after:w-2/3";
+              const baseNavClass = "relative px-4 py-2.5 flex items-center leading-none tracking-tight text-foreground/70 font-semibold transition-all duration-300 hover:text-primary after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-primary after:rounded-full after:transition-all after:duration-300 after:ease-out hover:after:w-full";
+              const activeNavClass = "text-primary after:w-full";
 
               if (item.isExternal) {
                 return (
@@ -132,7 +132,7 @@ export const Navbar = () => {
                       )}>
                       <span>{item.label}</span>
                       <ChevronDown className={cn(
-                        "h-3.5 w-3.5 transition-transform duration-200 flex-shrink-0 opacity-60",
+                        "h-3.5 w-3.5 transition-transform duration-300 flex-shrink-0 opacity-50",
                         megaMenuOpen && "rotate-180"
                       )} />
                     </button>
@@ -159,7 +159,7 @@ export const Navbar = () => {
                   <Link
                     key={item.id}
                     to="/planner"
-                    className="bg-accent text-accent-foreground rounded-lg transition-all duration-200 hover:bg-accent/85 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] flex items-center leading-none text-[13px] font-semibold py-2.5 px-5">
+                    className="h-10 px-6 bg-accent text-accent-foreground rounded-lg transition-all duration-300 hover:bg-accent/85 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center leading-none text-[15px] font-bold tracking-tight">
                     {item.label}
                   </Link>);
               }
@@ -186,7 +186,7 @@ export const Navbar = () => {
             })}
             <Link
               to="/inquiry"
-              className="ml-2 px-5 py-2.5 rounded-lg transition-all duration-200 text-[13px] border-0 text-primary-foreground bg-primary font-semibold hover:bg-primary/90 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]">
+              className="h-10 px-6 ml-1 rounded-lg transition-all duration-300 border-0 text-primary-foreground bg-primary font-bold hover:bg-primary/90 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center text-[15px] tracking-tight">
               견적/문의
             </Link>
           </div>
