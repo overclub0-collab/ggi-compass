@@ -1,6 +1,7 @@
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useEffect, useState, useCallback } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
+import ProductBanner from '@/components/ProductBanner';
 import { CategorySidebar } from '@/components/CategorySidebar';
 import { ProductCard } from '@/components/ProductCard';
 import { Button } from '@/components/ui/button';
