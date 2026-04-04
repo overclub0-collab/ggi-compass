@@ -109,6 +109,7 @@ const AdminCompanyInfo = () => {
       handleChange(sectionId, 'video_url', publicUrl);
       toast.success('동영상이 업로드되었습니다.');
     } catch (error: any) {
+      toast.dismiss(toastId);
       toast.error('동영상 업로드 실패: ' + error.message);
     } finally {
       setUploadingVideoId(null);
