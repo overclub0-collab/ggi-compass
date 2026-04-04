@@ -294,7 +294,7 @@ const AdminCompanyInfo = () => {
                   </div>
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                  MP4, WebM, OGG / 100MB 이하 • 동영상이 설정되면 히어로 배경에 자동 재생됩니다.
+                  MP4, WebM, OGG / 500MB 이하 • 동영상이 설정되면 히어로 배경에 자동 재생됩니다.
                 </p>
               </div>
             )}
