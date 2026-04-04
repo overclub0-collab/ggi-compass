@@ -89,7 +89,7 @@ export const Footer = () => {
       {/* Copyright */}
       <div className="border-t border-primary-foreground/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 text-center text-primary-foreground/60 text-xs uppercase tracking-widest">
-          © 2024 G.G.I Infrastructure. All Rights Reserved.
+          © 2024 G.G.I Infrastructure. All Rights Reserved. / Designed by Jang.
         </div>
       </div>
     </footer>;
