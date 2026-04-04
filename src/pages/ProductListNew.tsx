@@ -506,6 +506,7 @@ const ProductListNew = () => {
             </div>
           </div>
         </div>
+        </div>
       </main>
     </PageLayout>
   );
