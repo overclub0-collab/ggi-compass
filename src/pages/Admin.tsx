@@ -1067,6 +1067,8 @@ const Admin = () => {
             <AdminFurnitureAnalysis />
           ) : activeTab === 'popups' ? (
             <AdminPopupManager />
+          ) : activeTab === 'product-banner' ? (
+            <AdminProductBanner />
           ) : null}
         </main>
       </div>
