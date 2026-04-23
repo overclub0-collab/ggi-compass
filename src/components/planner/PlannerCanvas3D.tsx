@@ -1,8 +1,6 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, Grid, Text, SoftShadows, ContactShadows, Edges, Environment } from '@react-three/drei';
-import { EffectComposer, SSAO, Bloom } from '@react-three/postprocessing';
-import { BlendFunction } from 'postprocessing';
+import { OrbitControls, Grid, Text, ContactShadows, Edges, Environment } from '@react-three/drei';
 import { PlacedFurniture, RoomDimensions } from '@/types/planner';
 import { FurnitureObject } from './FurnitureModels';
 import { Camera } from 'lucide-react';
@@ -22,8 +20,6 @@ interface PlannerCanvas3DProps {
   onRightClickSelect?: (id: string) => void;
   architecturalConfig?: ArchitecturalConfig;
   hdriPreset?: HdriPresetType;
-  fpsMode?: boolean;
-  onExitFps?: () => void;
 }
 
 const EDGE_COLOR = '#2a2a2a';
@@ -1017,52 +1013,8 @@ function SnapshotHelper({ onCapture }: { onCapture: (fn: () => void) => void }) 
   return null;
 }
 
-// ===== Collision Detection Helper =====
-function checkCollision(
-  newPos: THREE.Vector3,
-  roomW: number, roomD: number,
-  furniture: PlacedFurniture[],
-  playerRadius: number = 0.25
-): boolean {
-  const wallMargin = playerRadius + 0.06; // wall thickness offset
-  // Wall collision
-  if (newPos.x < wallMargin || newPos.x > roomW - wallMargin) return true;
-  if (newPos.z < wallMargin || newPos.z > roomD - wallMargin) return true;
-
-  // Furniture collision (AABB check)
-  const roomScale = 0.1;
-  for (const item of furniture) {
-    const fw = item.furniture.width / 1000;
-    const fd = item.furniture.height / 1000;
-    const fx = (item.x / roomScale) / 1000 + fw / 2;
-    const fz = (item.y / roomScale) / 1000 + fd / 2;
-
-    // Simple AABB with rotation consideration
-    const rot = (item.rotation * Math.PI) / 180;
-    const cosR = Math.abs(Math.cos(rot));
-    const sinR = Math.abs(Math.sin(rot));
-    const effectiveW = fw * cosR + fd * sinR;
-    const effectiveD = fw * sinR + fd * cosR;
-
-    const halfW = effectiveW / 2 + playerRadius;
-    const halfD = effectiveD / 2 + playerRadius;
-
-    if (
-      newPos.x > fx - halfW && newPos.x < fx + halfW &&
-      newPos.z > fz - halfD && newPos.z < fz + halfD
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// ===== Keyboard Camera Controls (WASD + QE + RF) =====
-function KeyboardCameraControls({ fpsMode, roomDimensions, placedFurniture }: {
-  fpsMode?: boolean;
-  roomDimensions?: RoomDimensions;
-  placedFurniture?: PlacedFurniture[];
-}) {
+// ===== Keyboard Camera Controls (WASD + QE + RF, orbit only) =====
+function KeyboardCameraControls() {
   const { camera } = useThree();
   const keys = useRef<Set<string>>(new Set());
 
@@ -1084,7 +1036,7 @@ function KeyboardCameraControls({ fpsMode, roomDimensions, placedFurniture }: {
 
   useFrame((_, delta) => {
     if (keys.current.size === 0) return;
-    const speed = (fpsMode ? 2.5 : 4) * delta;
+    const speed = 4 * delta;
     const rotSpeed = 1.5 * delta;
 
     const forward = new THREE.Vector3();
@@ -1095,121 +1047,22 @@ function KeyboardCameraControls({ fpsMode, roomDimensions, placedFurniture }: {
     const right = new THREE.Vector3();
     right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
-    if (fpsMode && roomDimensions) {
-      // FPS mode with collision detection
-      const roomW = roomDimensions.width / 1000;
-      const roomD = roomDimensions.height / 1000;
-      const furniture = placedFurniture || [];
-      const newPos = camera.position.clone();
+    if (keys.current.has('w')) camera.position.addScaledVector(forward, speed);
+    if (keys.current.has('s')) camera.position.addScaledVector(forward, -speed);
+    if (keys.current.has('a')) camera.position.addScaledVector(right, -speed);
+    if (keys.current.has('d')) camera.position.addScaledVector(right, speed);
 
-      if (keys.current.has('w')) newPos.addScaledVector(forward, speed);
-      if (keys.current.has('s')) newPos.addScaledVector(forward, -speed);
-      if (keys.current.has('a')) newPos.addScaledVector(right, -speed);
-      if (keys.current.has('d')) newPos.addScaledVector(right, speed);
-
-      // Try full move first
-      if (!checkCollision(newPos, roomW, roomD, furniture)) {
-        camera.position.copy(newPos);
-      } else {
-        // Try sliding along axes independently
-        const slideX = camera.position.clone();
-        slideX.x = newPos.x;
-        if (!checkCollision(slideX, roomW, roomD, furniture)) {
-          camera.position.x = slideX.x;
-        }
-        const slideZ = camera.position.clone();
-        slideZ.z = newPos.z;
-        if (!checkCollision(slideZ, roomW, roomD, furniture)) {
-          camera.position.z = slideZ.z;
-        }
-      }
-    } else {
-      // Standard orbit mode — no collision
-      if (keys.current.has('w')) camera.position.addScaledVector(forward, speed);
-      if (keys.current.has('s')) camera.position.addScaledVector(forward, -speed);
-      if (keys.current.has('a')) camera.position.addScaledVector(right, -speed);
-      if (keys.current.has('d')) camera.position.addScaledVector(right, speed);
-
-      if (keys.current.has('r')) camera.position.y += speed;
-      if (keys.current.has('f')) camera.position.y = Math.max(0.2, camera.position.y - speed);
-      if (keys.current.has('q')) camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed);
-      if (keys.current.has('e')) camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed);
-    }
+    if (keys.current.has('r')) camera.position.y += speed;
+    if (keys.current.has('f')) camera.position.y = Math.max(0.2, camera.position.y - speed);
+    if (keys.current.has('q')) camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed);
+    if (keys.current.has('e')) camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed);
   });
 
   return null;
 }
 
-// ===== FPS Camera Controls (PointerLock-like mouse look) =====
-function FPSCameraControls({ roomDimensions, onExitFps }: { roomDimensions: RoomDimensions; onExitFps?: () => void }) {
-  const { camera, gl } = useThree();
-  const isLocked = useRef(false);
-  const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'));
-  const EYE_HEIGHT = 1.6;
-
-  // Set initial FPS position
-  useEffect(() => {
-    const w = roomDimensions.width / 1000;
-    const d = roomDimensions.height / 1000;
-    camera.position.set(w / 2, EYE_HEIGHT, d - 1);
-    camera.rotation.set(0, Math.PI, 0);
-    euler.current.setFromQuaternion(camera.quaternion, 'YXZ');
-  }, []);
-
-  // Lock height in FPS mode
-  useFrame(() => {
-    camera.position.y = EYE_HEIGHT;
-  });
-
-  // Pointer lock for mouse look
-  useEffect(() => {
-    const canvas = gl.domElement;
-
-    const onClick = () => {
-      canvas.requestPointerLock();
-    };
-
-    const onLockChange = () => {
-      isLocked.current = document.pointerLockElement === canvas;
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isLocked.current) return;
-      const sensitivity = 0.002;
-      euler.current.y -= e.movementX * sensitivity;
-      euler.current.x -= e.movementY * sensitivity;
-      euler.current.x = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, euler.current.x));
-      camera.quaternion.setFromEuler(euler.current);
-    };
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isLocked.current) {
-        document.exitPointerLock();
-        onExitFps?.();
-      }
-    };
-
-    canvas.addEventListener('click', onClick);
-    document.addEventListener('pointerlockchange', onLockChange);
-    document.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      canvas.removeEventListener('click', onClick);
-      document.removeEventListener('pointerlockchange', onLockChange);
-      document.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('keydown', onKeyDown);
-      if (document.pointerLockElement === canvas) {
-        document.exitPointerLock();
-      }
-    };
-  }, [gl, camera, onExitFps]);
-
-  return null;
-}
-
-function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig, hdriPreset, onCaptureReady, fpsMode, onExitFps }:
-  Omit<PlannerCanvas3DProps, 'scale' | 'architecturalConfig'> & { archConfig: ArchitecturalConfig; hdriPreset: HdriPresetType; onCaptureReady: (fn: () => void) => void }) {
+function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig, hdriPreset, onCaptureReady }:
+  Omit<PlannerCanvas3DProps, 'scale' | 'architecturalConfig' | 'fpsMode' | 'onExitFps'> & { archConfig: ArchitecturalConfig; hdriPreset: HdriPresetType; onCaptureReady: (fn: () => void) => void }) {
   const w = roomDimensions.width / 1000;
   const d = roomDimensions.height / 1000;
 
@@ -1223,66 +1076,33 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
   return (
     <>
-      <SoftShadows size={25} samples={8} focus={0.5} />
+      {/* Soft ambient fill — dominant ambient lighting (cheaper than many point lights) */}
+      <ambientLight intensity={0.55} />
 
-      {/* HDRI Environment Map for realistic reflections */}
-      <Environment preset={hdriPreset} background={false} environmentIntensity={0.5} />
+      {/* HDRI Environment Map for reflections only (no background) */}
+      <Environment preset={hdriPreset} background={false} environmentIntensity={0.45} />
 
-      {/* Soft ambient fill */}
-      <ambientLight intensity={0.15} />
-
-      {/* Primary key light — directional with high-res shadows */}
+      {/* Single key directional light with low-res shadows */}
       <directionalLight
-        position={[w + 4, 12, d + 4]} intensity={0.8} castShadow
-        shadow-mapSize-width={2048} shadow-mapSize-height={2048}
+        position={[w + 4, 12, d + 4]} intensity={0.55} castShadow
+        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
         shadow-bias={-0.0001}
-        shadow-normalBias={0.03}
+        shadow-normalBias={0.04}
         shadow-camera-near={0.5} shadow-camera-far={40}
         shadow-camera-left={-10} shadow-camera-right={10}
         shadow-camera-top={10} shadow-camera-bottom={-10}
       />
 
-      {/* Rect Area Lights — soft, realistic indoor lighting */}
-      {/* Ceiling overhead panel light */}
-      <rectAreaLight
-        position={[w / 2, 2.75, d / 2]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        width={w * 0.6}
-        height={d * 0.6}
-        intensity={3}
-        color="#fff8ee"
-      />
-      {/* Window-side fill light */}
-      <rectAreaLight
-        position={[w / 2, 1.8, 0.05]}
-        rotation={[0, 0, 0]}
-        width={w * 0.8}
-        height={1.5}
-        intensity={1.5}
-        color="#e8f0ff"
-      />
-      {/* Side wall bounce */}
-      <rectAreaLight
-        position={[0.05, 1.4, d / 2]}
-        rotation={[0, Math.PI / 2, 0]}
-        width={d * 0.5}
-        height={1.2}
-        intensity={0.8}
-        color="#fff5e8"
-      />
-
-      {/* Soft fill from opposite side */}
-      <directionalLight position={[-3, 6, -2]} intensity={0.15} color="#c8d8f0" />
-      {/* Ground bounce */}
-      <hemisphereLight args={['#dde4f0', '#8b7355', 0.25]} />
+      {/* Soft hemisphere bounce */}
+      <hemisphereLight args={['#dde4f0', '#8b7355', 0.35]} />
       <color attach="background" args={['#f0eee8']} />
 
-      {/* Contact shadows for ground contact realism */}
+      {/* Lightweight contact shadow (single-frame bake) */}
       <ContactShadows
-        position={[w / 2, 0, d / 2]} opacity={0.5}
+        position={[w / 2, 0, d / 2]} opacity={0.4}
         scale={Math.max(w, d) * 1.5} blur={2.5} far={3}
         color="#1a1410"
-        resolution={512}
+        resolution={256}
         frames={1}
       />
 
@@ -1297,42 +1117,17 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
       <SnapshotHelper onCapture={onCaptureReady} />
 
-      {/* Post-processing: SSAO + subtle Bloom */}
-      <EffectComposer multisampling={2}>
-        <SSAO
-          blendFunction={BlendFunction.MULTIPLY}
-          samples={9}
-          radius={0.1}
-          intensity={15}
-          luminanceInfluence={0.6}
-          worldDistanceThreshold={1.0}
-          worldDistanceFalloff={0.5}
-          worldProximityThreshold={0.4}
-          worldProximityFalloff={0.3}
-        />
-        <Bloom
-          intensity={0.06}
-          luminanceThreshold={0.92}
-          luminanceSmoothing={0.5}
-          mipmapBlur
-        />
-      </EffectComposer>
-
-      <KeyboardCameraControls fpsMode={fpsMode} roomDimensions={roomDimensions} placedFurniture={placedFurniture} />
-      {fpsMode ? (
-        <FPSCameraControls roomDimensions={roomDimensions} onExitFps={onExitFps} />
-      ) : (
-        <OrbitControls
-          target={[w / 2, 0.5, d / 2]}
-          minPolarAngle={0.05}
-          maxPolarAngle={Math.PI * 0.95}
-          minDistance={0.5} maxDistance={30}
-          enableDamping dampingFactor={0.06}
-          enablePan panSpeed={0.8}
-          rotateSpeed={0.7}
-          zoomSpeed={1.2}
-        />
-      )}
+      <KeyboardCameraControls />
+      <OrbitControls
+        target={[w / 2, 0.5, d / 2]}
+        minPolarAngle={0.05}
+        maxPolarAngle={Math.PI * 0.95}
+        minDistance={0.5} maxDistance={30}
+        enableDamping dampingFactor={0.06}
+        enablePan panSpeed={0.8}
+        rotateSpeed={0.7}
+        zoomSpeed={1.2}
+      />
     </>
   );
 }
@@ -1340,7 +1135,6 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 export const PlannerCanvas3D = ({
   roomDimensions, placedFurniture, selectedId,
   onSelect, onRightClickSelect, architecturalConfig, hdriPreset = 'apartment',
-  fpsMode = false, onExitFps,
 }: PlannerCanvas3DProps) => {
   const captureRef = useRef<(() => void) | null>(null);
   const archConfig = architecturalConfig || DEFAULT_ARCHITECTURAL_CONFIG;
@@ -1361,9 +1155,7 @@ export const PlannerCanvas3D = ({
     <div className="w-full h-full bg-muted/30 relative" onContextMenu={(e) => e.preventDefault()}>
       {/* Tooltip */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
-        {fpsMode
-          ? '🚶 1인칭 모드 | 클릭하여 마우스 잠금 | WASD: 이동 | ESC: 나가기'
-          : 'WASD: 이동 | QE: 회전 | RF: 상하 | 마우스 드래그: 궤도 회전 | 좌클릭: 선택 | 우클릭: 정보 고정'}
+        WASD: 이동 | QE: 회전 | RF: 상하 | 마우스 드래그: 궤도 회전 | 좌클릭: 선택 | 우클릭: 정보 고정
       </div>
 
       <Button
@@ -1375,15 +1167,17 @@ export const PlannerCanvas3D = ({
       </Button>
 
       <Canvas
-        shadows
-        camera={{ position: fpsMode ? [roomDimensions.width / 2000, 1.6, roomDimensions.height / 1000 - 1] : [8, 6, 8], fov: fpsMode ? 75 : 45 }}
+        shadows={{ type: THREE.PCFShadowMap }}
+        camera={{ position: [8, 6, 8], fov: 45 }}
         style={{ width: '100%', height: '100%', display: 'block' }}
-        gl={{ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
-        dpr={[1, 1.5]}
+        gl={{ antialias: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
+        dpr={[1, 1.25]}
         onContextMenu={(e) => e.preventDefault()}
-        onCreated={({ gl }) => {
+        onCreated={({ gl, scene }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.1;
+          // Ensure frustum culling enabled (default true) on all scene objects
+          scene.traverse((obj) => { obj.frustumCulled = true; });
         }}
       >
         <Scene
@@ -1395,8 +1189,6 @@ export const PlannerCanvas3D = ({
           archConfig={archConfig}
           hdriPreset={hdriPreset}
           onCaptureReady={handleCaptureReady}
-          fpsMode={fpsMode}
-          onExitFps={onExitFps}
         />
       </Canvas>
     </div>
