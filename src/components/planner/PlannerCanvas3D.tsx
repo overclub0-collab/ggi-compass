@@ -1015,52 +1015,8 @@ function SnapshotHelper({ onCapture }: { onCapture: (fn: () => void) => void }) 
   return null;
 }
 
-// ===== Collision Detection Helper =====
-function checkCollision(
-  newPos: THREE.Vector3,
-  roomW: number, roomD: number,
-  furniture: PlacedFurniture[],
-  playerRadius: number = 0.25
-): boolean {
-  const wallMargin = playerRadius + 0.06; // wall thickness offset
-  // Wall collision
-  if (newPos.x < wallMargin || newPos.x > roomW - wallMargin) return true;
-  if (newPos.z < wallMargin || newPos.z > roomD - wallMargin) return true;
-
-  // Furniture collision (AABB check)
-  const roomScale = 0.1;
-  for (const item of furniture) {
-    const fw = item.furniture.width / 1000;
-    const fd = item.furniture.height / 1000;
-    const fx = (item.x / roomScale) / 1000 + fw / 2;
-    const fz = (item.y / roomScale) / 1000 + fd / 2;
-
-    // Simple AABB with rotation consideration
-    const rot = (item.rotation * Math.PI) / 180;
-    const cosR = Math.abs(Math.cos(rot));
-    const sinR = Math.abs(Math.sin(rot));
-    const effectiveW = fw * cosR + fd * sinR;
-    const effectiveD = fw * sinR + fd * cosR;
-
-    const halfW = effectiveW / 2 + playerRadius;
-    const halfD = effectiveD / 2 + playerRadius;
-
-    if (
-      newPos.x > fx - halfW && newPos.x < fx + halfW &&
-      newPos.z > fz - halfD && newPos.z < fz + halfD
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// ===== Keyboard Camera Controls (WASD + QE + RF) =====
-function KeyboardCameraControls({ fpsMode, roomDimensions, placedFurniture }: {
-  fpsMode?: boolean;
-  roomDimensions?: RoomDimensions;
-  placedFurniture?: PlacedFurniture[];
-}) {
+// ===== Keyboard Camera Controls (WASD + QE + RF, orbit only) =====
+function KeyboardCameraControls() {
   const { camera } = useThree();
   const keys = useRef<Set<string>>(new Set());
 
@@ -1082,7 +1038,7 @@ function KeyboardCameraControls({ fpsMode, roomDimensions, placedFurniture }: {
 
   useFrame((_, delta) => {
     if (keys.current.size === 0) return;
-    const speed = (fpsMode ? 2.5 : 4) * delta;
+    const speed = 4 * delta;
     const rotSpeed = 1.5 * delta;
 
     const forward = new THREE.Vector3();
@@ -1093,121 +1049,22 @@ function KeyboardCameraControls({ fpsMode, roomDimensions, placedFurniture }: {
     const right = new THREE.Vector3();
     right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
-    if (fpsMode && roomDimensions) {
-      // FPS mode with collision detection
-      const roomW = roomDimensions.width / 1000;
-      const roomD = roomDimensions.height / 1000;
-      const furniture = placedFurniture || [];
-      const newPos = camera.position.clone();
+    if (keys.current.has('w')) camera.position.addScaledVector(forward, speed);
+    if (keys.current.has('s')) camera.position.addScaledVector(forward, -speed);
+    if (keys.current.has('a')) camera.position.addScaledVector(right, -speed);
+    if (keys.current.has('d')) camera.position.addScaledVector(right, speed);
 
-      if (keys.current.has('w')) newPos.addScaledVector(forward, speed);
-      if (keys.current.has('s')) newPos.addScaledVector(forward, -speed);
-      if (keys.current.has('a')) newPos.addScaledVector(right, -speed);
-      if (keys.current.has('d')) newPos.addScaledVector(right, speed);
-
-      // Try full move first
-      if (!checkCollision(newPos, roomW, roomD, furniture)) {
-        camera.position.copy(newPos);
-      } else {
-        // Try sliding along axes independently
-        const slideX = camera.position.clone();
-        slideX.x = newPos.x;
-        if (!checkCollision(slideX, roomW, roomD, furniture)) {
-          camera.position.x = slideX.x;
-        }
-        const slideZ = camera.position.clone();
-        slideZ.z = newPos.z;
-        if (!checkCollision(slideZ, roomW, roomD, furniture)) {
-          camera.position.z = slideZ.z;
-        }
-      }
-    } else {
-      // Standard orbit mode — no collision
-      if (keys.current.has('w')) camera.position.addScaledVector(forward, speed);
-      if (keys.current.has('s')) camera.position.addScaledVector(forward, -speed);
-      if (keys.current.has('a')) camera.position.addScaledVector(right, -speed);
-      if (keys.current.has('d')) camera.position.addScaledVector(right, speed);
-
-      if (keys.current.has('r')) camera.position.y += speed;
-      if (keys.current.has('f')) camera.position.y = Math.max(0.2, camera.position.y - speed);
-      if (keys.current.has('q')) camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed);
-      if (keys.current.has('e')) camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed);
-    }
+    if (keys.current.has('r')) camera.position.y += speed;
+    if (keys.current.has('f')) camera.position.y = Math.max(0.2, camera.position.y - speed);
+    if (keys.current.has('q')) camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed);
+    if (keys.current.has('e')) camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed);
   });
 
   return null;
 }
 
-// ===== FPS Camera Controls (PointerLock-like mouse look) =====
-function FPSCameraControls({ roomDimensions, onExitFps }: { roomDimensions: RoomDimensions; onExitFps?: () => void }) {
-  const { camera, gl } = useThree();
-  const isLocked = useRef(false);
-  const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'));
-  const EYE_HEIGHT = 1.6;
-
-  // Set initial FPS position
-  useEffect(() => {
-    const w = roomDimensions.width / 1000;
-    const d = roomDimensions.height / 1000;
-    camera.position.set(w / 2, EYE_HEIGHT, d - 1);
-    camera.rotation.set(0, Math.PI, 0);
-    euler.current.setFromQuaternion(camera.quaternion, 'YXZ');
-  }, []);
-
-  // Lock height in FPS mode
-  useFrame(() => {
-    camera.position.y = EYE_HEIGHT;
-  });
-
-  // Pointer lock for mouse look
-  useEffect(() => {
-    const canvas = gl.domElement;
-
-    const onClick = () => {
-      canvas.requestPointerLock();
-    };
-
-    const onLockChange = () => {
-      isLocked.current = document.pointerLockElement === canvas;
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isLocked.current) return;
-      const sensitivity = 0.002;
-      euler.current.y -= e.movementX * sensitivity;
-      euler.current.x -= e.movementY * sensitivity;
-      euler.current.x = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, euler.current.x));
-      camera.quaternion.setFromEuler(euler.current);
-    };
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isLocked.current) {
-        document.exitPointerLock();
-        onExitFps?.();
-      }
-    };
-
-    canvas.addEventListener('click', onClick);
-    document.addEventListener('pointerlockchange', onLockChange);
-    document.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      canvas.removeEventListener('click', onClick);
-      document.removeEventListener('pointerlockchange', onLockChange);
-      document.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('keydown', onKeyDown);
-      if (document.pointerLockElement === canvas) {
-        document.exitPointerLock();
-      }
-    };
-  }, [gl, camera, onExitFps]);
-
-  return null;
-}
-
-function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig, hdriPreset, onCaptureReady, fpsMode, onExitFps }:
-  Omit<PlannerCanvas3DProps, 'scale' | 'architecturalConfig'> & { archConfig: ArchitecturalConfig; hdriPreset: HdriPresetType; onCaptureReady: (fn: () => void) => void }) {
+function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightClickSelect, archConfig, hdriPreset, onCaptureReady }:
+  Omit<PlannerCanvas3DProps, 'scale' | 'architecturalConfig' | 'fpsMode' | 'onExitFps'> & { archConfig: ArchitecturalConfig; hdriPreset: HdriPresetType; onCaptureReady: (fn: () => void) => void }) {
   const w = roomDimensions.width / 1000;
   const d = roomDimensions.height / 1000;
 
