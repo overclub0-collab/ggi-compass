@@ -1,8 +1,6 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, Grid, Text, SoftShadows, ContactShadows, Edges, Environment } from '@react-three/drei';
-import { EffectComposer, SSAO, Bloom } from '@react-three/postprocessing';
-import { BlendFunction } from 'postprocessing';
+import { OrbitControls, Grid, Text, ContactShadows, Edges, Environment } from '@react-three/drei';
 import { PlacedFurniture, RoomDimensions } from '@/types/planner';
 import { FurnitureObject } from './FurnitureModels';
 import { Camera } from 'lucide-react';
