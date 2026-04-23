@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers, Sun, Footprints, Menu, X, Monitor } from 'lucide-react';
+import { ArrowLeft, ZoomIn, ZoomOut, Box, Layers, Sun, Menu, X, Monitor } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { PlannerLeftPanel } from '@/components/planner/PlannerLeftPanel';
@@ -31,7 +31,6 @@ const SpacePlanner = () => {
   const [started, setStarted] = useState(false);
   const [consultationOpen, setConsultationOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
-  const [fpsMode, setFpsMode] = useState(false);
   const [, setDraggingFurniture] = useState<FurnitureItem | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [archConfig, setArchConfig] = useState<ArchitecturalConfig>(DEFAULT_ARCHITECTURAL_CONFIG);
@@ -142,7 +141,7 @@ const SpacePlanner = () => {
           <div className="flex items-center bg-white/10 rounded-lg p-0.5">
             <Button
               variant="ghost" size="sm"
-              onClick={() => { setViewMode('2d'); setFpsMode(false); }}
+              onClick={() => setViewMode('2d')}
               className={`h-7 px-2 sm:px-2.5 text-xs font-bold gap-1 ${viewMode === '2d' ? 'bg-white/25 text-white' : 'text-white/60'}`}
             >
               <Layers className="h-3 w-3" />
@@ -171,17 +170,7 @@ const SpacePlanner = () => {
             </div>
           )}
 
-          {/* FPS mode toggle — 3D only, desktop only */}
-          {viewMode === '3d' && !isMobile && (
-            <Button
-              variant="ghost" size="sm"
-              onClick={() => setFpsMode(prev => !prev)}
-              className={`h-7 px-2.5 text-xs font-bold gap-1 ${fpsMode ? 'bg-amber-500/30 text-amber-200' : 'text-white/60 bg-white/10'}`}
-            >
-              <Footprints className="h-3 w-3" />
-              {fpsMode ? '1인칭' : '워크스루'}
-            </Button>
-          )}
+          {/* (1인칭 워크스루 모드 제거됨 — 성능 최적화) */}
 
           {/* HDRI Environment Preset — 3D only, desktop only */}
           {viewMode === '3d' && !isMobile && (
@@ -267,8 +256,6 @@ const SpacePlanner = () => {
               onRightClickSelect={handleRightClickSelect}
               architecturalConfig={archConfig}
               hdriPreset={hdriPreset}
-              fpsMode={isMobile ? false : fpsMode}
-              onExitFps={() => setFpsMode(false)}
             />
           )}
         </div>
