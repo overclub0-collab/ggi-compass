@@ -1119,7 +1119,7 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
       <SnapshotHelper onCapture={onCaptureReady} />
 
-      <KeyboardCameraControls roomDimensions={roomDimensions} placedFurniture={placedFurniture} />
+      <KeyboardCameraControls />
       <OrbitControls
         target={[w / 2, 0.5, d / 2]}
         minPolarAngle={0.05}
@@ -1137,7 +1137,6 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 export const PlannerCanvas3D = ({
   roomDimensions, placedFurniture, selectedId,
   onSelect, onRightClickSelect, architecturalConfig, hdriPreset = 'apartment',
-  fpsMode = false, onExitFps,
 }: PlannerCanvas3DProps) => {
   const captureRef = useRef<(() => void) | null>(null);
   const archConfig = architecturalConfig || DEFAULT_ARCHITECTURAL_CONFIG;
@@ -1158,9 +1157,7 @@ export const PlannerCanvas3D = ({
     <div className="w-full h-full bg-muted/30 relative" onContextMenu={(e) => e.preventDefault()}>
       {/* Tooltip */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-foreground/80 text-background text-xs px-3 py-1.5 rounded-full pointer-events-none opacity-70">
-        {fpsMode
-          ? '🚶 1인칭 모드 | 클릭하여 마우스 잠금 | WASD: 이동 | ESC: 나가기'
-          : 'WASD: 이동 | QE: 회전 | RF: 상하 | 마우스 드래그: 궤도 회전 | 좌클릭: 선택 | 우클릭: 정보 고정'}
+        WASD: 이동 | QE: 회전 | RF: 상하 | 마우스 드래그: 궤도 회전 | 좌클릭: 선택 | 우클릭: 정보 고정
       </div>
 
       <Button
@@ -1172,15 +1169,18 @@ export const PlannerCanvas3D = ({
       </Button>
 
       <Canvas
-        shadows
-        camera={{ position: fpsMode ? [roomDimensions.width / 2000, 1.6, roomDimensions.height / 1000 - 1] : [8, 6, 8], fov: fpsMode ? 75 : 45 }}
+        shadows={{ type: THREE.PCFShadowMap }}
+        camera={{ position: [8, 6, 8], fov: 45 }}
         style={{ width: '100%', height: '100%', display: 'block' }}
-        gl={{ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
-        dpr={[1, 1.5]}
+        gl={{ antialias: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
+        dpr={[1, 1.25]}
+        frameloop="demand"
         onContextMenu={(e) => e.preventDefault()}
-        onCreated={({ gl }) => {
+        onCreated={({ gl, scene }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.1;
+          // Ensure frustum culling enabled (default true) on all scene objects
+          scene.traverse((obj) => { obj.frustumCulled = true; });
         }}
       >
         <Scene
@@ -1192,8 +1192,6 @@ export const PlannerCanvas3D = ({
           archConfig={archConfig}
           hdriPreset={hdriPreset}
           onCaptureReady={handleCaptureReady}
-          fpsMode={fpsMode}
-          onExitFps={onExitFps}
         />
       </Canvas>
     </div>
