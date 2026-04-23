@@ -20,8 +20,6 @@ interface PlannerCanvas3DProps {
   onRightClickSelect?: (id: string) => void;
   architecturalConfig?: ArchitecturalConfig;
   hdriPreset?: HdriPresetType;
-  fpsMode?: boolean;
-  onExitFps?: () => void;
 }
 
 const EDGE_COLOR = '#2a2a2a';
