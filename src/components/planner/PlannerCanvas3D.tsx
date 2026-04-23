@@ -1221,66 +1221,33 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
   return (
     <>
-      <SoftShadows size={25} samples={8} focus={0.5} />
+      {/* Soft ambient fill — dominant ambient lighting (cheaper than many point lights) */}
+      <ambientLight intensity={0.55} />
 
-      {/* HDRI Environment Map for realistic reflections */}
-      <Environment preset={hdriPreset} background={false} environmentIntensity={0.5} />
+      {/* HDRI Environment Map for reflections only (no background) */}
+      <Environment preset={hdriPreset} background={false} environmentIntensity={0.45} />
 
-      {/* Soft ambient fill */}
-      <ambientLight intensity={0.15} />
-
-      {/* Primary key light — directional with high-res shadows */}
+      {/* Single key directional light with low-res shadows */}
       <directionalLight
-        position={[w + 4, 12, d + 4]} intensity={0.8} castShadow
-        shadow-mapSize-width={2048} shadow-mapSize-height={2048}
+        position={[w + 4, 12, d + 4]} intensity={0.55} castShadow
+        shadow-mapSize-width={1024} shadow-mapSize-height={1024}
         shadow-bias={-0.0001}
-        shadow-normalBias={0.03}
+        shadow-normalBias={0.04}
         shadow-camera-near={0.5} shadow-camera-far={40}
         shadow-camera-left={-10} shadow-camera-right={10}
         shadow-camera-top={10} shadow-camera-bottom={-10}
       />
 
-      {/* Rect Area Lights — soft, realistic indoor lighting */}
-      {/* Ceiling overhead panel light */}
-      <rectAreaLight
-        position={[w / 2, 2.75, d / 2]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        width={w * 0.6}
-        height={d * 0.6}
-        intensity={3}
-        color="#fff8ee"
-      />
-      {/* Window-side fill light */}
-      <rectAreaLight
-        position={[w / 2, 1.8, 0.05]}
-        rotation={[0, 0, 0]}
-        width={w * 0.8}
-        height={1.5}
-        intensity={1.5}
-        color="#e8f0ff"
-      />
-      {/* Side wall bounce */}
-      <rectAreaLight
-        position={[0.05, 1.4, d / 2]}
-        rotation={[0, Math.PI / 2, 0]}
-        width={d * 0.5}
-        height={1.2}
-        intensity={0.8}
-        color="#fff5e8"
-      />
-
-      {/* Soft fill from opposite side */}
-      <directionalLight position={[-3, 6, -2]} intensity={0.15} color="#c8d8f0" />
-      {/* Ground bounce */}
-      <hemisphereLight args={['#dde4f0', '#8b7355', 0.25]} />
+      {/* Soft hemisphere bounce */}
+      <hemisphereLight args={['#dde4f0', '#8b7355', 0.35]} />
       <color attach="background" args={['#f0eee8']} />
 
-      {/* Contact shadows for ground contact realism */}
+      {/* Lightweight contact shadow (single-frame bake) */}
       <ContactShadows
-        position={[w / 2, 0, d / 2]} opacity={0.5}
+        position={[w / 2, 0, d / 2]} opacity={0.4}
         scale={Math.max(w, d) * 1.5} blur={2.5} far={3}
         color="#1a1410"
-        resolution={512}
+        resolution={256}
         frames={1}
       />
 
@@ -1295,42 +1262,17 @@ function Scene({ roomDimensions, placedFurniture, selectedId, onSelect, onRightC
 
       <SnapshotHelper onCapture={onCaptureReady} />
 
-      {/* Post-processing: SSAO + subtle Bloom */}
-      <EffectComposer multisampling={2}>
-        <SSAO
-          blendFunction={BlendFunction.MULTIPLY}
-          samples={9}
-          radius={0.1}
-          intensity={15}
-          luminanceInfluence={0.6}
-          worldDistanceThreshold={1.0}
-          worldDistanceFalloff={0.5}
-          worldProximityThreshold={0.4}
-          worldProximityFalloff={0.3}
-        />
-        <Bloom
-          intensity={0.06}
-          luminanceThreshold={0.92}
-          luminanceSmoothing={0.5}
-          mipmapBlur
-        />
-      </EffectComposer>
-
-      <KeyboardCameraControls fpsMode={fpsMode} roomDimensions={roomDimensions} placedFurniture={placedFurniture} />
-      {fpsMode ? (
-        <FPSCameraControls roomDimensions={roomDimensions} onExitFps={onExitFps} />
-      ) : (
-        <OrbitControls
-          target={[w / 2, 0.5, d / 2]}
-          minPolarAngle={0.05}
-          maxPolarAngle={Math.PI * 0.95}
-          minDistance={0.5} maxDistance={30}
-          enableDamping dampingFactor={0.06}
-          enablePan panSpeed={0.8}
-          rotateSpeed={0.7}
-          zoomSpeed={1.2}
-        />
-      )}
+      <KeyboardCameraControls roomDimensions={roomDimensions} placedFurniture={placedFurniture} />
+      <OrbitControls
+        target={[w / 2, 0.5, d / 2]}
+        minPolarAngle={0.05}
+        maxPolarAngle={Math.PI * 0.95}
+        minDistance={0.5} maxDistance={30}
+        enableDamping dampingFactor={0.06}
+        enablePan panSpeed={0.8}
+        rotateSpeed={0.7}
+        zoomSpeed={1.2}
+      />
     </>
   );
 }
