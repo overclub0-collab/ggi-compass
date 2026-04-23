@@ -1174,7 +1174,6 @@ export const PlannerCanvas3D = ({
         style={{ width: '100%', height: '100%', display: 'block' }}
         gl={{ antialias: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
         dpr={[1, 1.25]}
-        frameloop="demand"
         onContextMenu={(e) => e.preventDefault()}
         onCreated={({ gl, scene }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
