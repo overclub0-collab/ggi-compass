@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logError } from '@/lib/errorUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { Download, Calendar, FileText, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,7 +38,7 @@ const Catalogs = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Failed to fetch catalogs:', error);
+      logError('Catalogs.fetch', error);
       toast.error('카탈로그를 불러오는데 실패했습니다.');
     } else {
       setCatalogs(data || []);
@@ -59,7 +60,7 @@ const Catalogs = () => {
         )
       );
     } catch (error) {
-      console.error('Failed to track download:', error);
+      logError('Catalogs.trackDownload', error);
     }
 
     window.open(catalog.pdf_url, '_blank');

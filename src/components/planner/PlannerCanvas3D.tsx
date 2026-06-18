@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
+import { logError } from '@/lib/errorUtils';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid, Text, ContactShadows, Edges, Environment } from '@react-three/drei';
 import { PlacedFurniture, RoomDimensions } from '@/types/planner';
@@ -983,7 +984,7 @@ function SnapshotHelper({ onCapture }: { onCapture: (fn: () => void) => void }) 
         document.body.removeChild(link);
         toast.success('렌더링 샷이 저장되었습니다!');
       } catch (err) {
-        console.error('Snapshot error:', err);
+        logError('PlannerCanvas3D.snapshot', err);
         toast.error('스냅샷 저장에 실패했습니다');
       }
     });
@@ -1003,7 +1004,7 @@ function SnapshotHelper({ onCapture }: { onCapture: (fn: () => void) => void }) 
       document.body.removeChild(link);
       toast.success('렌더링 샷이 저장되었습니다!');
     } catch (err) {
-      console.error('Snapshot error:', err);
+      logError('PlannerCanvas3D.snapshot', err);
       toast.error('스냅샷 저장에 실패했습니다');
     }
   };

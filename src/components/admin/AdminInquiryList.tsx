@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logError } from '@/lib/errorUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,7 +74,7 @@ export const AdminInquiryList = ({ onInquiryUpdate }: AdminInquiryListProps) => 
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Fetch error:', error);
+      logError('AdminInquiryList.fetch', error);
       toast.error('문의 목록을 불러오는데 실패했습니다.');
     } else {
       setInquiries(data as Inquiry[] || []);
@@ -125,7 +126,7 @@ export const AdminInquiryList = ({ onInquiryUpdate }: AdminInquiryListProps) => 
       .eq('id', selectedInquiry.id);
 
     if (error) {
-      console.error('Update error:', error);
+      logError('AdminInquiryList.update', error);
       toast.error('저장에 실패했습니다.');
     } else {
       // 답변이 있으면 이메일 발송
@@ -142,13 +143,13 @@ export const AdminInquiryList = ({ onInquiryUpdate }: AdminInquiryListProps) => 
           });
           
           if (emailResponse.error) {
-            console.error('Email send error:', emailResponse.error);
+            logError('AdminInquiryList.emailSend', emailResponse.error);
             toast.success('답변이 저장되었습니다. (이메일 발송 실패)');
           } else {
             toast.success('답변이 저장되고 이메일이 발송되었습니다.');
           }
         } catch (emailError) {
-          console.error('Email error:', emailError);
+          logError('AdminInquiryList.email', emailError);
           toast.success('답변이 저장되었습니다. (이메일 발송 실패)');
         }
       } else {
@@ -170,7 +171,7 @@ export const AdminInquiryList = ({ onInquiryUpdate }: AdminInquiryListProps) => 
       .eq('id', id);
 
     if (error) {
-      console.error('Delete error:', error);
+      logError('AdminInquiryList.delete', error);
       toast.error('삭제에 실패했습니다.');
     } else {
       toast.success('문의가 삭제되었습니다.');

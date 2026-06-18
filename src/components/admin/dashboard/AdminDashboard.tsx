@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { logError } from '@/lib/errorUtils';
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardSummaryCards } from "./DashboardSummaryCards";
 import { DashboardCharts } from "./DashboardCharts";
@@ -68,7 +69,7 @@ export function AdminDashboard({ onNavigateToInquiries }: AdminDashboardProps) {
       ]);
       setLastRefresh(new Date());
     } catch (error) {
-      console.error('Dashboard data fetch error:', error);
+      logError('AdminDashboard.fetch', error);
       toast.error('대시보드 데이터를 불러오는데 실패했습니다.');
     } finally {
       setIsLoading(false);
