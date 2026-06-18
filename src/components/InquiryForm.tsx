@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { logError } from '@/lib/errorUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -95,7 +96,7 @@ export const InquiryForm = () => {
       });
       setPrivacyAgreed(false);
     } catch (error: any) {
-      console.error('Submit error:', error);
+      logError('InquiryForm.submit', error);
       toast.error(error.message || '문의 등록에 실패했습니다. 다시 시도해 주세요.');
     } finally {
       setIsSubmitting(false);
@@ -128,7 +129,7 @@ export const InquiryForm = () => {
 
       setLookupResults(data.inquiries);
     } catch (error: any) {
-      console.error('Lookup error:', error);
+      logError('InquiryForm.lookup', error);
       toast.error(error.message || '조회에 실패했습니다.');
     } finally {
       setIsLookingUp(false);
