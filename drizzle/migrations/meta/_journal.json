@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793154292026,
+      "tag": "0000_restore_role_check_execution",
+      "breakpoints": true
+    }
+  ]
+}
