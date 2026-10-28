@@ -104,6 +104,7 @@ const CategoryTree = ({
           )}>
             {category.name}
           </span>
+          {!category.is_active && <span className="text-xs text-muted-foreground shrink-0">비활성</span>}
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button variant="ghost" size="icon" className="h-6 w-6"
               onClick={(e) => { e.stopPropagation(); onAddProduct(category); }}
@@ -179,6 +180,7 @@ const CategoryTree = ({
             {category.name}
           </span>
 
+          {!category.is_active && <span className="text-xs text-muted-foreground shrink-0">비활성</span>}
           {/* Action Buttons */}
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
             {/* Add Subcategory - prominent button */}

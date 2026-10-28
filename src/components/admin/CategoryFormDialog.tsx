@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ interface Category {
 }
 
 interface CategoryFormData {
+  is_active: boolean;
   name: string;
   slug: string;
   parent_id: string;
@@ -59,6 +61,7 @@ const CategoryFormDialog = ({
   const mainCategories = categories.filter(c => !c.parent_id);
 
   const [formData, setFormData] = useState<CategoryFormData>({
+    is_active: false,
     name: '',
     slug: '',
     parent_id: '',
@@ -75,6 +78,7 @@ const CategoryFormDialog = ({
     if (!open) return;
     if (editingCategory) {
       setFormData({
+        is_active: editingCategory.is_active,
         name: editingCategory.name,
         slug: editingCategory.slug,
         parent_id: editingCategory.parent_id || '',
@@ -84,6 +88,7 @@ const CategoryFormDialog = ({
       });
     } else {
       setFormData({
+        is_active: false,
         name: '',
         slug: '',
         parent_id: initialParentId || '',
@@ -220,6 +225,11 @@ const CategoryFormDialog = ({
           </div>
 
           {/* Save button */}
+          <div className="flex items-center justify-between gap-3 min-h-[44px]">
+            <Label htmlFor="category-active" className="text-base">카테고리 활성화</Label>
+            <Switch id="category-active" checked={formData.is_active}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))} />
+          </div>
           <Button
             onClick={handleSubmit}
             disabled={!formData.name.trim() || (isSubcategory && !formData.parent_id)}

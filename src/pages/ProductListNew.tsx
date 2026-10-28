@@ -26,6 +26,7 @@ import {
 import { ArrowLeft, Search, X, SlidersHorizontal, ChevronRight, Heart, ShoppingCart, CheckSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { isCategoryRouteAvailable } from '@/lib/categoryAvailability';
 
 interface Product {
   id: string;
@@ -48,6 +49,7 @@ interface Product {
 }
 
 interface Category {
+  is_active: boolean | null;
   id: string;
   name: string;
   slug: string;
@@ -69,6 +71,8 @@ const ProductListNew = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [categoryInfo, setCategoryInfo] = useState<{ title: string; description?: string }>({ title: '전체 제품' });
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  const categoryUnavailable = categoriesLoaded && !isCategoryRouteAvailable(categories, mainCategory, subCategory);
 
   // Filter / pagination state
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
@@ -88,13 +92,22 @@ const ProductListNew = () => {
         .eq('is_active', true)
         .order('display_order', { ascending: true });
       if (data) setCategories(data);
+      setCategoriesLoaded(true);
     };
     fetchCategories();
   }, []);
 
   // ─── Server-side fetch (with pagination) ────────────────────────────────
   const fetchProducts = useCallback(async () => {
-    if (categories.length === 0) return;
+    if (!categoriesLoaded) return;
+    if (!isCategoryRouteAvailable(categories, mainCategory, subCategory)) {
+      setProducts([]);
+      setTotalCount(0);
+      setSelectedIds(new Set());
+      setCategoryInfo({ title: '비활성 카테고리' });
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setSelectedIds(new Set());
 
@@ -110,7 +123,7 @@ const ProductListNew = () => {
     if (mainCategory && mainCategory !== 'all') {
       const mainCat = categories.find(c => c.slug === mainCategory && !c.parent_id);
       if (subCategory && mainCat) {
-        query = query.eq('subcategory', subCategory);
+        query = query.eq('main_category', mainCategory).eq('subcategory', subCategory);
         const subCat = categories.find(c => c.slug === subCategory && c.parent_id === mainCat.id);
         setCategoryInfo({
           title: subCat?.name || subCategory,
@@ -155,7 +168,7 @@ const ProductListNew = () => {
       setTotalCount(count ?? 0);
     }
     setIsLoading(false);
-  }, [categories, mainCategory, subCategory, searchQuery, sortBy, currentPage, pageSize]);
+  }, [categories, categoriesLoaded, mainCategory, subCategory, searchQuery, sortBy, currentPage, pageSize]);
 
   useEffect(() => {
     fetchProducts();
@@ -396,7 +409,7 @@ const ProductListNew = () => {
               ) : products.length === 0 ? (
                 <div className="text-center py-16 bg-card rounded-xl">
                   <p className="text-muted-foreground mb-4">
-                    {hasActiveFilters ? '검색 결과가 없습니다.' : '등록된 제품이 없습니다.'}
+                    {categoryUnavailable ? '현재 비활성화된 카테고리입니다.' : hasActiveFilters ? '검색 결과가 없습니다.' : '등록된 제품이 없습니다.'}
                   </p>
                   {hasActiveFilters ? (
                     <Button variant="outline" onClick={clearFilters}>
