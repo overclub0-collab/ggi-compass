@@ -1,0 +1,4 @@
+- [ ] Disable currently empty product categories without deleting them.
+- [ ] Add persistent admin activation controls and inactive-category visibility.
+- [ ] Apply category status consistently to public navigation and direct category pages.
+- [ ] Test category rules and verify admin saving and public results.
