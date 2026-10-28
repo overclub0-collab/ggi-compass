@@ -517,7 +517,7 @@ const Admin = () => {
     }
   };
 
-  const handleSaveCategory = async (data: { name: string; slug: string; parent_id: string; display_order: number; description: string; image_url: string }) => {
+  const handleSaveCategory = async (data: { name: string; slug: string; parent_id: string; display_order: number; description: string; image_url: string; is_active: boolean }) => {
     if (!data.name.trim()) {
       toast.error('카테고리명은 필수입니다.');
       return;
@@ -525,6 +525,7 @@ const Admin = () => {
 
     try {
       const categoryData = {
+        is_active: data.is_active,
         name: data.name,
         slug: data.slug || data.name.toLowerCase().replace(/\s+/g, '-'),
         parent_id: data.parent_id || null,
